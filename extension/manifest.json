@@ -1,0 +1,48 @@
+{
+    "name": "豆伴",
+    "author": "四不象",
+    "version": "0.1.0",
+    "description": "豆瓣功能加强外挂",
+    "manifest_version": 2,
+    "icons": {
+        "16": "images/icon-16x16.png",
+        "32": "images/icon-32x32.png",
+        "48": "images/icon-48x48.png",
+        "128": "images/icon-128x128.png"
+    },
+    "browser_action": {
+        "default_icon":  {
+            "16": "images/icon-19x19.png",
+            "32": "images/icon-38x38.png"
+        },
+        "default_title": "豆伴",
+        "default_popup": "popup.html"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "http://*.douban.com/*",
+                "https://*.douban.com/*"
+            ],
+            "js": ["content-script.js"],
+            "css": ["content-script.css"],
+            "run_at": "document_idle"
+        }
+    ],
+    "background": {
+        "scripts": [
+            "background.js"
+        ]
+    },
+    "web_accessible_resources": [
+        "inline-script.js",
+        "images/icon-32x32.png"
+    ],
+    "permissions": [
+        "storage",
+        "http://*.douban.com/*",
+        "https://*.douban.com/*"
+    ],
+    "homepage_url": "https://doufen.org/",
+    "options_page": "options.html"
+}
