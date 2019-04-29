@@ -2,22 +2,18 @@
 
 class Assistant {
     constructor () {
-        const ELEMENT_STYLE = '\
-            position: fixed; \
-            margin: 0; \
-            padding: 8px; \
-            top: 40px; \
-            left: 8px; \
-            border: 3px solid gray; \
-            width: 32px; \
-            height: 32px; \
-            border-radius: 27px; \
-            background-color: #eee; \
-            z-index: 999;';
+        const TEMPLATE = `\
+<div class="panel-head">
+    <span class="close">
+        <svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="times" class="svg-inline--fa fa-times fa-w-11" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 512"><path fill="currentColor" d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path></svg>
+    </span>
+</div>
+<div class="panel-body">
+</div>`;
         let assistant = this.element = document.createElement('div');
         assistant.id = 'doufen-assistant';
-        assistant.style = ELEMENT_STYLE;
-        assistant.innerHTML = `<img src="${chrome.extension.getURL('images/icon-32x32.png')}">`;
+        //assistant.innerHTML = `<img src="${chrome.extension.getURL('images/icon-32x32.png')}">`;
+        assistant.innerHTML = TEMPLATE;
         document.body.appendChild(assistant);
 
         this._dragable = false;

@@ -1,0 +1,31 @@
+#doufen-assistant {
+    position: fixed;
+    margin: 0;
+    top: 40px;
+    left: 12px;
+    z-index: 999;
+    width: 54px;
+    height: 100px;
+}
+
+#doufen-assistant .panel-head {
+    height: 20px;
+    border-radius: 4px;
+    background-color: #aaa;
+}
+
+#doufen-assistant .panel-head>.close {
+    width: 12px;
+    float: right;
+    margin: 2px;
+}
+
+#doufen-assistant .panel-body {
+    margin-top: 4px;
+    border: 3px solid gray;
+    width: 32px;
+    height: 32px;
+    border-radius: 30px;
+    padding: 8px;
+    background-color: #eee;
+}
