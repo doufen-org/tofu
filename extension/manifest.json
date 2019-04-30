@@ -36,7 +36,8 @@
     },
     "web_accessible_resources": [
         "inline-script.js",
-        "images/icon-32x32.png"
+        "images/*",
+        "media/*"
     ],
     "permissions": [
         "storage",

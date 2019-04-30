@@ -1,26 +1,39 @@
 #doufen-assistant {
     position: fixed;
+    padding: 12px;
     margin: 0;
     top: 40px;
     left: 12px;
     z-index: 999;
     width: 54px;
-    height: 100px;
-}
-
-#doufen-assistant .panel-head {
-    height: 20px;
+    visibility: hidden;
     border-radius: 4px;
-    background-color: #aaa;
+    background-color: rgba(200, 200, 200, 0.5);
 }
 
-#doufen-assistant .panel-head>.close {
-    width: 12px;
+#doufen-assistant.draggable {
+    cursor: move;
+}
+
+#doufen-assistant:hover {
+    visibility: visible;
+}
+
+#doufen-assistant .icon.close {
+    width: 18px;
+    height: 18px;
     float: right;
-    margin: 2px;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+    display: none;
 }
 
-#doufen-assistant .panel-body {
+#doufen-assistant.closable .icon.close {
+    display: block;
+}
+
+#doufen-assistant .sprite {
     margin-top: 4px;
     border: 3px solid gray;
     width: 32px;
@@ -28,4 +41,136 @@
     border-radius: 30px;
     padding: 8px;
     background-color: #eee;
+    clear: both;
+    cursor: pointer;
+    visibility: visible;
+    background-repeat: no-repeat;
+    background-position: 8px 8px;
+}
+
+#doufen-assistant.flash .sprite {
+    background-position: -100px -100px;
+}
+
+#doufen-assistant .sprite:hover {
+    border-color: aquamarine;
+}
+
+#doufen-assistant .icon.close {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="#999" d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 448c-110.5 0-200-89.5-200-200S145.5 56 256 56s200 89.5 200 200-89.5 200-200 200zm101.8-262.2L295.6 256l62.2 62.2c4.7 4.7 4.7 12.3 0 17l-22.6 22.6c-4.7 4.7-12.3 4.7-17 0L256 295.6l-62.2 62.2c-4.7 4.7-12.3 4.7-17 0l-22.6-22.6c-4.7-4.7-4.7-12.3 0-17l62.2-62.2-62.2-62.2c-4.7-4.7-4.7-12.3 0-17l22.6-22.6c4.7-4.7 12.3-4.7 17 0l62.2 62.2 62.2-62.2c4.7-4.7 12.3-4.7 17 0l22.6 22.6c4.7 4.7 4.7 12.3 0 17z"></path></svg>');
+}
+
+#doufen-assistant .icon.close:hover {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="black" d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 448c-110.5 0-200-89.5-200-200S145.5 56 256 56s200 89.5 200 200-89.5 200-200 200zm101.8-262.2L295.6 256l62.2 62.2c4.7 4.7 4.7 12.3 0 17l-22.6 22.6c-4.7 4.7-12.3 4.7-17 0L256 295.6l-62.2 62.2c-4.7 4.7-12.3 4.7-17 0l-22.6-22.6c-4.7-4.7-4.7-12.3 0-17l62.2-62.2-62.2-62.2c-4.7-4.7-4.7-12.3 0-17l22.6-22.6c4.7-4.7 12.3-4.7 17 0l62.2 62.2 62.2-62.2c4.7-4.7 12.3-4.7 17 0l22.6 22.6c4.7 4.7 4.7 12.3 0 17z"></path></svg>');
+}
+
+#doufen-assistant .speaker {
+    display: none;
+}
+
+#doufen-assistant .dialog {
+    font-size: 16px;
+    line-height: 20px;
+    position: absolute;
+    visibility: visible;
+    cursor: pointer;
+    visibility: hidden;
+}
+
+#doufen-assistant .dialog .message {
+    padding: 10px;
+    margin: 0;
+    border-radius: 4px;
+    background-color: #fffadc;
+    border: 1px solid black/*#FAF3CA8*/;
+    max-width: 400px;
+    min-width: 16px;
+    word-break: keep-all;
+    white-space: nowrap;
+}
+
+#doufen-assistant .dialog .message.alignment {
+    word-break: normal;
+    white-space: normal;
+}
+
+#doufen-assistant .dialog .arrow {
+    font-size:0;
+    overflow: hidden;
+    position: absolute;
+    width: 0px;
+    height: 0px;
+    border-width: 10px;
+}
+
+/* right dialog */
+#doufen-assistant .dialog.right {
+    margin: -54px auto auto 72px;
+    visibility: visible;
+}
+
+#doufen-assistant .dialog.right .arrow.border {
+    border-style:solid dashed dashed;
+    border-color: transparent black/*#FAF3CA*/ transparent transparent; 
+    margin: 16px auto auto -20px;
+}
+
+#doufen-assistant .dialog.right .arrow.background {
+    border-style:solid dashed dashed; 
+    border-color:transparent #fffadc transparent transparent;
+    margin: 16px auto auto -19px;
+}
+
+/* bottom dialog */
+#doufen-assistant .dialog.bottom {
+    margin-top: 20px;
+    visibility: visible;
+}
+
+#doufen-assistant .dialog.bottom .arrow.border {
+    border-style:solid dashed dashed;
+    border-color: transparent transparent black/*#FAF3CA*/ transparent; 
+    margin: -20px auto auto 16px;
+}
+
+#doufen-assistant .dialog.bottom .arrow.background {
+    border-style:solid dashed dashed; 
+    border-color:transparent transparent #fffadc transparent;
+    margin: -19px auto auto 16px;
+}
+
+/* top dialog */
+#doufen-assistant .dialog.top {
+    margin: -200px auto auto 0px;
+    visibility: visible;
+}
+
+#doufen-assistant .dialog.top .arrow.border {
+    border-style:solid dashed dashed;
+    border-color: black/*#FAF3CA*/ transparent transparent; 
+    margin: 126px auto auto 16px;
+}
+
+#doufen-assistant .dialog.top .arrow.background {
+    border-style:solid dashed dashed; 
+    border-color:#fffadc transparent transparent;
+    margin: 125px auto auto 16px;
+}
+
+/* left dialog */
+#doufen-assistant .dialog.left {
+    margin: -54px auto auto -380px;
+    visibility: visible;
+}
+
+#doufen-assistant .dialog.left .arrow.border {
+    border-style:solid dashed dashed;
+    border-color: transparent transparent transparent black/*#FAF3CA*/; 
+    margin: 16px auto auto 360px;
+}
+
+#doufen-assistant .dialog.left .arrow.background {
+    border-style:solid dashed dashed; 
+    border-color:transparent transparent transparent #fffadc;
+    margin: 16px auto auto 359px;
 }

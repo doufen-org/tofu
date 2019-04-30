@@ -1,29 +1,48 @@
 "use strict";
 
-class Assistant {
-    constructor () {
-        const TEMPLATE = `\
-<div class="panel-head">
-    <span class="close">
-        <svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="times" class="svg-inline--fa fa-times fa-w-11" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 512"><path fill="currentColor" d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path></svg>
-    </span>
+
+const ASSISTANT_TEMPLATE = `\
+<span class="icon close" title="关闭"></span>
+<div class="sprite" style="background-image: url('${chrome.extension.getURL('images/icon-32x32.png')}');"></div>
+<div class="dialog">
+    <div class="arrow border"></div>
+    <div class="arrow background"></div>
+    <div class="message">asdvd asdvd</div>
 </div>
-<div class="panel-body">
-</div>`;
-        let assistant = this.element = document.createElement('div');
+<audio class="speaker"></audio>`;
+
+
+class Assistant {
+    /**
+     * constructor
+     * @param {boolean} draggable 
+     * @param {boolean} closable 
+     */
+    constructor (draggable = true, closable = true) {
+        let assistant = this.element = document.createElement('DIV');
         assistant.id = 'doufen-assistant';
-        //assistant.innerHTML = `<img src="${chrome.extension.getURL('images/icon-32x32.png')}">`;
-        assistant.innerHTML = TEMPLATE;
-        document.body.appendChild(assistant);
+        assistant.innerHTML = ASSISTANT_TEMPLATE;
+        assistant.querySelector('.sprite').addEventListener('click', () => {
 
-        this._dragable = false;
+        })
+
+        this.draggable = draggable;
+        this.closable = closable;
     }
 
-    get dragable() {
-        return this._dragable;
+    /**
+     * Get property draggable
+     * @returns {boolean}
+     */
+    get draggable() {
+        return this._draggable;
     }
 
-    set dragable(value) {
+    /**
+     * Set property draggable
+     * @param {boolean} value 
+     */
+    set draggable(value) {
         let isDragging = false,
             elementLeft,
             elementTop;
@@ -46,25 +65,148 @@ class Assistant {
                 moveY = event.clientY - elementTop;
             this.element.style.left = moveX + 'px';
             this.element.style.top = moveY + 'px';
+            event.preventDefault();
         };
 
         if (value) {
-            this._dragable = true;
-            document.addEventListener('mousedown', onStartDrag);
-            document.addEventListener('mouseup', onStopDrag);
-            document.addEventListener('mousemove', onDragging);
+            this._draggable = true;
+            this.element.classList.add('draggable');
+            document.addEventListener('mousedown', this._onStartDrag = onStartDrag);
+            document.addEventListener('mouseup', this._onStopDrag = onStopDrag);
+            document.addEventListener('mousemove', this._onDragging = onDragging);
         } else {
-            this._dragable = false;
-            document.removeEventListener('mousedown', onStartDrag);
-            document.removeEventListener('mouseup', onStopDrag);
-            document.removeEventListener('mousemove', onDragging);
+            this._draggable = false;
+            this.element.classList.remove('draggable');
+            document.removeEventListener('mousedown', this._onStartDrag);
+            document.removeEventListener('mouseup', this._onStopDrag);
+            document.removeEventListener('mousemove', this._onDragging);
         }
     }
 
-    say (message) {
-        //
+    /**
+     * Get property closable
+     * @returns {boolean}
+     */
+    get closable() {
+        return this._closable;
     }
 
+    /**
+     * Set property closable
+     * @param {boolean} value 
+     */
+    set closable(value) {
+        let onClose = (event) => {
+            this.close();
+        };
+
+        if (value) {
+            this._closable = true;
+            this.element.classList.add('closable');
+            this.element.querySelector('.icon.close').addEventListener('click', this._onClose = onClose);
+        } else {
+            this._closable = false;
+            this.element.classList.remove('closable');
+            this.element.querySelector('.icon.close').removeEventListener('click', this._onClose);
+        }
+    }
+
+    /**
+     * Close assistant
+     */
+    close() {
+        document.body.removeChild(this.element);
+    }
+
+    /**
+     * Open assistant
+     */
+    open() {
+        document.body.appendChild(this.element);
+    }
+
+    /**
+     * Show notification
+     * @param {string} message 
+     * @param {string} direction
+     */
+    notify(message, direction = 'auto') {
+        const MESSAGE_BOX_MAX_WIDTH = 400;
+        let dialog = this.element.querySelector('.dialog'),
+            messageBox = dialog.querySelector('.message'),
+            arrowBorder = dialog.querySelector('.arrow.border'),
+            arrowBackground = dialog.querySelector('.arrow.background');
+        let directions = ['left', 'right', 'top', 'bottom'];
+        directions.forEach(dir => dialog.classList.remove(dir));
+        if (directions.indexOf(direction) == -1) {
+            direction = 'right';
+        }
+        dialog.style = arrowBorder.style = arrowBackground.style = '';
+        messageBox.style.width = 'auto';
+        messageBox.classList.remove('alignment');
+        messageBox.innerText = message;
+        dialog.classList.add(direction);
+        messageBox.style.width = getComputedStyle(messageBox).width;
+
+        switch (direction) {
+            case 'left':
+                dialog.style.marginLeft = `-${messageBox.offsetWidth + 20}px`;
+                arrowBorder.style.marginLeft = `${messageBox.offsetWidth}px`;
+                arrowBackground.style.marginLeft = `${messageBox.offsetWidth - 1}px`;
+                break;
+            case 'right':
+                break;
+            case 'top':
+                dialog.style.marginTop = `-${messageBox.offsetHeight + 74}px`;
+                arrowBorder.style.marginTop = `${messageBox.offsetHeight}px`;
+                arrowBackground.style.marginTop = `${messageBox.offsetHeight - 1}px`;
+                break;
+            case 'bottom':
+                break;
+        }
+        messageBox.classList.add('alignment');
+    }
+
+    /**
+     * Play sounds
+     */
+    beep(name = 'meow') {
+        let audio = `media/${name}.mp3`;
+        let speaker = this.element.querySelector('.speaker');
+        speaker.src = chrome.extension.getURL(audio);
+        speaker.play();
+    }
+
+    /**
+     * Flash assistant
+     * @param {number} times 
+     */
+    flash(times = Number.MAX_VALUE) {
+        this._isFlashing = times;
+        let interval = 500;
+        let onFlash = () => {
+            if (!this.element.classList.toggle('flash')) {
+                if (this._isFlashing -- < 1) {
+                    return;
+                }
+            }
+            setTimeout(() => {
+                onFlash();
+            }, interval);  
+        }
+        if (times) {
+            this.element.classList.add('flash');
+            this._isFlashing --;
+            setTimeout(onFlash, interval);
+        } else {
+            this.element.classList.remove('flash');
+        }
+    }
+
+    /**
+     * Get instance of singleton
+     * @returns {Assistant}
+     */
     static get() {
         if (!Assistant.instance) {
             Assistant.instance = new Assistant();
@@ -73,14 +215,8 @@ class Assistant {
     }
 }
 
-let assistant = Assistant.get();
-assistant.dragable = true;
+let assistant = Assistant.get(true, true);
+assistant.open();
 
-let notes = window.indexedDB.open('notes', 1);
+window.assistant = assistant;
 
-notes.onerror = event => {
-    console.log('数据库打开报错');
-};
-notes.onsuccess = e => {
-    console.log('数据库打开');
-}
