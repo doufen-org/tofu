@@ -1,0 +1,25 @@
+{
+  "name": "tofu",
+  "version": "0.1.0",
+  "description": "Chrome 扩展程序形式的豆瓣外挂。增强豆瓣功能，本地备份豆瓣账号数据。",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/doufen-org/tofu.git"
+  },
+  "author": "四不象",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/doufen-org/tofu/issues"
+  },
+  "homepage": "https://github.com/doufen-org/tofu#readme",
+  "devDependencies": {
+    "webpack": "^4.30.0"
+  }
+}
