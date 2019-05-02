@@ -1,25 +1,25 @@
-#doufen-assistant {
+#tofu-assistant {
     position: fixed;
     padding: 12px;
     margin: 0;
     top: 100px;
     left: 0;
-    z-index: 999;
+    z-index: 20000;
     width: 54px;
     visibility: hidden;
     border-radius: 4px;
     background-color: rgba(200, 200, 200, 0.5);
 }
 
-#doufen-assistant.draggable {
+#tofu-assistant.draggable {
     cursor: move;
 }
 
-#doufen-assistant:hover {
+#tofu-assistant:hover {
     visibility: visible;
 }
 
-#doufen-assistant .sprite {
+#tofu-assistant .sprite {
     margin-top: 4px;
     border: 3px solid gray;
     width: 32px;
@@ -34,15 +34,15 @@
     background-position: 8px 8px;
 }
 
-#doufen-assistant.flash .sprite {
+#tofu-assistant.flash .sprite {
     background-position: -100px -100px;
 }
 
-#doufen-assistant .sprite:hover {
+#tofu-assistant .sprite:hover {
     border-color: aquamarine;
 }
 
-#doufen-assistant .icon.close {
+#tofu-assistant .icon.close {
     width: 11px;
     height: 18px;
     float: right;
@@ -53,19 +53,19 @@
     background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 512"><path fill="gray" d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path></svg>');
 }
 
-#doufen-assistant.closable .icon.close {
+#tofu-assistant.closable .icon.close {
     display: block;
 }
 
-#doufen-assistant .icon.close:hover {
+#tofu-assistant .icon.close:hover {
     background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 512"><path fill="black" d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path></svg>');
 }
 
-#doufen-assistant .speaker {
+#tofu-assistant .speaker {
     display: none;
 }
 
-#doufen-assistant .dialog {
+#tofu-assistant .dialog {
     font-size: 16px;
     line-height: 20px;
     position: absolute;
@@ -74,11 +74,11 @@
     visibility: hidden;
 }
 
-#doufen-assistant .dialog.show {
+#tofu-assistant .dialog.show {
     visibility: visible;
 }
 
-#doufen-assistant .dialog .message {
+#tofu-assistant .dialog .message {
     padding: 10px;
     margin: 0;
     border-radius: 4px;
@@ -91,21 +91,21 @@
     position: absolute;
 }
 
-#doufen-assistant .dialog .message.alignment {
+#tofu-assistant .dialog .message.alignment {
     word-break: normal;
     white-space: normal;
 }
 
-#doufen-assistant .dialog .arrow {
+#tofu-assistant .dialog .arrow {
     font-size: 0;
     overflow: hidden;
     position: absolute;
     width: 20px;
     height: 20px;
-    z-index: 998;
+    z-index: 19999;
 }
 
-#doufen-assistant .dialog .arrow > div {
+#tofu-assistant .dialog .arrow > div {
     width: 0px;
     height: 0px;
     border-width: 10px;
@@ -114,54 +114,54 @@
     position: absolute;
 }
 
-#doufen-assistant .dialog.east .arrow {
+#tofu-assistant .dialog.east .arrow {
     margin: -37px auto auto 50px;
 }
 
-#doufen-assistant .dialog.east .arrow .border {
+#tofu-assistant .dialog.east .arrow .border {
     border-right-color: black;
 }
 
-#doufen-assistant .dialog.east .arrow .filler {
+#tofu-assistant .dialog.east .arrow .filler {
     border-right-color: #fffadc;
     margin-left: 1px;
 }
 
-#doufen-assistant .dialog.north .arrow {
+#tofu-assistant .dialog.north .arrow {
     margin: -70px auto auto 17px;
 }
 
-#doufen-assistant .dialog.north .arrow .border {
+#tofu-assistant .dialog.north .arrow .border {
     border-top-color: black;
 }
 
-#doufen-assistant .dialog.north .arrow .filler {
+#tofu-assistant .dialog.north .arrow .filler {
     border-top-color: #fffadc;
     margin-top: -1px;
 }
 
-#doufen-assistant .dialog.west .arrow {
+#tofu-assistant .dialog.west .arrow {
     margin: -37px auto auto -16px;
 }
 
-#doufen-assistant .dialog.west .arrow .border {
+#tofu-assistant .dialog.west .arrow .border {
     border-left-color: black;
 }
 
-#doufen-assistant .dialog.west .arrow .filler {
+#tofu-assistant .dialog.west .arrow .filler {
     border-left-color: #fffadc;
     margin-left: -1px;
 }
 
-#doufen-assistant .dialog.south .arrow {
+#tofu-assistant .dialog.south .arrow {
     margin: -4px auto auto 17px;
 }
 
-#doufen-assistant .dialog.south .arrow .border {
+#tofu-assistant .dialog.south .arrow .border {
     border-bottom-color: black;
 }
 
-#doufen-assistant .dialog.south .arrow .filler {
+#tofu-assistant .dialog.south .arrow .filler {
     border-bottom-color: #fffadc;
     margin-top: 1px;
 }

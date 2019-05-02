@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 
 const ASSISTANT_TEMPLATE = `\
@@ -23,19 +23,26 @@ class Assistant {
      * @param {boolean} draggable 
      * @param {boolean} closable 
      */
-    constructor (draggable = true, closable = true) {
+    constructor (draggable = true, closable = true, silent = false) {
         let assistant = this._elementRoot = document.createElement('DIV');
-        assistant.id = 'doufen-assistant';
+        assistant.id = 'tofu-assistant';
         assistant.innerHTML = ASSISTANT_TEMPLATE;
         assistant.querySelector('.sprite').addEventListener('click', () => {
-
+            window.shortcuts.open();
         })
 
         this.draggable = draggable;
         this.closable = closable;
+        this.silent = silent;
 
         let dialog = this._elementDialog = assistant.querySelector('.dialog');
         this._elementMessageBox = dialog.querySelector('.message');
+
+        if (!silent) {
+            document.addEventListener('visibilitychange', event => {
+                this.silent = event.target.hidden;
+            });
+        }
 
         this.loadSession();
         if (!this._closed) {
@@ -44,12 +51,12 @@ class Assistant {
     }
 
     loadSession() {
-        let session = sessionStorage.getItem('doufen.assistant');
+        let session = sessionStorage.getItem('tofu.assistant');
         if (session) {
             try {
                 session = JSON.parse(session);
             } catch (e) {
-                sessionStorage.removeItem('doufen.assistant');
+                sessionStorage.removeItem('tofu.assistant');
             }
             this._closed = session.closed;
             this._position = session.position;
@@ -58,11 +65,27 @@ class Assistant {
     }
 
     saveSession() {
-        sessionStorage.setItem('doufen.assistant', JSON.stringify({
+        sessionStorage.setItem('tofu.assistant', JSON.stringify({
             closed: this._closed,
             position: this._position
         }));
         return this;
+    }
+
+    /**
+     * Get property silent
+     * @returns {boolean}
+     */
+    get silent() {
+        return this._silent;
+    }
+
+    /**
+     * Set property silent
+     * @param {boolean} value 
+     */
+    set silent(value) {
+        this._silent = value ? true : false;
     }
 
     /**
@@ -156,6 +179,30 @@ class Assistant {
     }
 
     /**
+     * Connect to background
+     * @returns {Assistant}
+     */
+    connect() {
+        let port = this._port = chrome.runtime.connect({name: 'assistant'});
+        port.onMessage.addListener(message => {
+            //this.notify(message.text);
+            //this.flash(3);
+        });
+        return this;
+    }
+
+    /**
+     * Disconnect
+     * @returns {Assistant}
+     */
+    disconnect() {
+        if (this._port) {
+            this._port.disconnect();
+        }
+        return this;
+    }
+
+    /**
      * Close assistant
      * @returns {Assistant}
      */
@@ -166,7 +213,7 @@ class Assistant {
             window.removeEventListener('resize', this._onWindowResize);
         }
         document.body.removeChild(this._elementRoot);
-        return this;
+        return this.disconnect();
     }
 
     /**
@@ -174,6 +221,7 @@ class Assistant {
      * @returns {Assistant}
      */
     open() {
+        this._closed = false;
         if (this._position) {
             this._elementRoot.style.left = this._position.left;
             this._elementRoot.style.top = this._position.top;
@@ -198,7 +246,7 @@ class Assistant {
             }
         };
         window.addEventListener('resize', this._onWindowResize = onWindowResize);
-        return this;
+        return this.connect();
     }
 
     /**
@@ -221,12 +269,21 @@ class Assistant {
      * Show notification
      * @param {string} message 
      * @param {string} direction
+     * @param {function} callback
      * @returns {Assistant}
      */
-    notify(message, direction = 'auto') {
-        const MESSAGE_BOX_MAX_WIDTH = 400;
+    notify(message, direction = 'auto', callback = null) {
         let dialog = this._elementDialog,
             messageBox = this._elementMessageBox;
+        let onClick = event => {
+            if (callback) {
+                callback();
+            }
+            this.mute();
+        };
+        if (this._onMessageBoxClick) {
+            messageBox.removeEventListener('click', this._onMessageBoxClick);
+        }
 
         messageBox.style = '';
         dialog.classList.add('show');
@@ -242,6 +299,7 @@ class Assistant {
                 viewportHeight = document.documentElement.clientHeight;
             let elementRect = this._elementRoot.getBoundingClientRect();
             let elementX = elementRect.left, elementY = elementRect.top;
+
             if (elementY < viewportHeight / 3) {
                 dirY = 'south';
             } else if (elementY > viewportHeight *2 / 3) {
@@ -262,6 +320,7 @@ class Assistant {
         }
         directions.forEach(val => dialog.classList.remove(val));
         dialog.classList.add(dirX);
+        messageBox.classList.add('alignment');
 
         switch (dirX) {
             case 'west':
@@ -270,10 +329,10 @@ class Assistant {
                 messageBox.style.margin = `-48px auto auto -${messageBox.clientWidth + 17}px`;
                 break;
                 case 'north':
-                messageBox.style.margin = `-${messageBox.clientHeight + 48}px auto auto -${messageBox.clientWidth + 17}px`;
+                messageBox.style.margin = `-${messageBox.clientHeight + 8}px auto auto -${messageBox.clientWidth + 17}px`;
                 break;
                 default:
-                messageBox.style.margin = `-${parseInt(messageBox.clientHeight / 2) + 48}px auto auto -${messageBox.clientWidth + 17}px`;
+                messageBox.style.margin = `-${parseInt(messageBox.clientHeight / 2) + 8}px auto auto -${messageBox.clientWidth + 17}px`;
             }
             break;
 
@@ -293,13 +352,13 @@ class Assistant {
             case 'north':
             switch (dirY) {
                 case 'west':
-                messageBox.style.margin = `-${messageBox.clientHeight * 2 + 71}px auto auto ${-(messageBox.clientWidth - 54)}px`;
+                messageBox.style.margin = `-${messageBox.clientHeight + 71}px auto auto ${-(messageBox.clientWidth - 54)}px`;
                 break;
                 case 'east':
-                messageBox.style.margin = `-${messageBox.clientHeight * 2 + 71}px auto auto auto`;
+                messageBox.style.margin = `-${messageBox.clientHeight + 71}px auto auto auto`;
                 break;
                 default:
-                messageBox.style.margin = `-${messageBox.clientHeight * 2 + 71}px auto auto ${-(parseInt(messageBox.clientWidth / 2) - 27)}px`;
+                messageBox.style.margin = `-${messageBox.clientHeight + 71}px auto auto ${-(parseInt(messageBox.clientWidth / 2) - 27)}px`;
             }
             break;
 
@@ -309,14 +368,14 @@ class Assistant {
                 messageBox.style.margin = '-48px auto auto 69px';
                 break;
                 case 'north':
-                messageBox.style.margin = `-${messageBox.clientHeight + 48}px auto auto 69px`;
+                messageBox.style.margin = `-${messageBox.clientHeight + 8}px auto auto 69px`;
                 break;
                 default:
-                messageBox.style.margin = `-${parseInt(messageBox.clientHeight / 2) + 48}px auto auto 69px`;
+                messageBox.style.margin = `-${parseInt(messageBox.clientHeight / 2) + 8}px auto auto 69px`;
             }
             break;
         }
-        messageBox.classList.add('alignment');
+        messageBox.addEventListener('click', this._onMessageBoxClick = onClick, {once: true});
         return this;
     }
 
@@ -335,6 +394,7 @@ class Assistant {
      * @returns {Assistant}
      */
     beep(name = 'meow') {
+        if (this.silent) return this;
         let audio = `media/${name}.mp3`;
         let speaker = this._elementRoot.querySelector('.speaker');
         speaker.src = chrome.extension.getURL(audio);
@@ -371,18 +431,27 @@ class Assistant {
     }
 
     /**
+     * Load settings
+     * @returns {object}
+     */
+    static loadSettings() {
+        return {};
+    }
+
+    /**
      * Get singleton
      * @returns {Assistant}
      */
     static get() {
         if (!Assistant.instance) {
-            Assistant.instance = new Assistant();
+            let settings = Assistant.loadSettings();
+            Assistant.instance = new Assistant(
+                settings.draggable,
+                settings.closable
+            );
         }
         return Assistant.instance;
     }
 }
 
-let assistant = Assistant.get(true, true);
-
-window.assistant = assistant;
-
+window.assistant = Assistant.get();

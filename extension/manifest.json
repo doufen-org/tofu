@@ -24,20 +24,20 @@
                 "http://*.douban.com/*",
                 "https://*.douban.com/*"
             ],
-            "js": ["content-script.js"],
-            "css": ["content-script.css"],
+            "js": ["assistant.js", "shortcuts.js"],
+            "css": ["assistant.css", "shortcuts.css"],
             "run_at": "document_idle"
         }
     ],
     "background": {
         "scripts": [
-            "background.js"
+            "service.js"
         ]
     },
     "web_accessible_resources": [
-        "inline-script.js",
         "images/*",
-        "media/*"
+        "media/*",
+        "index.html"
     ],
     "permissions": [
         "storage",
