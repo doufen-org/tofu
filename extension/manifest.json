@@ -31,6 +31,19 @@
     ],
     "background": {
         "scripts": [
+            "tasks/task.js",
+            "tasks/book.js",
+            "tasks/doulist.js",
+            "tasks/doumail.js",
+            "tasks/event.js",
+            "tasks/followed.js",
+            "tasks/follower.js",
+            "tasks/like.js",
+            "tasks/movie.js",
+            "tasks/music.js",
+            "tasks/note.js",
+            "tasks/photo.js",
+            "tasks/status.js",
             "service.js"
         ]
     },
@@ -43,6 +56,10 @@
         "storage",
         "http://*.douban.com/*",
         "https://*.douban.com/*"
+    ],
+    "optional_permissions": [
+        "notifications",
+        "downloads"
     ],
     "homepage_url": "https://doufen.org/",
     "options_page": "options.html"

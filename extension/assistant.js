@@ -15,6 +15,43 @@ const ASSISTANT_TEMPLATE = `\
 
 
 /**
+ * Class ServiceProxy
+ */
+class ServiceProxy {
+    /**
+     * Constructor
+     * @param {chrome.runtime.Port} port 
+     * @returns {Proxy}
+     */
+    constructor(port) {
+        let eventTarget = new EventTarget();
+        let callIdCounter = 1;
+        return new Proxy(eventTarget, {
+            get(target, property, receiver) {
+                if (property in target) {
+                    return (...args) => {
+                        target[property].apply(target, args);
+                    };
+                }
+                return (...args) => {
+                    let callId = (callIdCounter ++).toString();
+                    port.postMessage({
+                        type: 'syscall',
+                        id: callId,
+                        method: property,
+                        args: args
+                    });
+                    return new Promise((resolve) => {
+                        target.addEventListener(callId, event => resolve(event.detail), {once: true});
+                    });
+                }
+            }
+        });
+    }
+}
+
+
+/**
  * Class Assistant
  */
 class Assistant {
@@ -23,26 +60,24 @@ class Assistant {
      * @param {boolean} draggable 
      * @param {boolean} closable 
      */
-    constructor (draggable = true, closable = true, silent = false) {
+    constructor (draggable, closable, silent) {
         let assistant = this._elementRoot = document.createElement('DIV');
         assistant.id = 'tofu-assistant';
         assistant.innerHTML = ASSISTANT_TEMPLATE;
-        assistant.querySelector('.sprite').addEventListener('click', () => {
-            window.shortcuts.open();
-        })
-
-        this.draggable = draggable;
-        this.closable = closable;
-        this.silent = silent;
-
+        let sprite = this._elementSprite = assistant.querySelector('.sprite');
+        sprite.addEventListener('click', () => {
+            if (this._port) {
+                window.shortcuts.open();
+            }
+        });
         let dialog = this._elementDialog = assistant.querySelector('.dialog');
         this._elementMessageBox = dialog.querySelector('.message');
 
-        if (!silent) {
-            document.addEventListener('visibilitychange', event => {
-                this.silent = event.target.hidden;
-            });
-        }
+        this.loadSettings(draggable, closable, silent);
+
+        document.addEventListener('visibilitychange', event => {
+            this._hidden = event.target.hidden;
+        });
 
         this.loadSession();
         if (!this._closed) {
@@ -50,6 +85,19 @@ class Assistant {
         }
     }
 
+    /**
+     * Load settings
+     */
+    loadSettings(draggable = true, closable = true, silent = false) {
+        this.draggable = draggable;
+        this.closable = closable;
+        this.silent = silent;
+    }
+
+    /**
+     * Load session data
+     * @returns {Assistant}
+     */
     loadSession() {
         let session = sessionStorage.getItem('tofu.assistant');
         if (session) {
@@ -64,6 +112,10 @@ class Assistant {
         return this;
     }
 
+    /**
+     * Save session data
+     * @returns {Assistant}
+     */
     saveSession() {
         sessionStorage.setItem('tofu.assistant', JSON.stringify({
             closed: this._closed,
@@ -179,15 +231,52 @@ class Assistant {
     }
 
     /**
+     * On receive message
+     * @param {any} message 
+     */
+    onMessage(message) {
+        // TODO: 
+        switch (message.type) {
+            case 'broadcast':
+            this.beep().flash(5).notify(message.text);    
+            break;
+            case 'syscall':
+            this.service.dispatchEvent(new CustomEvent(message.id, {detail: message.return}));
+            break;
+        }
+    }
+
+    /**
+     * 
+     */
+    get service() {
+        let serviceProxy = this._serviceProxy;
+        if (!serviceProxy) {
+            serviceProxy = this._serviceProxy = new ServiceProxy(this._port);
+        }
+        return serviceProxy;
+    }
+
+    /**
+     * On disconnect
+     * @param {chrome.runtime.Port} port 
+     */
+    onDisconnect(port) {
+        if (this._port == port) {
+            delete this._port;
+            this._elementSprite.style.opacity = '0.5';
+            this.notify('与后台服务断开连接。刷新页面重新连接。');
+        }
+    }
+
+    /**
      * Connect to background
      * @returns {Assistant}
      */
     connect() {
         let port = this._port = chrome.runtime.connect({name: 'assistant'});
-        port.onMessage.addListener(message => {
-            //this.notify(message.text);
-            //this.flash(3);
-        });
+        port.onMessage.addListener(message => this.onMessage(message));
+        port.onDisconnect.addListener(port => this.onDisconnect(port));
         return this;
     }
 
@@ -332,7 +421,7 @@ class Assistant {
                 messageBox.style.margin = `-${messageBox.clientHeight + 8}px auto auto -${messageBox.clientWidth + 17}px`;
                 break;
                 default:
-                messageBox.style.margin = `-${parseInt(messageBox.clientHeight / 2) + 8}px auto auto -${messageBox.clientWidth + 17}px`;
+                messageBox.style.margin = `-${parseInt(messageBox.clientHeight / 2) + 27}px auto auto -${messageBox.clientWidth + 17}px`;
             }
             break;
 
@@ -371,7 +460,7 @@ class Assistant {
                 messageBox.style.margin = `-${messageBox.clientHeight + 8}px auto auto 69px`;
                 break;
                 default:
-                messageBox.style.margin = `-${parseInt(messageBox.clientHeight / 2) + 8}px auto auto 69px`;
+                messageBox.style.margin = `-${parseInt(messageBox.clientHeight / 2) + 27}px auto auto 69px`;
             }
             break;
         }
@@ -394,7 +483,7 @@ class Assistant {
      * @returns {Assistant}
      */
     beep(name = 'meow') {
-        if (this.silent) return this;
+        if (this.silent || this._hidden) return this;
         let audio = `media/${name}.mp3`;
         let speaker = this._elementRoot.querySelector('.speaker');
         speaker.src = chrome.extension.getURL(audio);
@@ -431,27 +520,27 @@ class Assistant {
     }
 
     /**
-     * Load settings
-     * @returns {object}
-     */
-    static loadSettings() {
-        return {};
-    }
-
-    /**
-     * Get singleton
+     * Setup assistant
      * @returns {Assistant}
      */
-    static get() {
+    static setup() {
         if (!Assistant.instance) {
-            let settings = Assistant.loadSettings();
-            Assistant.instance = new Assistant(
-                settings.draggable,
-                settings.closable
-            );
+            let instance = Assistant.instance = new Assistant();
+            chrome.storage.sync.get([
+                'assistant.draggable',
+                'assistant.closable',
+                'assistant.silent'
+            ], items => {
+                instance.loadSettings(
+                    items.draggable,
+                    items.closable,
+                    items.silent
+                );
+            });
         }
         return Assistant.instance;
     }
 }
 
-window.assistant = Assistant.get();
+window.assistant = Assistant.setup();
+

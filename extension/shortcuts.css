@@ -41,6 +41,16 @@
     padding: 20px;
 }
 
+#tofu-shortcuts .modal-content > h1 {
+    text-align: center;
+    font-size: 26px;
+    font-weight: bold;
+    color: #666;
+    line-height: 1.2;
+    margin: 0;
+    padding: 0 0 16px 0;
+}
+
 #tofu-shortcuts .modal-close {
     position: fixed;
     right: 20px;

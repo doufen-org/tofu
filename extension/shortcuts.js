@@ -4,6 +4,7 @@
 const SHORTCUTS_TEMPLATE = `\
 <div class="modal-background"></div>
 <div class="modal-content">
+    <h1>豆伴</h1>
     <p><a href="${chrome.extension.getURL('index.html')}">后台</a></p>
 </div>
 <button class="modal-close"></button>
@@ -53,10 +54,10 @@ class Shortcuts {
     }
 
     /**
-     * Get singleton
+     * Setup shortcuts
      * @returns {Shortcuts}
      */
-    static get() {
+    static setup() {
         if (!Shortcuts.instance) {
             Shortcuts.instance = new Shortcuts();
         }
@@ -64,4 +65,4 @@ class Shortcuts {
     }
 }
 
-window.shortcuts = Shortcuts.get();
+window.shortcuts = Shortcuts.setup();
