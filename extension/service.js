@@ -24,6 +24,7 @@ export default class Service {
         this._tasks = [];
         this._status = SERVICE_STATUS.STOPPED;
         this._requestInterval = 1000;
+        this._last_request = Date.now();
         chrome.runtime.onConnect.addListener(port => this.onConnect(port));
     }
 
