@@ -4,7 +4,7 @@
 /**
  * Service status code
  */
-const SERVICE_STATUS = {
+export const SERVICE_STATUS = {
     STOPPED: 1,
     START_PENDING: 2,
     STOP_PENDING: 3,
@@ -18,11 +18,12 @@ const SERVICE_STATUS = {
 /**
  * Class Service
  */
-class Service {
+export default class Service {
     constructor() {
         this._ports = new Map();
         this._tasks = [];
         this._status = SERVICE_STATUS.STOPPED;
+        this._requestInterval = 1000;
         chrome.runtime.onConnect.addListener(port => this.onConnect(port));
     }
 
@@ -36,9 +37,22 @@ class Service {
 
     /**
      * Load settings
+     * @param {object} settings
      */
-    loadSettings() {
-        //
+    loadSettings(settings) {
+        if (settings['service.request.interval']) {
+            this._requestInterval = settings['service.request.interval'];
+        }
+    }
+
+    /**
+     * Get request interval
+     * @returns {Promise}
+     */
+    get requestInterval() {
+        return new Promise(resolve => {
+            setTimeout(resolve, this._requestInterval);
+        });
     }
 
     /**
@@ -129,33 +143,37 @@ class Service {
 
     start() {
         if (this.status != SERVICE_STATUS.STOPPED) return false;
+        this._status = SERVICE_STATUS.START_PENDING;
+        this.executeSchedule();
     }
 
     pause() {
         if (this.status != SERVICE_STATUS.RUNNING) return false;
+        this._status = SERVICE_STATUS.PAUSE_PENDING;
     }
 
     resume() {
         if (this.status != SERVICE_STATUS.PAUSED) return false;
-        
+        this._status = SERVICE_STATUS.RESUME_PENDING
     }
 
     stop() {
         if (this.status != SERVICE_STATUS.RUNNING) return false;
-        
+        this._status = SERVICE_STATUS.STOP_PENDING;
     }
 
-    get isBusy() {
-        
+    executeSchedule() {
+
     }
 
     /**
      * Schedule a task
-     * @param {Task} task 
+     * @param {string} task 
+     * @param {Array | null} args 
      * @returns {Service}
      */
-    schedule(task) {
-
+    schedule(task, args = null) {
+        this._tasks.push(task);
     }
 
     /**
@@ -166,13 +184,11 @@ class Service {
         if (!Service.instance) {
             let instance = Service.instance = new Service();
             chrome.storage.sync.get([
+                'service.request.interval'
             ], items => {
-                instance.loadSettings(
-                );
+                instance.loadSettings(items);
             });
         }
         return Service.instance;
     }
 }
-
-window.service = Service.startup();
