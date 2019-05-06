@@ -1,5 +1,7 @@
 'use strict';
 
+import Task from "./task.js";
+
 
 /**
  * Service status code
@@ -16,15 +18,70 @@ export const SERVICE_STATUS = {
 
 
 /**
+ * Class AsyncBlockingQueue
+ */
+class AsyncBlockingQueue {
+    constructor() {
+        this.resolves = [];
+        this.promises = [];
+    }
+
+    _add() {
+        this.promises.push(
+            new Promise(resolve => {
+                this.resolves.push(resolve);
+            })
+        );
+    }
+
+    enqueue(t) {
+        if (!this.resolves.length) this._add();
+        let resolve = this.resolves.shift();
+        resolve(t);
+    }
+
+    dequeue() {
+        if (!this.promises.length) this._add();
+        return this.promises.shift();
+    }
+
+    isEmpty() {
+        return !this.promises.length; // this.length == 0
+    }
+
+    isBlocked() {
+        return !!this.resolves.length; // this.length < 0
+    }
+
+    get length() {
+        return (this.promises.length - this.resolves.length);
+    }
+}
+
+
+/**
+ * Class StateChangeEvent
+ */
+class StateChangeEvent extends Event {
+    constructor(originalState, currentState) {
+        this.type = 'statechange';
+        this.originalState = originalState;
+        this.currentState = currentState;
+    }
+}
+
+
+/**
  * Class Service
  */
-export default class Service {
+export default class Service extends EventTarget {
     constructor() {
         this._ports = new Map();
-        this._tasks = [];
+        this._taskQueue = new AsyncBlockingQueue();
+        this._task = null;
         this._status = SERVICE_STATUS.STOPPED;
-        this._requestInterval = 1000;
-        this._last_request = Date.now();
+        this.requestInterval = 1000;
+        this.lastRequest = 0;
         chrome.runtime.onConnect.addListener(port => this.onConnect(port));
     }
 
@@ -42,18 +99,8 @@ export default class Service {
      */
     loadSettings(settings) {
         if (settings['service.request.interval']) {
-            this._requestInterval = settings['service.request.interval'];
+            this.requestInterval = settings['service.request.interval'];
         }
-    }
-
-    /**
-     * Get request interval
-     * @returns {Promise}
-     */
-    get requestInterval() {
-        return new Promise(resolve => {
-            setTimeout(resolve, this._requestInterval);
-        });
     }
 
     /**
@@ -142,29 +189,38 @@ export default class Service {
         return this._status;
     }
 
+    /**
+     * Start service
+     */
     start() {
-        if (this.status != SERVICE_STATUS.STOPPED) return false;
-        this._status = SERVICE_STATUS.START_PENDING;
-        this.executeSchedule();
+        let originalState = this._status, currentState = SERVICE_STATUS.START_PENDING;
+        if (originalState != SERVICE_STATUS.STOPPED) return false;
+        this._status = currentState;
+        this.dispatchEvent(new StateChangeEvent(originalState, currentState));
     }
 
+    /**
+     * Pause service
+     */
     pause() {
-        if (this.status != SERVICE_STATUS.RUNNING) return false;
+        if (this._status != SERVICE_STATUS.RUNNING || this.status != SERVICE_STATUS.START_PENDING) return false;
         this._status = SERVICE_STATUS.PAUSE_PENDING;
     }
 
+    /**
+     * Resume service
+     */
     resume() {
-        if (this.status != SERVICE_STATUS.PAUSED) return false;
-        this._status = SERVICE_STATUS.RESUME_PENDING
+        if (this._status != SERVICE_STATUS.PAUSED) return false;
+        this._status = SERVICE_STATUS.RESUME_PENDING;
     }
 
+    /**
+     * Stop service
+     */
     stop() {
-        if (this.status != SERVICE_STATUS.RUNNING) return false;
+        if (this._status != SERVICE_STATUS.RUNNING) return false;
         this._status = SERVICE_STATUS.STOP_PENDING;
-    }
-
-    executeSchedule() {
-
     }
 
     /**
@@ -174,22 +230,34 @@ export default class Service {
      * @returns {Service}
      */
     schedule(task, args = null) {
-        this._tasks.push(task);
+        this._taskQueue.enqueue({
+            name: task,
+            args: Array.isArray(args) ? args : []
+        });
     }
 
     /**
      * Startup service
      * @returns {Service}
      */
-    static startup() {
+    static async startup() {
         if (!Service.instance) {
             let instance = Service.instance = new Service();
-            chrome.storage.sync.get([
-                'service.request.interval'
-            ], items => {
-                instance.loadSettings(items);
-            });
+            instance.loadSettings(await new Promise(resolve => {
+                chrome.storage.sync.get([
+                    'service.request.interval'
+                ], resolve);    
+            }));
         }
-        return Service.instance;
+        /*
+        let taskArgs;
+        while (taskArgs = await this._taskQueue.dequeue()) {
+            let task = this._task = await Task.create(taskArgs.name, taskArgs.args);
+            this._status = SERVICE_STATUS.RUNNING;
+            console.log(task);
+            //let retVal = await task.run();
+            this._status = SERVICE_STATUS.START_PENDING;
+        }
+        */
     }
 }

@@ -6,32 +6,20 @@
  */
 export default class Task {
     /**
-     * Constructor
-     * @param {Service} service 
-     */
-    constructor(service) {
-        this._service = service;
-    }
-
-    /**
-     * Continue task
-     */
-    continue() {
-        if (this._continuation) {
-            this._continuation();
-        } else {
-            throw new Error('Invalid continuation');
-        }
-    }
-
-    next() {
-
-    }
-
-    /**
      * Run task
      */
     async run() {
-        // do something
+        throw new Error('Not implemented');
+    }
+
+    /**
+     * Create a task by name
+     * @param {string} name 
+     * @param {Array} args 
+     * @returns {Task}
+     */
+    static async create(name, args) {
+        let module = await import(`./tasks/${name}.js`);
+        return new module.default(...args);
     }
 }
