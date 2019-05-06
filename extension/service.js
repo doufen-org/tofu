@@ -34,10 +34,10 @@ class AsyncBlockingQueue {
         );
     }
 
-    enqueue(t) {
+    enqueue(item) {
         if (!this.resolves.length) this._add();
         let resolve = this.resolves.shift();
-        resolve(t);
+        resolve(item);
     }
 
     dequeue() {
@@ -46,11 +46,16 @@ class AsyncBlockingQueue {
     }
 
     isEmpty() {
-        return !this.promises.length; // this.length == 0
+        return !this.promises.length;
     }
 
     isBlocked() {
-        return !!this.resolves.length; // this.length < 0
+        return !!this.resolves.length;
+    }
+
+    clear() {
+        this.resolves.length = 0;
+        this.promises.length = 0;
     }
 
     get length() {
@@ -64,7 +69,7 @@ class AsyncBlockingQueue {
  */
 class StateChangeEvent extends Event {
     constructor(originalState, currentState) {
-        this.type = 'statechange';
+        super('statechange');
         this.originalState = originalState;
         this.currentState = currentState;
     }
@@ -76,9 +81,9 @@ class StateChangeEvent extends Event {
  */
 export default class Service extends EventTarget {
     constructor() {
+        super();
         this._ports = new Map();
         this._taskQueue = new AsyncBlockingQueue();
-        this._task = null;
         this._status = SERVICE_STATUS.STOPPED;
         this.requestInterval = 1000;
         this.lastRequest = 0;
@@ -236,21 +241,32 @@ export default class Service extends EventTarget {
         });
     }
 
+    standby() {
+        return new Promise(resolve => {
+            this._standby = resolve;
+        });
+    }
+
     /**
      * Startup service
      * @returns {Service}
      */
     static async startup() {
-        if (!Service.instance) {
-            let instance = Service.instance = new Service();
+        let instance = Service.instance;
+        if (!instance) {
+            Service.instance = instance = new Service();
             instance.loadSettings(await new Promise(resolve => {
                 chrome.storage.sync.get([
                     'service.request.interval'
                 ], resolve);    
             }));
         }
+
+        while (await instance.standby()) {
+            let taskArgs = await this._taskQueue.dequeue();
+            let task = await Task.create(taskArgs.name, taskArgs.args);
+        }
         /*
-        let taskArgs;
         while (taskArgs = await this._taskQueue.dequeue()) {
             let task = this._task = await Task.create(taskArgs.name, taskArgs.args);
             this._status = SERVICE_STATUS.RUNNING;
