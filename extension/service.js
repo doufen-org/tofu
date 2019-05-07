@@ -1,7 +1,5 @@
 'use strict';
 
-import Task from "./task.js";
-
 
 /**
  * Service status code
@@ -10,10 +8,7 @@ export const SERVICE_STATUS = {
     STOPPED: 1,
     START_PENDING: 2,
     STOP_PENDING: 3,
-    RUNNING: 4,
-    RESUME_PENDING: 5,
-    PAUSE_PENDING: 6,
-    PAUSED: 7
+    RUNNING: 4
 };
 
 
@@ -54,7 +49,6 @@ class AsyncBlockingQueue {
     }
 
     clear() {
-        this.resolves.length = 0;
         this.promises.length = 0;
     }
 
@@ -195,37 +189,28 @@ export default class Service extends EventTarget {
     }
 
     /**
-     * Start service
+     * Start handling task queue
      */
     start() {
-        let originalState = this._status, currentState = SERVICE_STATUS.START_PENDING;
+        let originalState = this._status;
         if (originalState != SERVICE_STATUS.STOPPED) return false;
-        this._status = currentState;
-        this.dispatchEvent(new StateChangeEvent(originalState, currentState));
+        this._status = SERVICE_STATUS.START_PENDING;
+        this.dispatchEvent(new StateChangeEvent(originalState, this._status));
+        if (this._continuation) {
+            this._continuation();
+        }
+        return true;
     }
 
     /**
-     * Pause service
-     */
-    pause() {
-        if (this._status != SERVICE_STATUS.RUNNING || this.status != SERVICE_STATUS.START_PENDING) return false;
-        this._status = SERVICE_STATUS.PAUSE_PENDING;
-    }
-
-    /**
-     * Resume service
-     */
-    resume() {
-        if (this._status != SERVICE_STATUS.PAUSED) return false;
-        this._status = SERVICE_STATUS.RESUME_PENDING;
-    }
-
-    /**
-     * Stop service
+     * Stop handling task queue
      */
     stop() {
-        if (this._status != SERVICE_STATUS.RUNNING) return false;
+        let originalState = this._status;
+        if (originalState != SERVICE_STATUS.RUNNING && originalState != SERVICE_STATUS.START_PENDING) return false;
         this._status = SERVICE_STATUS.STOP_PENDING;
+        this.dispatchEvent(new StateChangeEvent(originalState, this._status));
+        return true;
     }
 
     /**
@@ -241,10 +226,35 @@ export default class Service extends EventTarget {
         });
     }
 
-    standby() {
-        return new Promise(resolve => {
-            this._standby = resolve;
-        });
+    continue(isTaskEnd = false) {
+        let executor, originalState = this._status;
+
+        switch (originalState) {
+            case SERVICE_STATUS.RUNNING:
+            executor = resolve => resolve();
+            break;
+
+            case SERVICE_STATUS.START_PENDING:
+            executor = resolve => {
+                this._status = SERVICE_STATUS.RUNNING;
+                this.dispatchEvent(new StateChangeEvent(originalState, this._status));
+                resolve();
+            };
+            break;
+
+            case SERVICE_STATUS.STOP_PENDING:
+            executor = resolve => {
+                this._status = SERVICE_STATUS.STOPPED;
+                this.dispatchEvent(new StateChangeEvent(originalState, this._status));
+                this._continuation = resolve;
+            };
+            break;
+
+            case SERVICE_STATUS.STOPPED:
+            executor = resolve => this._continuation = resolve;
+        }
+
+        return new Promise(executor);
     }
 
     /**
@@ -252,19 +262,23 @@ export default class Service extends EventTarget {
      * @returns {Service}
      */
     static async startup() {
+        const RUN_FOREVER = true;
+
         let instance = Service.instance;
         if (!instance) {
             Service.instance = instance = new Service();
             instance.loadSettings(await new Promise(resolve => {
                 chrome.storage.sync.get([
                     'service.request.interval'
-                ], resolve);    
+                ], resolve);
             }));
         }
 
-        while (await instance.standby()) {
-            let taskArgs = await this._taskQueue.dequeue();
-            let task = await Task.create(taskArgs.name, taskArgs.args);
+        while (RUN_FOREVER) {
+            let taskArgs = await instance._taskQueue.dequeue();
+            //let task = await Task.create(taskArgs.name, taskArgs.args);
+            console.log(taskArgs);
+            await instance.continue();
         }
         /*
         while (taskArgs = await this._taskQueue.dequeue()) {
