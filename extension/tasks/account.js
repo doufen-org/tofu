@@ -4,15 +4,17 @@ import Task from '../task.js';
 
 const URL_MINE = 'https://m.douban.com/mine/';
 
-async function task(service) {
-    let response = await fetch(URL_MINE);
-    console.log(response.text());
-    await service.requestInterval;
-    response = await fetch('https://m.douban.com/mine/');
-    console.log(response.text());
-}
-
 
 export default class Account extends Task {
 
+    async run(sleep) {
+        let counter = 1;
+        while (true) {
+            await new Promise(resolve => {
+                setTimeout(resolve, 1000);
+            });
+            await sleep();
+            console.log(counter ++);
+        }
+    }
 }

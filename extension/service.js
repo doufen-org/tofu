@@ -1,4 +1,5 @@
 'use strict';
+import Task from './task.js';
 
 
 /**
@@ -226,6 +227,10 @@ export default class Service extends EventTarget {
         });
     }
 
+    /**
+     * Continue 
+     * @param {boolean} isTaskEnd 
+     */
     continue(isTaskEnd = false) {
         let executor, originalState = this._status;
 
@@ -276,18 +281,12 @@ export default class Service extends EventTarget {
 
         while (RUN_FOREVER) {
             let taskArgs = await instance._taskQueue.dequeue();
-            //let task = await Task.create(taskArgs.name, taskArgs.args);
-            console.log(taskArgs);
-            await instance.continue();
+            let task = await Task.create(taskArgs.name, taskArgs.args);
+            await task.run(() => {
+                return instance.continue();
+            });
+            await instance.continue(true);
         }
-        /*
-        while (taskArgs = await this._taskQueue.dequeue()) {
-            let task = this._task = await Task.create(taskArgs.name, taskArgs.args);
-            this._status = SERVICE_STATUS.RUNNING;
-            console.log(task);
-            //let retVal = await task.run();
-            this._status = SERVICE_STATUS.START_PENDING;
-        }
-        */
+
     }
 }

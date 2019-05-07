@@ -7,8 +7,9 @@
 export default class Task {
     /**
      * Run task
+     * @param {callback} sleep
      */
-    async run() {
+    async run(sleep) {
         throw new Error('Not implemented');
     }
 
