@@ -21,5 +21,8 @@
   "homepage": "https://github.com/doufen-org/tofu#readme",
   "devDependencies": {
     "webpack": "^4.30.0"
+  },
+  "dependencies": {
+    "idb": "^4.0.3"
   }
 }

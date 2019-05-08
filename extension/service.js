@@ -215,12 +215,12 @@ export default class Service extends EventTarget {
     }
 
     /**
-     * Schedule a task
+     * assign a task
      * @param {string} task 
      * @param {Array | null} args 
      * @returns {Service}
      */
-    schedule(task, args = null) {
+    assign(task, args = null) {
         this._taskQueue.enqueue({
             name: task,
             args: Array.isArray(args) ? args : []
@@ -228,16 +228,14 @@ export default class Service extends EventTarget {
     }
 
     /**
-     * Continue 
-     * @param {boolean} isTaskEnd 
+     * Continue the task
      */
-    continue(isTaskEnd = false) {
+    continue() {
         let executor, originalState = this._status;
 
         switch (originalState) {
             case SERVICE_STATUS.RUNNING:
-            executor = resolve => resolve();
-            break;
+            return Promise.resolve();
 
             case SERVICE_STATUS.START_PENDING:
             executor = resolve => {
@@ -263,29 +261,54 @@ export default class Service extends EventTarget {
     }
 
     /**
+     * Idle the service
+     */
+    idle() {
+        let originalState = this._status;
+        if (originalState == SERVICE_STATUS.RUNNING) {
+            this._status = SERVICE_STATUS.START_PENDING;
+            this.dispatchEvent(new StateChangeEvent(originalState, this._status));
+            return Promise.resolve();
+        }
+        return this.continue();
+    }
+
+    /**
      * Startup service
      * @returns {Service}
      */
     static async startup() {
         const RUN_FOREVER = true;
+        const SERVICE_SETTINGS = ['service.request.interval'];
 
-        let instance = Service.instance;
-        if (!instance) {
-            Service.instance = instance = new Service();
-            instance.loadSettings(await new Promise(resolve => {
-                chrome.storage.sync.get([
-                    'service.request.interval'
-                ], resolve);
+        let service = Service.instance;
+        if (!service) {
+            Service.instance = service = new Service();
+            service.loadSettings(await new Promise(resolve => {
+                chrome.storage.sync.get(SERVICE_SETTINGS, resolve);
             }));
         }
-
+        
+        let lastRequest = 0;
         while (RUN_FOREVER) {
-            let taskArgs = await instance._taskQueue.dequeue();
+            let taskArgs = await service._taskQueue.dequeue();
             let task = await Task.create(taskArgs.name, taskArgs.args);
-            await task.run(() => {
-                return instance.continue();
+            await task.run((input, init) => {
+                let promise = service.continue();
+                let requestInterval = lastRequest + service.requestInterval - Date.now();
+                if (requestInterval > 0) {
+                    promise = promise.then(() => {
+                        return new Promise(resolve => {
+                            setTimeout(resolve, requestInterval);
+                        });
+                    });
+                }
+                return promise.then(() => {
+                    lastRequest = Date.now();
+                    return fetch(input, init);
+                });
             });
-            await instance.continue(true);
+            await service.idle();
         }
 
     }

@@ -7,10 +7,26 @@
 export default class Task {
     /**
      * Run task
-     * @param {callback} sleep
+     * @param {callback} fetch
+     * @param {Storage} storage
      */
-    async run(sleep) {
+    async run(fetch, storage) {
         throw new Error('Not implemented');
+    }
+
+    /**
+     * Create DOM
+     * @param {string} html 
+     * @returns {Element}
+     */
+    createElement(html) {
+        let matches = html.match(/<body[^>]*>([\s\S]*)<\/body>/);
+        if (!matches) {
+            throw new Error('Response body content not matched');
+        }
+        let bodyElement = document.createElement('BODY');
+        bodyElement.innerHTML = matches[1];
+        return bodyElement;
     }
 
     /**
