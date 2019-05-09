@@ -14,6 +14,10 @@ export default class Task {
         throw new Error('Not implemented');
     }
 
+    log(message, level='INFO') {
+
+    }
+
     /**
      * Create DOM
      * @param {string} html 

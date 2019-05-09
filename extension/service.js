@@ -274,6 +274,17 @@ export default class Service extends EventTarget {
     }
 
     /**
+     * Get singleton instance
+     * @returns {Service}
+     */
+    static get instance() {
+        if (!Service._instance) {
+            Service._instance = new Service();
+        }
+        return Service._instance;
+    }
+
+    /**
      * Startup service
      * @returns {Service}
      */
@@ -282,32 +293,31 @@ export default class Service extends EventTarget {
         const SERVICE_SETTINGS = ['service.request.interval'];
 
         let service = Service.instance;
-        if (!service) {
-            Service.instance = service = new Service();
-            service.loadSettings(await new Promise(resolve => {
-                chrome.storage.sync.get(SERVICE_SETTINGS, resolve);
-            }));
-        }
-        
+        service.loadSettings(await new Promise(resolve => {
+            chrome.storage.sync.get(SERVICE_SETTINGS, resolve);
+        }));
+
         let lastRequest = 0;
+        let fetchURL = (input, init) => {
+            let promise = service.continue();
+            let requestInterval = lastRequest + service.requestInterval - Date.now();
+            if (requestInterval > 0) {
+                promise = promise.then(() => {
+                    return new Promise(resolve => {
+                        setTimeout(resolve, requestInterval);
+                    });
+                });
+            }
+            return promise.then(() => {
+                lastRequest = Date.now();
+                return fetch(input, init);
+            });
+        };
+
         while (RUN_FOREVER) {
             let taskArgs = await service._taskQueue.dequeue();
             let task = await Task.create(taskArgs.name, taskArgs.args);
-            await task.run((input, init) => {
-                let promise = service.continue();
-                let requestInterval = lastRequest + service.requestInterval - Date.now();
-                if (requestInterval > 0) {
-                    promise = promise.then(() => {
-                        return new Promise(resolve => {
-                            setTimeout(resolve, requestInterval);
-                        });
-                    });
-                }
-                return promise.then(() => {
-                    lastRequest = Date.now();
-                    return fetch(input, init);
-                });
-            });
+            await task.run(fetchURL);
             await service.idle();
         }
 

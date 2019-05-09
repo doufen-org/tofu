@@ -520,25 +520,34 @@ class Assistant {
     }
 
     /**
+     * Get singleton instance
+     * @returns {Assistant}
+     */
+    static get instance() {
+        if (!Assistant._instance) {
+            Assistant._instance = new Assistant();
+        }
+        return Assistant._instance;
+    }
+
+    /**
      * Setup assistant
      * @returns {Assistant}
      */
     static setup() {
-        if (!Assistant.instance) {
-            let instance = Assistant.instance = new Assistant();
-            chrome.storage.sync.get([
-                'assistant.draggable',
-                'assistant.closable',
-                'assistant.silent'
-            ], items => {
-                instance.loadSettings(
-                    items.draggable,
-                    items.closable,
-                    items.silent
-                );
-            });
-        }
-        return Assistant.instance;
+        let instance = Assistant.instance;
+        chrome.storage.sync.get([
+            'assistant.draggable',
+            'assistant.closable',
+            'assistant.silent'
+        ], items => {
+            instance.loadSettings(
+                items.draggable,
+                items.closable,
+                items.silent
+            );
+        });
+        return instance;
     }
 }
 
