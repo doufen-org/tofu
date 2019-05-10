@@ -11,11 +11,53 @@ export default class Task {
      * @param {Storage} storage
      */
     async run(fetch, storage) {
-        throw new Error('Not implemented');
+        this.fetch = fetch;
+        this.storage = storage;
+        this._isRunning = true;
+        // TODO:
+        this._isRunning = false;
     }
 
-    log(message, level='INFO') {
+    /**
+     * Signin account
+     * @returns {object}
+     */
+    async signin() {
+        const URL_MINE = 'https://m.douban.com/mine/';
+        let response = await this.fetch(URL_MINE);
+        if (response.redirected) {
+            this.log('未登录豆瓣');
+            window.open(response.url);
+        }
+    }
 
+    /**
+     * Whether the task is running
+     * @returns {boolean}
+     */
+    get isRunning() {
+        return this._isRunning;
+    }
+
+    /**
+     * Log message
+     * @param {string} message 
+     * @param {string} level 
+     */
+    log(message, level='INFO') {
+        switch (level) {
+            case 'INFO':
+            console.info(message);
+            break;
+            case 'WARN':
+            console.warn(message);
+            break;
+            case 'ERROR':
+            console.error(message);
+            break;
+            default:
+            console.log(message);
+        }
     }
 
     /**
@@ -41,6 +83,8 @@ export default class Task {
      */
     static async create(name, args) {
         let module = await import(`./tasks/${name}.js`);
-        return new module.default(...args);
+        let task = new module.default(...args);
+        task._isRunning = false;
+        return task;
     }
 }

@@ -1,5 +1,6 @@
 'use strict';
 import Task from './task.js';
+import Storage from './storage.js';
 
 
 /**
@@ -313,11 +314,12 @@ export default class Service extends EventTarget {
                 return fetch(input, init);
             });
         };
+        let storage = new Storage('grave');
 
         while (RUN_FOREVER) {
             let taskArgs = await service._taskQueue.dequeue();
             let task = await Task.create(taskArgs.name, taskArgs.args);
-            await task.run(fetchURL);
+            await task.run(fetchURL, storage);
             await service.idle();
         }
 
