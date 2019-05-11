@@ -2,6 +2,16 @@
 
 
 /**
+ * Class TaskError
+ */
+export class TaskError extends Error {
+    constructor(message) {
+        super(message);
+    }
+}
+
+
+/**
  * Class Task
  */
 export default class Task {
@@ -9,11 +19,14 @@ export default class Task {
      * Run task
      * @param {callback} fetch
      * @param {Storage} storage
+     * @param {Logger} logger
      */
-    async run(fetch, storage) {
+    async run(fetch, storage, logger) {
         this.fetch = fetch;
         this.storage = storage;
+        this.logger = logger;
         this._isRunning = true;
+        let account = await this.signin();
         // TODO:
         this._isRunning = false;
     }
@@ -26,9 +39,12 @@ export default class Task {
         const URL_MINE = 'https://m.douban.com/mine/';
         let response = await this.fetch(URL_MINE);
         if (response.redirected) {
-            this.log('未登录豆瓣');
             window.open(response.url);
+            throw new Error('未登录豆瓣');
         }
+        let bodyElement = this.createElement(await response.text());
+        let inputElement = bodyElement.querySelector('#user');
+
     }
 
     /**
@@ -37,27 +53,6 @@ export default class Task {
      */
     get isRunning() {
         return this._isRunning;
-    }
-
-    /**
-     * Log message
-     * @param {string} message 
-     * @param {string} level 
-     */
-    log(message, level='INFO') {
-        switch (level) {
-            case 'INFO':
-            console.info(message);
-            break;
-            case 'WARN':
-            console.warn(message);
-            break;
-            case 'ERROR':
-            console.error(message);
-            break;
-            default:
-            console.log(message);
-        }
     }
 
     /**

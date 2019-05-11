@@ -4,14 +4,134 @@ import Storage from './storage.js';
 
 
 /**
- * Service status code
+ * Service settings
  */
-export const SERVICE_STATUS = {
-    STOPPED: 1,
-    START_PENDING: 2,
-    STOP_PENDING: 3,
-    RUNNING: 4
-};
+const SERVICE_SETTINGS = [
+    'service.debug',
+    'service.requestInterval',
+];
+
+
+/**
+ * Class Logger
+ */
+class Logger extends EventTarget {
+    /**
+     * Constructor
+     */
+    constructor() {
+        super();
+        Object.assign(this, {
+            LEVEL_CRITICAL: 50,
+            LEVEL_ERROR: 40,
+            LEVEL_WARNING: 30,
+            LEVEL_INFO: 20,
+            LEVEL_DEBUG: 10,
+            LEVEL_NOTSET: 0,
+        });
+        this._level = this.LEVEL_INFO;
+        this.entries = [];
+    }
+
+    /**
+     * Log error
+     * @param {string} message 
+     * @param {any} context 
+     * @returns {object}  
+     */
+    error(message, context = null) {
+        return this.log(this.LEVEL_ERROR, message, context);
+    }
+
+    /**
+     * Log warning
+     * @param {string} message 
+     * @param {any} context 
+     * @returns {object} 
+     */
+    warning(message, context = null) {
+        return this.log(this.LEVEL_WARNING, message, context);
+    }
+
+    /**
+     * Log info
+     * @param {string} message 
+     * @param {any} context 
+     * @returns {object} 
+     */
+    info(message, context = null) {
+        return this.log(this.LEVEL_INFO, message, context);
+    }
+
+    /**
+     * Log debug info
+     * @param {string} message 
+     * @param {any} context 
+     * @returns {object} 
+     */
+    debug(message, context = null) {
+        return this.log(this.LEVEL_DEBUG, message, context);
+    }
+
+    /**
+     * Log message
+     * @param {number} level 
+     * @param {string} message 
+     * @param {any} context 
+     * @returns {object} 
+     */
+    log(level, message, context = null) {
+        if (this._level > level) return;
+        let levelName;
+        switch (level) {
+            case this.LEVEL_DEBUG:
+            levelName = 'DEBUG';
+            break;
+            case this.LEVEL_INFO:
+            levelName = 'INFO';
+            break;
+            case this.LEVEL_WARNING:
+            levelName = 'WARNING';
+            break;
+            case this.LEVEL_ERROR:
+            levelName = 'ERROR';
+            break;
+            case this.LEVEL_CRITICAL:
+            levelName = 'CRITICAL';
+            break;
+            default:
+            levelName = 'UNKNOWN';
+        }
+        let entry = {
+            time: Date.now(),
+            level: level,
+            levelName: levelName,
+            message: message,
+            context: context,
+        };
+        let cancelled = !this.dispatchEvent(new CustomEvent('log', {detail: entry}));
+        if (cancelled) {
+            return entry;
+        }
+        return this.entries.push(entry);
+    }
+
+    /**
+     * Get default level
+     * @returns {number}
+     */
+    get level() {
+        return this._level;
+    }
+
+    /**
+     * Set default level
+     * @param {number} value
+     */
+    set level(value) {
+        this._level = value;
+    }
+}
 
 
 /**
@@ -78,29 +198,75 @@ class StateChangeEvent extends Event {
 export default class Service extends EventTarget {
     constructor() {
         super();
+        Object.assign(this, {
+            STATE_STOPPED: 1,
+            STATE_START_PENDING: 2,
+            STATE_STOP_PENDING: 3,
+            STATE_RUNNING: 4
+        });
         this._ports = new Map();
         this._taskQueue = new AsyncBlockingQueue();
-        this._status = SERVICE_STATUS.STOPPED;
+        this._status = this.STATE_STOPPED;
+        this._debug = false;
         this.requestInterval = 1000;
         this.lastRequest = 0;
         chrome.runtime.onConnect.addListener(port => this.onConnect(port));
     }
 
     /**
-     * Get all service statuses
-     * @returns {object}
+     * Get debug mode
+     * @returns {boolean} 
      */
-    get statuses() {
-        return SERVICE_STATUS;
+    get debug() {
+        return this._debug;
     }
 
     /**
-     * Load settings
+     * Set debug mode
+     * @param {boolean} value
+     */
+    set debug(value) {
+        if (this._debug = !!value) {
+            let logger = this.logger;
+            logger.level = logger.LEVEL_DEBUG;
+            logger.addEventListener('log', event => {
+                let entry = event.detail;
+                let datetime = new Date(entry.time).toISOString();
+                console.log(`[${datetime}] ${entry.levelName}: ${entry.message}`);
+            })
+        }
+    }
+
+    /**
+     * Get logger
+     * @returns {Logger} 
+     */
+    get logger() {
+        let logger = this._logger;
+        if (!logger) {
+            this._logger = logger = new Logger();
+        }
+        return logger;
+    }
+
+    /**
+     * Set settings
      * @param {object} settings
      */
-    loadSettings(settings) {
-        if (settings['service.request.interval']) {
-            this.requestInterval = settings['service.request.interval'];
+    set settings(settings) {
+        for (let key in settings) {
+            try {
+                let keyPath = key.split('.');
+                if (keyPath.shift() != 'service') {
+                    continue;
+                }
+                let lastNode = keyPath.pop();
+                let target = this;
+                for (let node of keyPath) {
+                    target = target[node];
+                }
+                target[lastNode] = settings[key];
+            } catch (e) {}
         }
     }
 
@@ -195,12 +361,13 @@ export default class Service extends EventTarget {
      */
     start() {
         let originalState = this._status;
-        if (originalState != SERVICE_STATUS.STOPPED) return false;
-        this._status = SERVICE_STATUS.START_PENDING;
+        if (originalState != this.STATE_STOPPED) return false;
+        this._status = this.STATE_START_PENDING;
         this.dispatchEvent(new StateChangeEvent(originalState, this._status));
         if (this._continuation) {
             this._continuation();
         }
+        this.logger.debug('Starting service...');
         return true;
     }
 
@@ -209,19 +376,21 @@ export default class Service extends EventTarget {
      */
     stop() {
         let originalState = this._status;
-        if (originalState != SERVICE_STATUS.RUNNING && originalState != SERVICE_STATUS.START_PENDING) return false;
-        this._status = SERVICE_STATUS.STOP_PENDING;
+        if (originalState != this.STATE_RUNNING && originalState != this.STATE_START_PENDING) return false;
+        this._status = this.STATE_STOP_PENDING;
         this.dispatchEvent(new StateChangeEvent(originalState, this._status));
+        this.logger.debug('Stopping service...');
         return true;
     }
 
     /**
-     * assign a task
+     * Emit a task
      * @param {string} task 
      * @param {Array | null} args 
      * @returns {Service}
      */
-    assign(task, args = null) {
+    emit(task, args = null) {
+        this.logger.debug(`Add task "${task}"`, args);
         this._taskQueue.enqueue({
             name: task,
             args: Array.isArray(args) ? args : []
@@ -235,26 +404,28 @@ export default class Service extends EventTarget {
         let executor, originalState = this._status;
 
         switch (originalState) {
-            case SERVICE_STATUS.RUNNING:
+            case this.STATE_RUNNING:
             return Promise.resolve();
 
-            case SERVICE_STATUS.START_PENDING:
+            case this.STATE_START_PENDING:
             executor = resolve => {
-                this._status = SERVICE_STATUS.RUNNING;
+                this.logger.debug('Service started.');
+                this._status = this.STATE_RUNNING;
                 this.dispatchEvent(new StateChangeEvent(originalState, this._status));
                 resolve();
             };
             break;
 
-            case SERVICE_STATUS.STOP_PENDING:
+            case this.STATE_STOP_PENDING:
             executor = resolve => {
-                this._status = SERVICE_STATUS.STOPPED;
+                this.logger.debug('Service stopped.');
+                this._status = this.STATE_STOPPED;
                 this.dispatchEvent(new StateChangeEvent(originalState, this._status));
                 this._continuation = resolve;
             };
             break;
 
-            case SERVICE_STATUS.STOPPED:
+            case this.STATE_STOPPED:
             executor = resolve => this._continuation = resolve;
         }
 
@@ -262,12 +433,12 @@ export default class Service extends EventTarget {
     }
 
     /**
-     * Idle the service
+     * Get ready for running task
      */
-    idle() {
+    ready() {
         let originalState = this._status;
-        if (originalState == SERVICE_STATUS.RUNNING) {
-            this._status = SERVICE_STATUS.START_PENDING;
+        if (originalState == this.STATE_RUNNING) {
+            this._status = this.STATE_START_PENDING;
             this.dispatchEvent(new StateChangeEvent(originalState, this._status));
             return Promise.resolve();
         }
@@ -291,15 +462,17 @@ export default class Service extends EventTarget {
      */
     static async startup() {
         const RUN_FOREVER = true;
-        const SERVICE_SETTINGS = ['service.request.interval'];
 
         let service = Service.instance;
-        service.loadSettings(await new Promise(resolve => {
+        let logger = service.logger;
+
+        service.settings = await new Promise(resolve => {
             chrome.storage.sync.get(SERVICE_SETTINGS, resolve);
-        }));
+        });
+        logger.debug('Service settings loaded.');
 
         let lastRequest = 0;
-        let fetchURL = (input, init) => {
+        let fetchURL = (resource, init) => {
             let promise = service.continue();
             let requestInterval = lastRequest + service.requestInterval - Date.now();
             if (requestInterval > 0) {
@@ -310,17 +483,31 @@ export default class Service extends EventTarget {
                 });
             }
             return promise.then(() => {
+                let url = Request.prototype.isPrototypeOf(resource) ? resource.url : resource.toString();
                 lastRequest = Date.now();
-                return fetch(input, init);
+                logger.debug(`Fetching ${url}...`, resource);
+                return fetch(resource, init);
             });
         };
-        let storage = new Storage('grave');
 
+        let storage = new Storage('grave');
+        let currentTask;
         while (RUN_FOREVER) {
-            let taskArgs = await service._taskQueue.dequeue();
-            let task = await Task.create(taskArgs.name, taskArgs.args);
-            await task.run(fetchURL, storage);
-            await service.idle();
+            await service.ready();
+            if (typeof currentTask == 'undefined') {
+                logger.debug('Waiting for task...');
+                let taskArgs = await service._taskQueue.dequeue();
+                currentTask = await Task.create(taskArgs.name, taskArgs.args);
+            }
+            try {
+                logger.debug('Performing task...');
+                await currentTask.run(fetchURL, storage, logger);
+                logger.debug('Task completed...');
+                currentTask = undefined;
+            } catch (e) {
+                logger.error(e.name + ': ' + e.message);
+                service.stop();
+            }
         }
 
     }
