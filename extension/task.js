@@ -44,6 +44,12 @@ export default class Task {
         }
         let bodyElement = this.createElement(await response.text());
         let inputElement = bodyElement.querySelector('#user');
+        let username = inputElement.getAttribute('data-name');
+        let userid = inputElement.getAttribute('value');
+        return {
+            id: userid,
+            username: username,
+        }
 
     }
 
