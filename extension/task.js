@@ -27,6 +27,9 @@ export default class Task {
         this.logger = logger;
         this._isRunning = true;
         let account = await this.signin();
+        try {
+            await this.storage.database.put('account', account);
+        } catch (e) {}
         // TODO:
         this._isRunning = false;
     }
@@ -46,9 +49,13 @@ export default class Task {
         let inputElement = bodyElement.querySelector('#user');
         let username = inputElement.getAttribute('data-name');
         let userid = inputElement.getAttribute('value');
+        let homepageLink = bodyElement.querySelector('.profile .detail .basic-info>a');
+        let homepageURL = homepageLink.getAttribute('href');
+        let userSymbol = homepageURL.match(/\/people\/(.+)/).pop();
         return {
-            id: userid,
+            id: parseInt(userid),
             username: username,
+            symbol: userSymbol,
         }
 
     }

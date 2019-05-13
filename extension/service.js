@@ -491,6 +491,8 @@ export default class Service extends EventTarget {
         };
 
         let storage = new Storage('grave');
+        storage.logger = logger;
+        await storage.open();
         let currentTask;
         while (RUN_FOREVER) {
             await service.ready();
@@ -505,10 +507,10 @@ export default class Service extends EventTarget {
                 logger.debug('Task completed...');
                 currentTask = undefined;
             } catch (e) {
-                logger.error(e.name + ': ' + e.message);
+                logger.error(e);
                 service.stop();
             }
         }
-
+        storage.close();
     }
 }
