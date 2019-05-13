@@ -27,11 +27,21 @@ export default class Task {
         this.logger = logger;
         this._isRunning = true;
         let account = await this.signin();
-        try {
-            await this.storage.database.put('account', account);
-        } catch (e) {}
-        // TODO:
+        await this.storage.put('account', account);
+        await this.main(account);
         this._isRunning = false;
+    }
+
+    getCookie(name) {
+        return new Promise(resolve => chrome.cookies.get({url: '*.douban.com', name: name}, resolve));
+    }
+
+    /**
+     * Main
+     * @param {object} account 
+     */
+    async main(account) {
+        throw new TaskError('Not implemented.');
     }
 
     /**
@@ -43,7 +53,7 @@ export default class Task {
         let response = await this.fetch(URL_MINE);
         if (response.redirected) {
             window.open(response.url);
-            throw new Error('未登录豆瓣');
+            throw new TaskError('未登录豆瓣');
         }
         let bodyElement = this.createElement(await response.text());
         let inputElement = bodyElement.querySelector('#user');

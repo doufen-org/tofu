@@ -39,6 +39,7 @@
     ],
     "permissions": [
         "storage",
+        "cookies",
         "http://*.douban.com/*",
         "https://*.douban.com/*"
     ],
