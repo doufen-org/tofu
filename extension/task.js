@@ -2,6 +2,13 @@
 
 
 /**
+ * type: {music|book|movie}
+ * status: {mark|doing|done}
+ */
+export const URL_INTERESTS = 'https://m.douban.com/rexxar/api/v2/user/{uid}/interests?type={type}&status={status}&start={start}&count=50&ck={ck}&for_mobile=1';
+
+
+/**
  * Class TaskError
  */
 export class TaskError extends Error {
