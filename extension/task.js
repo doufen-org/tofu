@@ -32,10 +32,6 @@ export default class Task {
         this._isRunning = false;
     }
 
-    getCookie(name) {
-        return new Promise(resolve => chrome.cookies.get({url: '*.douban.com', name: name}, resolve));
-    }
-
     /**
      * Main
      * @param {object} account 
@@ -62,10 +58,24 @@ export default class Task {
         let homepageLink = bodyElement.querySelector('.profile .detail .basic-info>a');
         let homepageURL = homepageLink.getAttribute('href');
         let userSymbol = homepageURL.match(/\/people\/(.+)/).pop();
+        let cookiesNeeded = {
+            'ue': '',
+            'bid': '',
+            'frodotk_db': '',
+            'ck': '',
+            'dbcl2': '',
+        };
+        let cookies = await new Promise(resolve => chrome.cookies.getAll({url: 'https://*.douban.com'}, resolve));
+        for (let cookie of cookies) {
+            if (cookie.name in cookiesNeeded) {
+                cookiesNeeded[cookie.name] = cookie.value;
+            }
+        }
         return {
             id: parseInt(userid),
             username: username,
             symbol: userSymbol,
+            cookies: cookiesNeeded,
         }
 
     }

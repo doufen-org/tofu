@@ -79,7 +79,11 @@ export default class Storage {
 
     async add(storeName, item, key) {
         try {
-            return await this.database.add(storeName, item, key);
+            if (this._tx) {
+                return await this._tx.objectStore(storeName).add(item, key);
+            } else {
+                return await this.database.add(storeName, item, key);
+            }
         } catch (e) {
             this._lastError = e;
             return false;
@@ -88,7 +92,24 @@ export default class Storage {
 
     async put(storeName, item, key) {
         try {
-            return await this.database.put(storeName, item, key);
+            if (this._tx) {
+                return await this._tx.objectStore(storeName).put(item, key);
+            } else {
+                return await this.database.put(storeName, item, key);
+            }
+        } catch (e) {
+            this._lastError = e;
+            return false;
+        }
+    }
+
+    async get(storeName, key) {
+        try {
+            if (this._tx) {
+                return await this._tx.objectStore(storeName).get(key);
+            } else {
+                return await this.database.get(storeName, key);
+            }
         } catch (e) {
             this._lastError = e;
             return false;
@@ -97,9 +118,17 @@ export default class Storage {
 
     /**
      * Begin a transaction
-     * @returns {IDBTransaction}
+     * @returns {Transaction}
      */
     begin(storeNames, mode) {
-        return this.database.transaction(storeNames, mode);
+        return this._tx = this.database.transaction(storeNames, mode);
+    }
+
+    /**
+     * End a transaction
+     */
+    end() {
+        this._tx.done;
+        this._tx = undefined;
     }
 }
