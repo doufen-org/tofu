@@ -7,7 +7,8 @@ const VERSION = 1;
 const UPGRADES = [
     db => {
         db.createObjectStore('account', { keyPath: 'id' });
-        db.createObjectStore('music', { keyPath: 'id' }).createIndex('user', ['user_id', 'status'], { unique: false });
+        db.createObjectStore('interest', { keyPath: 'id' })
+            .createIndex('user', ['user_id', 'type', 'status'], { unique: false });
     },
 ];
 
@@ -79,11 +80,7 @@ export default class Storage {
 
     async add(storeName, item, key) {
         try {
-            if (this._tx) {
-                return this._tx.objectStore(storeName).add(item, key);
-            } else {
-                return await this.database.add(storeName, item, key);
-            }
+            return await this.database.add(storeName, item, key);
         } catch (e) {
             this._lastError = e;
             return false;
@@ -92,11 +89,7 @@ export default class Storage {
 
     async put(storeName, item, key) {
         try {
-            if (this._tx) {
-                return this._tx.objectStore(storeName).put(item, key);
-            } else {
-                return await this.database.put(storeName, item, key);
-            }
+            return await this.database.put(storeName, item, key);
         } catch (e) {
             this._lastError = e;
             return false;
@@ -105,30 +98,10 @@ export default class Storage {
 
     async get(storeName, key) {
         try {
-            if (this._tx) {
-                return this._tx.objectStore(storeName).get(key);
-            } else {
-                return await this.database.get(storeName, key);
-            }
+            return await this.database.get(storeName, key);
         } catch (e) {
             this._lastError = e;
             return false;
         }
-    }
-
-    /**
-     * Begin a transaction
-     * @returns {Transaction}
-     */
-    begin(storeNames, mode) {
-        return this._tx = this.database.transaction(storeNames, mode);
-    }
-
-    /**
-     * End a transaction
-     */
-    async end() {
-        await this._tx.done;
-        this._tx = undefined;
     }
 }
