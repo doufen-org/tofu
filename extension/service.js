@@ -471,6 +471,15 @@ export default class Service extends EventTarget {
         });
         logger.debug('Service settings loaded.');
 
+        chrome.webRequest.onBeforeSendHeaders.addListener(details => {
+            let overrideHeaderTag = 'X-Override-';
+            for (let header of details.requestHeaders) {
+                if (header.name.startsWith(overrideHeaderTag)) {
+                    header.name = header.name.substr(overrideHeaderTag.length);
+                }
+            }
+            return {requestHeaders: details.requestHeaders};
+        }, {urls: ["http://*.douban.com/*", "https://*.douban.com/*"]}, ["blocking", "requestHeaders"]);
         let lastRequest = 0;
         let fetchURL = (resource, init) => {
             let promise = service.continue();

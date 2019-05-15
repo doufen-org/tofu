@@ -6,6 +6,12 @@
  * status: {mark|doing|done}
  */
 export const URL_INTERESTS = 'https://m.douban.com/rexxar/api/v2/user/{uid}/interests?type={type}&status={status}&start={start}&count=50&ck={ck}&for_mobile=1';
+/**
+ * type: {music|book|movie}
+ */
+export const URL_REVIEWS = 'https://m.douban.com/rexxar/api/v2/user/1832573/reviews?type={type}&start={start}&count=50&ck={ck}&for_mobile=1'; 
+
+export const PAGE_SIZE = 50;
 
 
 /**

@@ -40,6 +40,8 @@
     "permissions": [
         "storage",
         "cookies",
+        "webRequest",
+        "webRequestBlocking",
         "http://*.douban.com/*",
         "https://*.douban.com/*"
     ],

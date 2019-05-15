@@ -7,7 +7,7 @@ const VERSION = 1;
 const UPGRADES = [
     db => {
         db.createObjectStore('account', { keyPath: 'id' });
-        db.createObjectStore('broadcast', { keyPath: 'id' });
+        db.createObjectStore('music', { keyPath: 'id' }).createIndex('user', ['user_id', 'status'], { unique: false });
     },
 ];
 
@@ -80,7 +80,7 @@ export default class Storage {
     async add(storeName, item, key) {
         try {
             if (this._tx) {
-                return await this._tx.objectStore(storeName).add(item, key);
+                return this._tx.objectStore(storeName).add(item, key);
             } else {
                 return await this.database.add(storeName, item, key);
             }
@@ -93,7 +93,7 @@ export default class Storage {
     async put(storeName, item, key) {
         try {
             if (this._tx) {
-                return await this._tx.objectStore(storeName).put(item, key);
+                return this._tx.objectStore(storeName).put(item, key);
             } else {
                 return await this.database.put(storeName, item, key);
             }
@@ -106,7 +106,7 @@ export default class Storage {
     async get(storeName, key) {
         try {
             if (this._tx) {
-                return await this._tx.objectStore(storeName).get(key);
+                return this._tx.objectStore(storeName).get(key);
             } else {
                 return await this.database.get(storeName, key);
             }
@@ -127,8 +127,8 @@ export default class Storage {
     /**
      * End a transaction
      */
-    end() {
-        this._tx.done;
+    async end() {
+        await this._tx.done;
         this._tx = undefined;
     }
 }
