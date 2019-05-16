@@ -9,7 +9,9 @@ export const URL_INTERESTS = 'https://m.douban.com/rexxar/api/v2/user/{uid}/inte
 /**
  * type: {music|book|movie}
  */
-export const URL_REVIEWS = 'https://m.douban.com/rexxar/api/v2/user/1832573/reviews?type={type}&start={start}&count=50&ck={ck}&for_mobile=1'; 
+export const URL_REVIEWS = 'https://m.douban.com/rexxar/api/v2/user/{uid}/reviews?type={type}&start={start}&count=50&ck={ck}&for_mobile=1';
+export const URL_FOLLOWING = 'https://m.douban.com/rexxar/api/v2/user/{uid}/following?start={start}&count=50&ck={ck}&for_mobile=1'
+export const URL_FOLLOWERS = 'https://m.douban.com/rexxar/api/v2/user/{uid}/followers?start={start}&count=50&ck={ck}&for_mobile=1'
 
 export const PAGE_SIZE = 50;
 

@@ -42,7 +42,6 @@
         "cookies",
         "webRequest",
         "webRequestBlocking",
-        "http://localhost:8000/*",
         "http://*.douban.com/*",
         "https://*.douban.com/*"
     ],

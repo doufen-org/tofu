@@ -478,9 +478,8 @@ export default class Service extends EventTarget {
                     header.name = header.name.substr(overrideHeaderTag.length);
                 }
             }
-            console.log(details.requestHeaders)
             return {requestHeaders: details.requestHeaders};
-        }, {urls: ["http://*.douban.com/*", "https://*.douban.com/*", "http://localhost:8000/*"]}, ["blocking", "requestHeaders"]);
+        }, {urls: ['http://*.douban.com/*', 'https://*.douban.com/*']}, ['blocking', 'requestHeaders', 'extraHeaders']);
         let lastRequest = 0;
         let fetchURL = (resource, init) => {
             let promise = service.continue();
