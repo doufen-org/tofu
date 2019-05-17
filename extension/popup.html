@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="script-src 'self';">
     <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+    <script src="vendor/zepto.min.js"></script>
     <style>
         html {
             font-size: 14px;
@@ -24,6 +25,16 @@
             color: darkcyan;
         }
 
+        .menu-item[disabled] {
+            color: gainsboro;
+            cursor: default;
+        }
+
+        .menu-item:hover[disabled] {
+            background-color: transparent;
+            color: gainsboro;
+        }
+
         .menu-item:hover {
             background-color: dodgerblue;
             color: white;
@@ -33,6 +44,10 @@
             cursor: pointer;
         }
 
+        .menu-item[disabled]>label {
+            cursor: default;
+        }
+
         .menu-item>span.icon {
             cursor: pointer;
             font-size: 0.75rem;
@@ -40,6 +55,10 @@
             height: 1rem;
             display: inline-block;
             line-height: 1rem;
+        }
+
+        .menu-item[disabled]>span.icon {
+            cursor: default;
         }
 
         .menu-separator {
@@ -53,32 +72,38 @@
 </head>
 
 <body class="menu">
-
-    <div class="menu-item">
+    <div class="menu-item" name="New">
+        <span class="icon">
+            <i class="fas fa-plus"></i>
+        </span>
+        <label>新建任务</label>
+    </div>
+    <div class="menu-separator">-</div>
+    <div class="menu-item" name="Start" disabled>
         <span class="icon">
             <i class="fas fa-play"></i>
         </span>
-        <label>开始备份</label>
+        <label>开始</label>
     </div>
-    <div class="menu-item">
+    <div class="menu-item" name="Stop" disabled>
         <span class="icon">
             <i class="fas fa-stop"></i>
         </span>
-        <label>停止备份</label>
+        <label>停止</label>
     </div>
     <div class="menu-separator">-</div>
-    <div class="menu-item">
+    <div class="menu-item" name="Settings">
         <span class="icon">
             <i class="fas fa-cog"></i>
         </span>
         <label>设置</label>
     </div>
     <div class="menu-separator">-</div>
-    <div class="menu-item">
+    <div class="menu-item" name="Help">
         <span class="icon"></span>
         <label>帮助</label>
     </div>
-    <div class="menu-item">
+    <div class="menu-item" name="About">
         <span class="icon">
             <i class="fas fa-info-circle"></i>
         </span>

@@ -376,10 +376,23 @@ export default class Service extends EventTarget {
      */
     stop() {
         let originalState = this._status;
-        if (originalState != this.STATE_RUNNING && originalState != this.STATE_START_PENDING) return false;
-        this._status = this.STATE_STOP_PENDING;
-        this.dispatchEvent(new StateChangeEvent(originalState, this._status));
-        this.logger.debug('Stopping service...');
+
+        switch (originalState) {
+            case this.STATE_RUNNING:
+            this._status = this.STATE_STOP_PENDING;
+            this.dispatchEvent(new StateChangeEvent(originalState, this._status));
+            this.logger.debug('Stopping service...');    
+            break;
+
+            case this.STATE_START_PENDING:
+            this._status = this.STATE_STOPPED;
+            this.dispatchEvent(new StateChangeEvent(originalState, this._status));
+            this.logger.debug('Service stopped.');
+            break;
+
+            default:
+            return false;
+        }
         return true;
     }
 
@@ -418,9 +431,9 @@ export default class Service extends EventTarget {
 
             case this.STATE_STOP_PENDING:
             executor = resolve => {
-                this.logger.debug('Service stopped.');
                 this._status = this.STATE_STOPPED;
                 this.dispatchEvent(new StateChangeEvent(originalState, this._status));
+                this.logger.debug('Service stopped.');
                 this._continuation = resolve;
             };
             break;
