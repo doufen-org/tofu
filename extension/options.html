@@ -1,0 +1,137 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <title>设置</title>
+    <link rel="shortcut icon" href="images/icon-32x32.png" type="image/png">
+    <link type="text/css" rel="stylesheet" href="vendor/bulma.min.css">
+    <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="vendor/switchery.min.css">
+    <script src="vendor/zepto.min.js"></script>
+    <script src="vendor/switchery.min.js"></script>
+    <style>
+        .page-tab-content {
+            margin-top: 3rem;
+            max-width: 50rem;
+        }
+        .card {
+            margin-bottom: 3rem;
+            padding: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar" role="navigation">
+        <div class="container">
+            <div class="navbar-brand">
+                <a class="navbar-item" href="https://doufen.org/" target="_blank">
+                    <img src="images/logo-main.png" alt="豆伴" title="豆伴">
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="section page-tab-panel">
+        <div class="container">
+            <div class="tabs is-centered is-boxed">
+                <ul>
+                    <li class="page-tab-link is-active" data-tab="general"><a href="#general">常规</a></li>
+                    <li class="page-tab-link" data-tab="help"><a href="#help">帮助</a></li>
+                    <li class="page-tab-link" data-tab="about"><a href="#about">关于</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="container page-tab-content" name="general">
+            <article class="card is-hidden" id="account-error">
+                <div class="card-content">
+                    <p class="has-text-centered">请先<a href="https://accounts.douban.com/passport/login">登录</a>豆瓣</p>
+                </div>
+            </article>
+            <article class="media card is-hidden" id="account">
+                <figure class="media-left">
+                    <p class="image is-64x64"></p>
+                </figure>
+                <div class="media-content">
+                    <div class="content">
+                        <p>
+                            <strong name="name"></strong>
+                            <small name="symbol"></small>
+                        </p>
+                    </div>
+                    <nav class="level">
+                        <div class="level-left">
+                            <a class="level-item" target="_blank" href="https://www.douban.com/contacts/rlist">
+                                <span class="is-size-7" name="followers"></span>
+                            </a>
+                            <a class="level-item" target="_blank" href="https://www.douban.com/contacts/list">
+                                <span class="is-size-7" name="following"></span>
+                            </a>
+                        </div>
+                    </nav>
+                    <div class="columns" name="collection"></div>
+                </div>
+                <div class="media-right">
+                    <a href="https://www.douban.com/mine/" class="button" target="_blank">
+                        <span>个人主页</span>
+                        <span class="icon is-small">
+                            <i class="fas fa-chevron-right"></i>
+                        </span>
+                    </a>
+                </div>
+            </article>
+            <div class="columns">
+                <div class="column is-10">
+                    <label>输出调试信息</label>
+                </div>
+                <div class="column">
+                    <input type="checkbox" class="is-switch" checked>
+                </div>
+            </div>
+            <div class="columns">
+                <div class="column is-10">
+                    <label>请求间隔：</label>
+                    <p class="help">请求间隔过短可能导致被豆瓣服务器屏蔽。</p>
+                </div>
+                <div class="column">
+                    <div class="field has-addons">
+                        <p class="control">
+                            <input class="input" type="text">
+                        </p>
+                        <p class="control">
+                            <a class="button is-static">秒</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="container page-tab-content is-hidden" name="help">
+            help
+        </div>
+        <div class="container page-tab-content is-hidden" name="about">
+            <div class="content">
+                <h2 class="title is-size-5">联系方式</h2>
+                <ul>
+                    <li>发现错误？<a href="https://github.com/doufen-org/tofu/issues" target="_blank">提交错误报告</a></li>
+                    <li>电子邮件：<a href="mailto:tofu@doufen.org">tofu@doufen.org</a></li>
+                    <li>关注社交账号：
+                        <a href="https://twitter.com/doufen-org" target="_blank">
+                            <span class="icon">
+                                <i class="fab fa-twitter"></i>
+                            </span>
+                        </a>
+                    </li>
+                </ul>
+                <h2 class="title is-size-5">支持</h2>
+                <p>Powered by <a href="https://doufen.org/" target="_blank">豆坟</a></p>
+            </div>
+        </div>
+    </section>
+    <script type="module" src="options.js"></script>
+</body>
+
+</html>

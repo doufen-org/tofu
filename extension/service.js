@@ -6,10 +6,10 @@ import Storage from './storage.js';
 /**
  * Service settings
  */
-const SERVICE_SETTINGS = [
-    'service.debug',
-    'service.requestInterval',
-];
+export const SERVICE_SETTINGS = {
+    'service.debug': false,
+    'service.requestInterval': 1.0,
+};
 
 
 /**
@@ -480,7 +480,7 @@ export default class Service extends EventTarget {
         let logger = service.logger;
 
         service.settings = await new Promise(resolve => {
-            chrome.storage.sync.get(SERVICE_SETTINGS, resolve);
+            chrome.storage.sync.get(Object.keys(SERVICE_SETTINGS), resolve);
         });
         logger.debug('Service settings loaded.');
 

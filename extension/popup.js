@@ -1,7 +1,8 @@
 // popup.js
 
-const URL_ABOUT = 'https://blog.doufen.org/about';
-const URL_HELP = 'https://blog.doufen.org/help';
+const URL_OPTIONS = chrome.runtime.getURL('options.html');
+const URL_ABOUT = URL_OPTIONS + '#about';
+const URL_HELP = URL_OPTIONS + '#help';
 
 
 /**
@@ -14,7 +15,7 @@ class PopupMenu {
     }
 
     clickNew(event) {
-
+        //
     }
 
     clickStart(event) {
@@ -26,7 +27,7 @@ class PopupMenu {
     }
 
     clickSettings(event) {
-        window.open(chrome.runtime.getURL('options.html'));
+        window.open(URL_OPTIONS);
     }
 
     clickHelp(event) {
