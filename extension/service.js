@@ -8,7 +8,7 @@ import Storage from './storage.js';
  */
 export const SERVICE_SETTINGS = {
     'service.debug': false,
-    'service.requestInterval': 1.0,
+    'service.requestInterval': 1000,
 };
 
 
@@ -207,8 +207,6 @@ export default class Service extends EventTarget {
         this._ports = new Map();
         this._taskQueue = new AsyncBlockingQueue();
         this._status = this.STATE_STOPPED;
-        this._debug = false;
-        this.requestInterval = 1000;
         this.lastRequest = 0;
         chrome.runtime.onConnect.addListener(port => this.onConnect(port));
     }
