@@ -25,12 +25,21 @@
 </head>
 
 <body>
-    <nav class="navbar" role="navigation">
+    <nav class="navbar">
         <div class="container">
             <div class="navbar-brand">
                 <a class="navbar-item" href="https://doufen.org/" target="_blank">
                     <img src="images/logo-main.png" alt="豆伴" title="豆伴">
                 </a>
+            </div>
+            <div class="navbar-menu">
+                <div class="navbar-end">
+                    <div class="navbar-item">
+                        <div class="buttons">
+                            <a href="" class="button is-primary">浏览备份</a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </nav>
@@ -63,16 +72,6 @@
                             <small name="symbol"></small>
                         </p>
                     </div>
-                    <nav class="level">
-                        <div class="level-left">
-                            <a class="level-item" target="_blank" href="https://www.douban.com/contacts/rlist">
-                                <span class="is-size-7" name="followers"></span>
-                            </a>
-                            <a class="level-item" target="_blank" href="https://www.douban.com/contacts/list">
-                                <span class="is-size-7" name="following"></span>
-                            </a>
-                        </div>
-                    </nav>
                     <div class="columns" name="collection"></div>
                 </div>
                 <div class="media-right">
@@ -89,7 +88,7 @@
                     <label>输出调试信息</label>
                 </div>
                 <div class="column">
-                    <input type="checkbox" class="is-switch" checked>
+                    <input type="checkbox" name="service.debug" class="is-switch" checked>
                 </div>
             </div>
             <div class="columns">
@@ -100,13 +99,21 @@
                 <div class="column">
                     <div class="field has-addons">
                         <p class="control">
-                            <input class="input" type="text">
+                            <input class="input" type="text" name="service.requestInterval">
                         </p>
                         <p class="control">
                             <a class="button is-static">秒</a>
                         </p>
                     </div>
                 </div>
+            </div>
+            <div class="field is-grouped is-grouped-centered">
+                <p class="control">
+                    <a class="button is-link" name="save">保存</a>
+                </p>
+                <p class="control">
+                    <a class="button" name="reset">重置</a>
+                </p>
             </div>
         </div>
         <div class="container page-tab-content is-hidden" name="help">

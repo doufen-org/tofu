@@ -1,6 +1,7 @@
 'use strict';
 import Task from './task.js';
 import Storage from './storage.js';
+import Settings from './settings.js';
 
 
 /**
@@ -477,10 +478,11 @@ export default class Service extends EventTarget {
         let service = Service.instance;
         let logger = service.logger;
 
-        service.settings = await new Promise(resolve => {
-            chrome.storage.sync.get(Object.keys(SERVICE_SETTINGS), resolve);
-        });
+        service.settings = await Settings.load(SERVICE_SETTINGS);
         logger.debug('Service settings loaded.');
+
+        let browserMainVersion = (/Chrome\/([0-9]+)/.exec(navigator.userAgent)||[,0])[1];
+        let extraOptions = (browserMainVersion >= 72) ? ['blocking', 'requestHeaders', 'extraHeaders'] : ['blocking', 'requestHeaders'];
 
         chrome.webRequest.onBeforeSendHeaders.addListener(details => {
             let overrideHeaderTag = 'X-Override-';
@@ -490,7 +492,7 @@ export default class Service extends EventTarget {
                 }
             }
             return {requestHeaders: details.requestHeaders};
-        }, {urls: ['http://*.douban.com/*', 'https://*.douban.com/*']}, ['blocking', 'requestHeaders', 'extraHeaders']);
+        }, {urls: ['http://*.douban.com/*', 'https://*.douban.com/*']}, extraOptions);
         let lastRequest = 0;
         let fetchURL = (resource, init) => {
             let promise = service.continue();

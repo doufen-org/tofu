@@ -3,4 +3,5 @@ import Service from './service.js';
 
 
 Service.startup();
-window.service = Service.instance;
+let service = window.service = Service.instance;
+service.start();

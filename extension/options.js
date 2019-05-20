@@ -1,4 +1,6 @@
+import Settings from './settings.js';
 import {SERVICE_SETTINGS} from './service.js';
+import Notification from './ui/notification.js';
 
 
 class TabPanel {
@@ -75,10 +77,10 @@ class AccountPanel {
         this.panel.querySelector('.media-left>.image').innerHTML = `<img src="${userInfo.avatar}">`;
         this.panel.querySelector('.media-content [name="name"]').innerText = userInfo.name;
         this.panel.querySelector('.media-content [name="symbol"]').innerText = 'ID: ' + userInfo.uid;
-        this.panel.querySelector('.media-content [name="followers"]').innerText = '被关注 ' + userInfo.followers_count;
-        this.panel.querySelector('.media-content [name="following"]').innerText = '关注 ' + userInfo.following_count;
         let collectionPanel = this.panel.querySelector('.media-content [name="collection"]');
         let collection = {
+            '关注': {key: 'following_count', url: 'https://www.douban.com/contacts/list'},
+            '被关注': {key: 'followers_count', url: 'https://www.douban.com/contacts/rlist'},
             '日记': {key: 'notes_count', url: 'https://www.douban.com/mine/notes'},
             '相册': {key: 'photo_albums_count', url: 'https://www.douban.com/mine/photos'},
             '小组': {key: 'joined_group_count', url: 'https://www.douban.com/group/mine'},
@@ -105,18 +107,57 @@ class AccountPanel {
 
 
 class GeneralSettings {
-    constructor(selector, settings) {
+    constructor(selector, settings, defaults) {
         this.panel = document.querySelector(selector);
+        this.settings = settings;
+        this.defaults = defaults;
+
+        const CONTROL_NAMES = [
+            'service.debug',
+            'service.requestInterval',
+            'save',
+            'reset',
+        ];
+        let controls = {};
+        for (let controlName of CONTROL_NAMES) {
+            controls[controlName] = this.panel.querySelector(`[name="${controlName}"]`)
+        }
+        this.controls = controls;
+
+        if (!settings[CONTROL_NAMES[0]]) {
+            controls[CONTROL_NAMES[0]].removeAttribute('checked');
+        }
+        controls[CONTROL_NAMES[1]].value = settings[CONTROL_NAMES[1]] / 1000;
+
+        controls.save.addEventListener('click', event => {
+            this.settings['service.debug'] = this.controls['service.debug'].checked;
+            this.settings['service.requestInterval'] = parseFloat(this.controls['service.requestInterval'].value) * 1000;
+            this.save(this.settings);
+        });
+        controls.reset.addEventListener('click', event => {
+            $(this.controls['service.debug']).prop('checked', this.defaults['service.debug']).trigger('change');
+            this.controls['service.requestInterval'].value = this.defaults['service.requestInterval'] / 1000;
+            this.save(this.defaults);
+        });
+
         let switches = this.panel.querySelectorAll('.is-switch');
         switches.forEach(el => new Switchery(el));
-        console.log(settings);
+    }
+
+    save(settings) {
+        try {
+            chrome.storage.sync.set(settings, result => {
+                Notification.show('保存成功');
+            });
+        } catch (e) {
+            Notification.show('保存失败', {type: 'danger'});
+        }
     }
 
     static async render() {
-        let settings = await new Promise(resolve => {
-            chrome.storage.sync.get(SERVICE_SETTINGS, resolve);
-        });
-        return new GeneralSettings('.page-tab-content[name="general"]', settings);
+        let settings = await Settings.load(SERVICE_SETTINGS);
+        let defaults = SERVICE_SETTINGS;
+        return new GeneralSettings('.page-tab-content[name="general"]', settings, defaults);
     }
 }
 
