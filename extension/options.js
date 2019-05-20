@@ -106,42 +106,80 @@ class AccountPanel {
 }
 
 
+class Control {
+    constructor(name) {
+        this.name = name;
+        this.element = document.querySelector(`[name="${name}"]`);
+    }
+
+    set value(value) {
+        this.element.value = value;
+    }
+
+    get value() {
+        return this.element.value;
+    }
+}
+
+
 class GeneralSettings {
     constructor(selector, settings, defaults) {
         this.panel = document.querySelector(selector);
         this.settings = settings;
         this.defaults = defaults;
 
-        const CONTROL_NAMES = [
-            'service.debug',
-            'service.requestInterval',
-            'save',
-            'reset',
+        let BoolSwitch = class extends Control {
+            constructor(name) {
+                super(name);
+                new Switchery(this.element);
+            }
+
+            set value(value) {
+                $(this.element).prop('checked', value).trigger('change');
+            }
+        
+            get value() {
+                return this.element.checked;
+            }
+        };
+
+        let TimeInput = class extends Control {
+            set value(value) {
+                this.element.value = value / 1000;
+            }
+        
+            get value() {
+                return parseInt(parseFloat(this.element.value) * 1000);
+            }
+        };
+
+        const CONTROL_METAS = [
+            {name: 'service.debug', type: BoolSwitch},
+            {name: 'service.requestInterval', type: TimeInput},
         ];
-        let controls = {};
-        for (let controlName of CONTROL_NAMES) {
-            controls[controlName] = this.panel.querySelector(`[name="${controlName}"]`)
-        }
-        this.controls = controls;
 
-        if (!settings[CONTROL_NAMES[0]]) {
-            controls[CONTROL_NAMES[0]].removeAttribute('checked');
+        this.controls = new Object();
+        for (let {name, type} of CONTROL_METAS) {
+            let control = this.controls[name] = new type(name);
+            control.value = settings[name];
         }
-        controls[CONTROL_NAMES[1]].value = settings[CONTROL_NAMES[1]] / 1000;
 
-        controls.save.addEventListener('click', event => {
-            this.settings['service.debug'] = this.controls['service.debug'].checked;
-            this.settings['service.requestInterval'] = parseFloat(this.controls['service.requestInterval'].value) * 1000;
+        this.saveButton = document.querySelector('.button[name="save"]');
+        this.resetButton = document.querySelector('.button[name="reset"]');
+
+        this.saveButton.addEventListener('click', event => {
+            for (let name in this.controls) {
+                this.settings[name] = this.controls[name].value;
+            }
             this.save(this.settings);
         });
-        controls.reset.addEventListener('click', event => {
-            $(this.controls['service.debug']).prop('checked', this.defaults['service.debug']).trigger('change');
-            this.controls['service.requestInterval'].value = this.defaults['service.requestInterval'] / 1000;
+
+        this.resetButton.addEventListener('click', event => {
+            for (let name in this.controls) {
+                this.controls[name].value = this.defaults[name];
+            }
             this.save(this.defaults);
         });
-
-        let switches = this.panel.querySelectorAll('.is-switch');
-        switches.forEach(el => new Switchery(el));
     }
 
     save(settings) {
