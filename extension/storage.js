@@ -2,19 +2,26 @@
 import { openDB } from './vendor/idb/index.js';
 
 
-const VERSION = 1;
+const DOUBAN_VERSION = 1;
+const GRAVE_VERSION = 1;
 
-const UPGRADES = [
+const DOUBAN_UPGRADES = [
     db => {
         db.createObjectStore('account', { keyPath: 'id' });
+        db.createObjectStore('grave', { keyPath: 'id', autoIncrement: true });
+    },
+];
+
+const GRAVE_UPGRADES = [
+    db => {
         db.createObjectStore('interest', { keyPath: 'id' })
-            .createIndex('user', ['user_id', 'type', 'status'], { unique: false });
+            .createIndex('sort', ['type', 'status']);
     },
 ];
 
 
 export default class Storage {
-    constructor(name, version = VERSION) {
+    constructor(name, version = DOUBAN_VERSION) {
         this.name = name;
         this.version = version;
     }
@@ -27,7 +34,7 @@ export default class Storage {
         return this._database = await openDB(this.name, this.version, {
             upgrade(db, oldVersion, newVersion, transaction) {
                 for (let i = oldVersion; i < newVersion; i ++) {
-                    (UPGRADES[i])(db, transaction);
+                    (DOUBAN_UPGRADES[i])(db, transaction);
                 }
             }
         });

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <title>浏览备份</title>
+    <link rel="shortcut icon" href="images/icon-32x32.png" type="image/png">
+    <link type="text/css" rel="stylesheet" href="vendor/bulma.min.css">
+    <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+    <script src="vendor/zepto.min.js"></script>
+    <style>
+        .page-tab-content {
+            margin-top: 3rem;
+            max-width: 50rem;
+        }
+        .card {
+            margin-bottom: 3rem;
+            padding: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <a class="navbar-item" href="https://doufen.org/" target="_blank">
+                    <img src="images/logo-main.png" alt="豆伴" title="豆伴">
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="section page-tab-panel">
+        <div class="container">
+            <div class="tabs is-centered is-boxed">
+                <ul>
+                    <li class="page-tab-link is-active" data-tab="general"><a href="#general">常规</a></li>
+                    <li class="page-tab-link" data-tab="help"><a href="#help">帮助</a></li>
+                    <li class="page-tab-link" data-tab="about"><a href="#about">关于</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="container page-tab-content" name="general"></div>
+        <div class="container page-tab-content is-hidden" name="help">
+        </div>
+        <div class="container page-tab-content is-hidden" name="about">
+        </div>
+    </section>
+    <script type="module" src="explorer.js"></script>
+</body>
+
+</html>
