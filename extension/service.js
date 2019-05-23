@@ -363,10 +363,10 @@ export default class Service extends EventTarget {
         if (originalState != this.STATE_STOPPED) return false;
         this._status = this.STATE_START_PENDING;
         this.dispatchEvent(new StateChangeEvent(originalState, this._status));
+        this.logger.debug('Starting service...');
         if (this._continuation) {
             this._continuation();
         }
-        this.logger.debug('Starting service...');
         return true;
     }
 
@@ -417,28 +417,28 @@ export default class Service extends EventTarget {
 
         switch (originalState) {
             case this.STATE_RUNNING:
-            return Promise.resolve();
+                return Promise.resolve();
 
             case this.STATE_START_PENDING:
-            executor = resolve => {
-                this.logger.debug('Service started.');
-                this._status = this.STATE_RUNNING;
-                this.dispatchEvent(new StateChangeEvent(originalState, this._status));
-                resolve();
-            };
-            break;
+                executor = resolve => {
+                    this._status = this.STATE_RUNNING;
+                    this.dispatchEvent(new StateChangeEvent(originalState, this._status));
+                    this.logger.debug('Service started.');
+                    resolve();
+                };
+                break;
 
             case this.STATE_STOP_PENDING:
-            executor = resolve => {
-                this._status = this.STATE_STOPPED;
-                this.dispatchEvent(new StateChangeEvent(originalState, this._status));
-                this.logger.debug('Service stopped.');
-                this._continuation = resolve;
-            };
-            break;
+                executor = resolve => {
+                    this._status = this.STATE_STOPPED;
+                    this.dispatchEvent(new StateChangeEvent(originalState, this._status));
+                    this.logger.debug('Service stopped.');
+                    this._continuation = resolve;
+                };
+                break;
 
             case this.STATE_STOPPED:
-            executor = resolve => this._continuation = resolve;
+                executor = resolve => this._continuation = resolve;
         }
 
         return new Promise(executor);
@@ -449,10 +449,14 @@ export default class Service extends EventTarget {
      */
     ready() {
         let originalState = this._status;
-        if (originalState == this.STATE_RUNNING) {
-            this._status = this.STATE_START_PENDING;
-            this.dispatchEvent(new StateChangeEvent(originalState, this._status));
-            return Promise.resolve();
+        switch (originalState) {
+            case this.STATE_RUNNING:
+                this._status = this.STATE_START_PENDING;
+                this.dispatchEvent(new StateChangeEvent(originalState, this._status));
+                this.logger.debug('Service is pending...');
+
+            case this.STATE_START_PENDING:
+                return Promise.resolve();
         }
         return this.continue();
     }
@@ -521,9 +525,15 @@ export default class Service extends EventTarget {
             if (typeof currentTask == 'undefined') {
                 logger.debug('Waiting for task...');
                 let taskArgs = await service._taskQueue.dequeue();
-                currentTask = await Task.create(taskArgs.name, taskArgs.args);
+                try {
+                    currentTask = await Task.create(taskArgs.name, taskArgs.args);
+                } catch (e) {
+                    logger.error(e);
+                    continue;
+                }
             }
             try {
+                await service.continue();
                 logger.debug('Performing task...');
                 await currentTask.run(fetchURL, storage, logger);
                 logger.debug('Task completed...');
