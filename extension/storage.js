@@ -7,7 +7,8 @@ const VERSION = 1;
 const UPGRADES = [
     db => {
         db.createObjectStore('account', { keyPath: 'id' });
-        db.createObjectStore('document', { keyPath: ['uri', 'version'] });
+        db.createObjectStore('job', { autoIncrement: true });
+        db.createObjectStore('status', { keyPath: ['id', 'version'] });
         db.createObjectStore('interest', { keyPath: ['id', 'version'] });
         //    .createIndex('sort', ['user_id', 'type', 'status'], { unique: false });
     },
