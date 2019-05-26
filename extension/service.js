@@ -1,5 +1,4 @@
 'use strict';
-import Task from './task.js';
 import Storage from './storage.js';
 import Settings from './settings.js';
 
@@ -11,6 +10,193 @@ export const SERVICE_SETTINGS = {
     'service.debug': false,
     'service.requestInterval': 1000,
 };
+
+
+/**
+ * Class TaskError
+ */
+export class TaskError extends Error {
+    constructor(message) {
+        super(message);
+    }
+}
+
+
+/**
+ * Class Task
+ */
+export class Task {
+    /**
+     * Initialize the task
+     * @param {callback} fetch
+     * @param {Storage} storage
+     * @param {Logger} logger
+     * @param {callback} parseHTML
+     * @param {number} jobId
+     * @param {Object} session
+     */
+    init(fetch, storage, logger, parseHTML, jobId, session) {
+        this.fetch = fetch;
+        this.storage = storage;
+        this.logger = logger;
+        this.parseHTML = parseHTML;
+        this.jobId = jobId;
+        this.session = session;
+    }
+
+    /**
+     * Run task
+     */
+    async run() {
+        throw new TaskError('Not implemented.');
+    }
+
+    /**
+     * Convert to JSON string
+     * @returns {string}
+     */
+    toJSON() {
+        return this.name;
+    }
+
+    /**
+     * Get task name
+     * @returns {string}
+     */
+    get name() {
+        throw new TaskError('Not implemented.');
+    }
+}
+
+
+/**
+ * Parse HTML
+ * @param {string} html 
+ * @param {string} url 
+ */
+function parseHTML(html, url) {
+    let context = document.implementation.createHTMLDocument('');
+    context.documentElement.innerHTML = html;
+    let base = context.createElement('base');
+    base.href = url;
+    context.head.appendChild(base);
+    return context;
+}
+
+
+/**
+ * Class Job
+ */
+class Job {
+    constructor(service) {
+        this._service = service;
+        this._tasks = [];
+        this._isRunning = false;
+        this._currentTask = null;
+        this._id = null;
+    }
+
+    /**
+     * Signin account
+     * @param {callback} fetch 
+     * @returns {object}
+     */
+    async signin(fetch) {
+        const URL_MINE = 'https://m.douban.com/mine/';
+        let response = await fetch(URL_MINE);
+        if (response.redirected) {
+            window.open(response.url);
+            throw new TaskError('未登录豆瓣');
+        }
+        let bodyElement = parseHTML(await response.text(), URL_MINE);
+        let inputElement = bodyElement.querySelector('#user');
+        let name = inputElement.getAttribute('data-name');
+        let userid = inputElement.getAttribute('value');
+        let homepageLink = bodyElement.querySelector('.profile .detail .basic-info>a');
+        let homepageURL = homepageLink.getAttribute('href');
+        let userSymbol = homepageURL.match(/\/people\/(.+)/).pop();
+        let cookiesNeeded = {
+            'ue': '',
+            'bid': '',
+            'frodotk_db': '',
+            'ck': '',
+            'dbcl2': '',
+        };
+        let cookies = await new Promise(resolve => chrome.cookies.getAll({url: 'https://*.douban.com'}, resolve));
+        for (let cookie of cookies) {
+            if (cookie.name in cookiesNeeded) {
+                cookiesNeeded[cookie.name] = cookie.value;
+            }
+        }
+        return {
+            user_id: parseInt(userid),
+            name: name,
+            symbol: userSymbol,
+            cookies: cookiesNeeded,
+        }
+    }
+
+    /**
+     * Add a task
+     * @param {Task} task 
+     */
+    addTask(task) {
+        this._tasks.push(task);
+    }
+
+    /**
+     * Run the job
+     * @param {callback} fetch 
+     * @param {Storage} storage 
+     * @param {Logger} logger 
+     */
+    async run(fetch, storage, logger) {
+        this._isRunning = true;
+        let session = await this.signin(fetch);
+        await storage.put('session', session);
+        let jobId =await storage.add('job', {
+            user_id: session.id,
+            created: Date.now(),
+            tasks: JSON.parse(JSON.stringify(this._tasks)),
+        });
+        this._id = jobId;
+        for (let task of this._tasks) {
+            this._currentTask = task;
+            task.init(fetch, storage, logger, parseHTML, jobId, session);
+            try {
+                await task.run();
+            } catch (e) {
+                logger.error('Fail to run task:' + e);
+            }
+        }
+        this._currentTask = null;
+        this._isRunning = false;
+    }
+
+    /**
+     * Whether the job is running
+     * @returns {boolean}
+     */
+    get isRunning() {
+        return this._isRunning;
+    }
+
+    /**
+     * Get current task
+     * @returns {Task|null}
+     */
+    get currentTask() {
+        return this._currentTask;
+    }
+
+    /**
+     * Get job id
+     * @returns {number|null}
+     */
+    get id() {
+        return this._id;
+    }
+}
 
 
 /**
@@ -206,7 +392,7 @@ export default class Service extends EventTarget {
             STATE_RUNNING: 4
         });
         this._ports = new Map();
-        this._taskQueue = new AsyncBlockingQueue();
+        this._jobQueue = new AsyncBlockingQueue();
         this._status = this.STATE_STOPPED;
         this.lastRequest = 0;
         chrome.runtime.onConnect.addListener(port => this.onConnect(port));
@@ -396,17 +582,26 @@ export default class Service extends EventTarget {
     }
 
     /**
-     * Emit a task
-     * @param {string} task 
-     * @param {Array | null} args 
-     * @returns {Service}
+     * Create a job
+     * @param  {...Object} tasks 
      */
-    emit(task, args = null) {
-        this.logger.debug(`Add task "${task}"`, args);
-        this._taskQueue.enqueue({
-            name: task,
-            args: Array.isArray(args) ? args : []
-        });
+    async createJob(...tasks) {
+        this.logger.debug('Creating a job...');
+        let job = new Job(this);
+        for (let {name, args} of tasks) {
+            try {
+                let module = await import(`./tasks/${name}.js`);
+                if (typeof args == 'undefined') {
+                    args = [];
+                }
+                let task = new module.default(...args);
+                job.addTask(task);
+            } catch (e) {
+                this.logger.error('Fail to create task:' + e);
+            }
+        }
+        this._jobQueue.enqueue(job);
+        return job;
     }
 
     /**
@@ -519,25 +714,19 @@ export default class Service extends EventTarget {
         let storage = new Storage('grave');
         storage.logger = logger;
         await storage.open();
-        let currentTask;
+        let currentJob;
         while (RUN_FOREVER) {
             await service.ready();
-            if (typeof currentTask == 'undefined') {
-                logger.debug('Waiting for task...');
-                let taskArgs = await service._taskQueue.dequeue();
-                try {
-                    currentTask = await Task.create(taskArgs.name, taskArgs.args);
-                } catch (e) {
-                    logger.error(e);
-                    continue;
-                }
+            if (typeof currentJob == 'undefined') {
+                logger.debug('Waiting for a job...');
+                currentJob = await service._jobQueue.dequeue();
             }
             try {
                 await service.continue();
-                logger.debug('Performing task...');
-                await currentTask.run(fetchURL, storage, logger);
-                logger.debug('Task completed...');
-                currentTask = undefined;
+                logger.debug('Performing job...');
+                await currentJob.run(fetchURL, storage, logger);
+                logger.debug('Job completed...');
+                currentJob = undefined;
             } catch (e) {
                 logger.error(e);
                 service.stop();

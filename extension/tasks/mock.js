@@ -1,9 +1,13 @@
 'use strict';
-import Task from '../task.js';
+import {Task} from '../service.js';
 
 
 export default class Mock extends Task {
-    async main(account) {
-        console.log(account);
+    async run() {
+        console.log('mock running');
+    }
+
+    get name() {
+        return 'Mock';
     }
 }

@@ -1,13 +1,16 @@
 'use strict';
-import Task from '../task.js';
-import {TaskError, URL_INTERESTS, PAGE_SIZE} from '../task.js';
+import {TaskError, Task} from '../service.js';
+
+
+const PAGE_SIZE = 50;
+const URL_INTERESTS = 'https://m.douban.com/rexxar/api/v2/user/{uid}/interests?type={type}&status={status}&start={start}&count=50&ck={ck}&for_mobile=1';
 
 
 export default class Interest extends Task {
-    async main(account) {
+    async run() {
         let baseURL = URL_INTERESTS
-            .replace('{ck}', account.cookies.ck)
-            .replace('{uid}', account.id);
+            .replace('{ck}', this.session.cookies.ck)
+            .replace('{uid}', this.session.id);
 
         for (let type of ['music', 'book', 'movie']) {
             let urlWithType = baseURL.replace('{type}', type);
@@ -23,12 +26,16 @@ export default class Interest extends Task {
                     let json = await response.json();
                     pageCount = Math.ceil(json.total / PAGE_SIZE);
                     for (let row of json.interests) {
-                        row.user_id = account.id;
                         row.type = type;
+                        row.version = this.jobId;
                         await this.storage.put('interest', row);
                     }
                 }
             }
         }
+    }
+
+    get name() {
+        return '书/影/音';
     }
 }

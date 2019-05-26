@@ -6,11 +6,16 @@ const VERSION = 1;
 
 const UPGRADES = [
     db => {
-        db.createObjectStore('account', { keyPath: 'id' });
         db.createObjectStore('job', { autoIncrement: true });
-        db.createObjectStore('status', { keyPath: ['id', 'version'] });
-        db.createObjectStore('interest', { keyPath: ['id', 'version'] });
-        //    .createIndex('sort', ['user_id', 'type', 'status'], { unique: false });
+        db.createObjectStore('session', { keyPath: 'user_id' });
+        db.createObjectStore('status', { keyPath: 'id' })
+            .createIndex('sort', ['author'], { unique: false });
+        db.createObjectStore('following', { keyPath: ['id', 'version'] })
+            .createIndex('sort', ['version'], { unique: false });
+        db.createObjectStore('follower', { keyPath: ['id', 'version'] })
+            .createIndex('sort', ['version'], { unique: false });
+        db.createObjectStore('interest', { keyPath: ['id', 'version'] })
+            .createIndex('sort', ['version', 'type', 'status'], { unique: false });
     },
 ];
 
