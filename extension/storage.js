@@ -9,7 +9,7 @@ const UPGRADES = [
         db.createObjectStore('job', { autoIncrement: true });
         db.createObjectStore('session', { keyPath: 'user_id' });
         db.createObjectStore('status', { keyPath: 'id' })
-            .createIndex('sort', ['author'], { unique: false });
+            .createIndex('sort', ['user_id'], { unique: false });
         db.createObjectStore('following', { keyPath: ['id', 'version'] })
             .createIndex('sort', ['version'], { unique: false });
         db.createObjectStore('follower', { keyPath: ['id', 'version'] })
