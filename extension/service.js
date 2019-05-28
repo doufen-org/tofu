@@ -711,7 +711,7 @@ export default class Service extends EventTarget {
             });
         };
 
-        let storage = new Storage('grave');
+        let storage = new Storage();
         storage.logger = logger;
         await storage.open();
         let currentJob;

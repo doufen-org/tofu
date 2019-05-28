@@ -1,29 +1,29 @@
 'use strict';
-import { openDB } from './vendor/idb/index.js';
 
 
 const VERSION = 1;
 
 const UPGRADES = [
-    db => {
-        db.createObjectStore('job', { autoIncrement: true });
-        db.createObjectStore('session', { keyPath: 'user_id' });
-        db.createObjectStore('status', { keyPath: 'id' })
+    database => {
+        database.createObjectStore('job', { autoIncrement: true });
+        database.createObjectStore('session', { keyPath: 'user_id' });
+        database.createObjectStore('status', { keyPath: 'id' })
             .createIndex('sort', ['user_id'], { unique: false });
-        db.createObjectStore('following', { keyPath: ['id', 'version'] })
+        database.createObjectStore('following', { keyPath: ['id', 'version'] })
             .createIndex('sort', ['version'], { unique: false });
-        db.createObjectStore('follower', { keyPath: ['id', 'version'] })
+        database.createObjectStore('follower', { keyPath: ['id', 'version'] })
             .createIndex('sort', ['version'], { unique: false });
-        db.createObjectStore('interest', { keyPath: ['id', 'version'] })
+        database.createObjectStore('interest', { keyPath: ['id', 'version'] })
             .createIndex('sort', ['version', 'type', 'status'], { unique: false });
     },
 ];
 
 
 export default class Storage {
-    constructor(name, version = VERSION) {
+    constructor(name = 'grave', version = VERSION, upgrades = UPGRADES) {
         this.name = name;
         this.version = version;
+        this.upgrades = upgrades;
     }
 
     /**
@@ -31,12 +31,25 @@ export default class Storage {
      * @returns {IDBDatabase}
      */
     async open() {
-        return this._database = await openDB(this.name, this.version, {
-            upgrade(db, oldVersion, newVersion, transaction) {
+        return this._database = await new Promise((resolve, reject) => {
+            let request = indexedDB.open(this.name, this.version);
+            request.addEventListener('success', event => {
+                resolve(event.target.result);
+            }, { once: true });
+            request.addEventListener('error', event => {
+                reject(event.target.error);
+            }, { once: true });
+            request.addEventListener('upgradeneeded', event => {
+                let oldVersion = event.oldVersion;
+                let newVersion = event.newVersion;
+                let request = event.target;
+                let database = request.result;
+                let transaction = request.transaction;
+
                 for (let i = oldVersion; i < newVersion; i ++) {
-                    (UPGRADES[i])(db, transaction);
+                    (this.upgrades[i])(database, transaction);
                 }
-            }
+            }, { once: true });
         });
     }
 
