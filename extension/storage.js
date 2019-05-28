@@ -19,6 +19,18 @@ const UPGRADES = [
 ];
 
 
+function wrap(request) {
+    return new Promise((resolve, reject) => {
+        request.addEventListener('success', event => {
+            resolve(event.target.result);
+        }, { once: true });
+        request.addEventListener('error', event => {
+            reject(event.target.error);
+        }, { once: true });
+    });
+}
+
+
 export default class Storage {
     constructor(name = 'grave', version = VERSION, upgrades = UPGRADES) {
         this.name = name;
@@ -99,8 +111,10 @@ export default class Storage {
     }
 
     async add(storeName, item, key) {
+        let store = this.database.transaction(storeName, 'readwrite').objectStore(storeName);
+        let request = store.add(item, key);
         try {
-            return await this.database.add(storeName, item, key);
+            return await wrap(request);
         } catch (e) {
             this._lastError = e;
             return false;
@@ -108,8 +122,10 @@ export default class Storage {
     }
 
     async put(storeName, item, key) {
+        let store = this.database.transaction(storeName, 'readwrite').objectStore(storeName);
+        let request = store.put(item, key);
         try {
-            return await this.database.put(storeName, item, key);
+            return await wrap(request);
         } catch (e) {
             this._lastError = e;
             return false;
@@ -117,8 +133,10 @@ export default class Storage {
     }
 
     async get(storeName, key) {
+        let store = this.database.transaction(storeName, 'readonly').objectStore(storeName);
+        let request = store.get(key);
         try {
-            return await this.database.get(storeName, key);
+            return await wrap(request);
         } catch (e) {
             this._lastError = e;
             return false;
