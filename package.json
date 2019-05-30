@@ -23,6 +23,7 @@
     "webpack": "^4.30.0"
   },
   "dependencies": {
+    "dexie": "^2.0.4",
     "idb": "^4.0.3"
   }
 }

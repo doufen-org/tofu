@@ -1,4 +1,5 @@
 'use strict';
+import Dexie from './vendor/dexie.js';
 
 
 const VERSION = 1;
@@ -6,9 +7,9 @@ const VERSION = 1;
 const UPGRADES = [
     database => {
         database.createObjectStore('job', { autoIncrement: true });
-        database.createObjectStore('session', { keyPath: 'user_id' });
+        database.createObjectStore('session', { keyPath: 'userId' });
         database.createObjectStore('status', { keyPath: 'id' })
-            .createIndex('sort', ['user_id'], { unique: false });
+            .createIndex('sort', ['userId'], { unique: false });
         database.createObjectStore('following', { keyPath: ['id', 'version'] })
             .createIndex('sort', ['version'], { unique: false });
         database.createObjectStore('follower', { keyPath: ['id', 'version'] })
@@ -110,6 +111,49 @@ export default class Storage {
         return this._lastError;
     }
 
+    /**
+     * Begin transaction
+     * @param {string|Array} storeNames 
+     * @param {string} mode 
+     */
+    bulk(storeNames, mode) {
+        let transaction = this.database.transaction(storeNames, mode);
+        transaction.addEventListener('complete', event => {
+            this._transaction = null;
+        }, { once: true });
+        transaction.addEventListener('error', event => {
+            this._transaction = null;
+        }, { once: true });
+        transaction.addEventListener('abort', event => {
+            this._transaction = null;
+        }, { once: true });
+        this._transaction = transaction;
+    }
+
+    /**
+     * Abort transaction
+     * @returns {boolean}
+     */
+    abort() {
+        if (this._transaction) {
+            try {
+                this._transaction.abort();
+                return true;
+            } catch (e) {
+                this._lastError = e;
+                return false;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Add item
+     * @param {string} storeName 
+     * @param {object} item 
+     * @param {string} key 
+     * @returns {any}
+     */
     async add(storeName, item, key) {
         let store = this.database.transaction(storeName, 'readwrite').objectStore(storeName);
         let request = store.add(item, key);
@@ -121,6 +165,13 @@ export default class Storage {
         }
     }
 
+    /**
+     * Put item
+     * @param {string} storeName 
+     * @param {object} item 
+     * @param {string} key 
+     * @returns {any}
+     */
     async put(storeName, item, key) {
         let store = this.database.transaction(storeName, 'readwrite').objectStore(storeName);
         let request = store.put(item, key);
@@ -132,6 +183,12 @@ export default class Storage {
         }
     }
 
+    /**
+     * Get item
+     * @param {string} storeName 
+     * @param {string} key 
+     * @returns {object}
+     */
     async get(storeName, key) {
         let store = this.database.transaction(storeName, 'readonly').objectStore(storeName);
         let request = store.get(key);

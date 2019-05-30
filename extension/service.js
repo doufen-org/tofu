@@ -110,7 +110,7 @@ class Job {
         }
         let bodyElement = parseHTML(await response.text(), URL_MINE);
         let inputElement = bodyElement.querySelector('#user');
-        let name = inputElement.getAttribute('data-name');
+        let username = inputElement.getAttribute('data-name');
         let userid = inputElement.getAttribute('value');
         let homepageLink = bodyElement.querySelector('.profile .detail .basic-info>a');
         let homepageURL = homepageLink.getAttribute('href');
@@ -129,9 +129,9 @@ class Job {
             }
         }
         return {
-            user_id: parseInt(userid),
-            name: name,
-            symbol: userSymbol,
+            userId: parseInt(userid),
+            username: username,
+            userSymbol: userSymbol,
             cookies: cookiesNeeded,
         }
     }
@@ -155,7 +155,7 @@ class Job {
         let session = await this.signin(fetch);
         await storage.put('session', session);
         let jobId =await storage.add('job', {
-            user_id: session.id,
+            userId: session.id,
             created: Date.now(),
             tasks: JSON.parse(JSON.stringify(this._tasks)),
         });

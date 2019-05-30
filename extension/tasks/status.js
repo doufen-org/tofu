@@ -6,7 +6,7 @@ const URL_TIMELINE = 'https://m.douban.com/rexxar/api/v2/status/user_timeline/{u
 
 export default class Mock extends Task {
     async run() {
-        let userId = this.session.user_id;
+        let userId = this.session.userId;
         let baseURL = URL_TIMELINE
             .replace('{ck}', this.session.cookies.ck)
             .replace('{uid}', userId);
@@ -21,7 +21,7 @@ export default class Mock extends Task {
             count = json.count;
             for (let item of json.items) {
                 let status = item.status;
-                item.user_id = userId;
+                item.userId = userId;
                 item.id = parseInt(status.id);
                 maxId = status.id;
                 await this.storage.add('status', item);

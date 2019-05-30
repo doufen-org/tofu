@@ -10,7 +10,7 @@ export default class Following extends Task {
     async run() {
         let baseURL = URL_FOLLOWING
             .replace('{ck}', this.session.cookies.ck)
-            .replace('{uid}', this.session.user_id);
+            .replace('{uid}', this.session.userId);
 
         let pageCount = 1;
         for (let i = 0; i < pageCount; i ++) {
