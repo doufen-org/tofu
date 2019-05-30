@@ -1,7 +1,9 @@
 'use strict';
-import Storage from './storage.js';
 import Settings from './settings.js';
+import Dexie from './vendor/dexie.js';
 
+
+const DB_NAME = 'grave';
 
 /**
  * Service settings
@@ -10,6 +12,27 @@ export const SERVICE_SETTINGS = {
     'service.debug': false,
     'service.requestInterval': 1000,
 };
+
+
+/**
+ * Class Storage
+ */
+class Storage {
+    static get instance() {
+        if (!Storage._instance) {
+            let db = Storage._instance = new Dexie(DB_NAME);
+            db.version(1).stores({
+                job: '++id, userId, username, userSymbol',
+                session: 'userId',
+                status: 'id, userId',
+                following: '[id+version], version',
+                follower: '[id+version], version',
+                interest: '[id+version], [version+type+status]',
+            });
+        }
+        return Storage._instance;
+    }
+}
 
 
 /**
@@ -153,10 +176,12 @@ class Job {
     async run(fetch, storage, logger) {
         this._isRunning = true;
         let session = await this.signin(fetch);
-        await storage.put('session', session);
-        let jobId =await storage.add('job', {
-            userId: session.id,
+        await storage.open();
+        await storage.session.put(session);
+        let jobId = await storage.job.add({
+            userId: session.userId,
             created: Date.now(),
+            progress: 0,
             tasks: JSON.parse(JSON.stringify(this._tasks)),
         });
         this._id = jobId;
@@ -169,6 +194,7 @@ class Job {
                 logger.error('Fail to run task:' + e);
             }
         }
+        storage.close();
         this._currentTask = null;
         this._isRunning = false;
     }
@@ -711,9 +737,8 @@ export default class Service extends EventTarget {
             });
         };
 
-        let storage = new Storage();
+        let storage = Storage.instance;
         storage.logger = logger;
-        await storage.open();
         let currentJob;
         while (RUN_FOREVER) {
             await service.ready();
@@ -732,6 +757,5 @@ export default class Service extends EventTarget {
                 service.stop();
             }
         }
-        storage.close();
     }
 }

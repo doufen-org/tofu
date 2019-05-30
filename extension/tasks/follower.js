@@ -10,7 +10,7 @@ export default class Follower extends Task {
     async run() {
         let baseURL = URL_FOLLOWERS
             .replace('{ck}', this.session.cookies.ck)
-            .replace('{uid}', this.session.id);
+            .replace('{uid}', this.session.userId);
 
         let pageCount = 1;
         for (let i = 0; i < pageCount; i ++) {
@@ -22,7 +22,7 @@ export default class Follower extends Task {
             pageCount = Math.ceil(json.total / PAGE_SIZE);
             for (let row of json.users) {
                 row.version = this.jobId;
-                await this.storage.put('follower', row);
+                await this.storage.follower.put(row);
             }
         }
     }
