@@ -110,7 +110,7 @@ function parseHTML(html, url) {
 /**
  * Class Job
  */
-class Job {
+class Job extends EventTarget {
     constructor(service) {
         this._service = service;
         this._tasks = [];
