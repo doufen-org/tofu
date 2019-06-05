@@ -15,27 +15,6 @@ export const SERVICE_SETTINGS = {
 
 
 /**
- * Class Storage
- */
-class Storage {
-    static get instance() {
-        if (!Storage._instance) {
-            let db = Storage._instance = new Dexie(DB_NAME);
-            db.version(1).stores({
-                job: '++id, userId, username, userSymbol',
-                session: 'userId',
-                status: 'id, userId',
-                following: '[id+version], version',
-                follower: '[id+version], version',
-                interest: '[id+version], [version+type+status]',
-            });
-        }
-        return Storage._instance;
-    }
-}
-
-
-/**
  * Class TaskError
  */
 export class TaskError extends Error {
@@ -112,11 +91,13 @@ function parseHTML(html, url) {
  */
 class Job extends EventTarget {
     constructor(service) {
+        super();
         this._service = service;
         this._tasks = [];
         this._isRunning = false;
         this._currentTask = null;
         this._id = null;
+        this._session = null;
     }
 
     /**
@@ -151,7 +132,7 @@ class Job extends EventTarget {
                 cookiesNeeded[cookie.name] = cookie.value;
             }
         }
-        return {
+        return this._session = {
             userId: parseInt(userid),
             username: username,
             userSymbol: userSymbol,
@@ -167,17 +148,31 @@ class Job extends EventTarget {
         this._tasks.push(task);
     }
 
+    get stroage() {
+        if (!Job._storage) {
+            let session = this._session;
+            let db = Job._storage = new Dexie(`${DB_NAME}[${session.userId}]`);
+            db.version(1).stores({
+                job: '++id, userId, username, userSymbol',
+                status: 'id, userId',
+                following: '[id+version], version',
+                follower: '[id+version], version',
+                interest: '[id+version], [version+type+status]',
+            });
+        }
+        return Job._storage;
+    }
+
     /**
      * Run the job
      * @param {callback} fetch 
-     * @param {Storage} storage 
      * @param {Logger} logger 
      */
-    async run(fetch, storage, logger) {
+    async run(fetch, logger) {
         this._isRunning = true;
         let session = await this.signin(fetch);
+        let storage = this.stroage;
         await storage.open();
-        await storage.session.put(session);
         let jobId = await storage.job.add({
             userId: session.userId,
             created: Date.now(),
@@ -737,8 +732,6 @@ export default class Service extends EventTarget {
             });
         };
 
-        let storage = Storage.instance;
-        storage.logger = logger;
         let currentJob;
         while (RUN_FOREVER) {
             await service.ready();
@@ -749,7 +742,7 @@ export default class Service extends EventTarget {
             try {
                 await service.continue();
                 logger.debug('Performing job...');
-                await currentJob.run(fetchURL, storage, logger);
+                await currentJob.run(fetchURL, logger);
                 logger.debug('Job completed...');
                 currentJob = undefined;
             } catch (e) {
