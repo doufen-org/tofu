@@ -8,6 +8,8 @@ const URL_FOLLOWING = 'https://m.douban.com/rexxar/api/v2/user/{uid}/following?s
 
 export default class Following extends Task {
     async run() {
+        await this.storage.table('version').put({table: 'following', version: this.jobId, updated: Date.now()});
+
         let baseURL = URL_FOLLOWING
             .replace('{ck}', this.session.cookies.ck)
             .replace('{uid}', this.session.userId);

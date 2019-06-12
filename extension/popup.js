@@ -3,6 +3,7 @@
 const URL_OPTIONS = chrome.runtime.getURL('options.html');
 const URL_ABOUT = URL_OPTIONS + '#about';
 const URL_HELP = URL_OPTIONS + '#help';
+const URL_BACKUP = chrome.runtime.getURL('backup.html');
 
 
 /**
@@ -16,6 +17,10 @@ class PopupMenu {
 
     clickNew(event) {
         //
+    }
+
+    clickBackup(event) {
+        window.open(URL_BACKUP);
     }
 
     clickStart(event) {

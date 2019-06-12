@@ -8,9 +8,11 @@ const URL_INTERESTS = 'https://m.douban.com/rexxar/api/v2/user/{uid}/interests?t
 
 export default class Interest extends Task {
     async run() {
+        await this.storage.table('version').put({table: 'interest', version: this.jobId, updated: Date.now()});
+
         let baseURL = URL_INTERESTS
             .replace('{ck}', this.session.cookies.ck)
-            .replace('{uid}', this.session.id);
+            .replace('{uid}', this.session.userId);
 
         for (let type of ['music', 'book', 'movie']) {
             let urlWithType = baseURL.replace('{type}', type);
@@ -28,7 +30,7 @@ export default class Interest extends Task {
                     for (let row of json.interests) {
                         row.type = type;
                         row.version = this.jobId;
-                        await this.storage.put('interest', row);
+                        await this.storage.interest.put(row);
                     }
                 }
             }

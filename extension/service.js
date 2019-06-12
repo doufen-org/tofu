@@ -148,19 +148,39 @@ class Job extends EventTarget {
         this._tasks.push(task);
     }
 
-    get stroage() {
-        if (!Job._storage) {
+    /**
+     * Get session storage
+     * @returns Dexie
+     */
+    get sessionStroage() {
+        if (!this._sessionStorage) {
             let session = this._session;
-            let db = Job._storage = new Dexie(`${DB_NAME}[${session.userId}]`);
+            let db = this._sessionStorage = new Dexie(`${DB_NAME}[${session.userId}]`);
             db.version(1).stores({
                 job: '++id, userId, username, userSymbol',
                 status: 'id, userId',
                 following: '[id+version], version',
                 follower: '[id+version], version',
                 interest: '[id+version], [version+type+status]',
+                version: 'table, version',
             });
         }
-        return Job._storage;
+        return this._sessionStorage;
+    }
+
+
+    /**
+     * Get global storage
+     * @returns Dexie
+     */
+    get globalStorage() {
+        if (!this._globalStorage) {
+            let db = this._globalStorage = new Dexie(DB_NAME);
+            db.version(1).stores({
+                account: 'userId, userSymbol',
+            });
+        }
+        return this._globalStorage;
     }
 
     /**
@@ -171,9 +191,15 @@ class Job extends EventTarget {
     async run(fetch, logger) {
         this._isRunning = true;
         let session = await this.signin(fetch);
-        let storage = this.stroage;
-        await storage.open();
-        let jobId = await storage.job.add({
+
+        let globalStorage = this.globalStorage;
+        await globalStorage.open();
+        globalStorage.account.put(session);
+        globalStorage.close();
+        
+        let sessionStroage = this.sessionStroage;
+        await sessionStroage.open();
+        let jobId = await sessionStroage.job.add({
             userId: session.userId,
             created: Date.now(),
             progress: 0,
@@ -182,14 +208,14 @@ class Job extends EventTarget {
         this._id = jobId;
         for (let task of this._tasks) {
             this._currentTask = task;
-            task.init(fetch, storage, logger, parseHTML, jobId, session);
+            task.init(fetch, sessionStroage, logger, parseHTML, jobId, session);
             try {
                 await task.run();
             } catch (e) {
                 logger.error('Fail to run task:' + e);
             }
         }
-        storage.close();
+        sessionStroage.close();
         this._currentTask = null;
         this._isRunning = false;
     }
