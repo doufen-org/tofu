@@ -11,22 +11,23 @@ export default class Mock extends Task {
             .replace('{ck}', this.session.cookies.ck)
             .replace('{uid}', userId);
 
-        let maxId = '', count;
+        let lastRow = await this.storage.status.orderBy('id').limit(1).first();
+        let maxId = lastRow ? lastRow.id : '', count;
         do {
             let response = await this.fetch(baseURL.replace('{maxId}', maxId), {headers: {'X-Override-Referer': 'https://m.douban.com/mine/statuses'}});
             if (response.status != 200) {
                 throw new TaskError('豆瓣服务器返回错误');
             }
             let json = await response.json();
-            count = json.count;
+            count = json.items.length;
             for (let item of json.items) {
                 let status = item.status;
                 item.userId = userId;
                 item.id = parseInt(status.id);
                 maxId = status.id;
-                await this.storage.add('status', item);
+                await this.storage.status.add(item);
             }
-        } while (count >= 20);
+        } while (count > 0 || (maxId = '') == '');
     }
 
     get name() {

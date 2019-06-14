@@ -1,9 +1,6 @@
 'use strict';
 import Settings from './settings.js';
-import Dexie from './vendor/dexie.js';
 
-
-const DB_NAME = 'grave';
 
 /**
  * Service settings
