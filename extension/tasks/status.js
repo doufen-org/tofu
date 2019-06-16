@@ -4,12 +4,12 @@ import {Task} from '../service.js';
 
 const URL_TIMELINE = 'https://m.douban.com/rexxar/api/v2/status/user_timeline/{uid}?max_id={maxId}&ck={ck}&for_mobile=1';
 
-export default class Mock extends Task {
+
+export default class Status extends Task {
     async run() {
-        let userId = this.session.userId;
         let baseURL = URL_TIMELINE
             .replace('{ck}', this.session.cookies.ck)
-            .replace('{uid}', userId);
+            .replace('{uid}', this.session.userId);
 
         let lastRow = await this.storage.status.orderBy('id').limit(1).first();
         let maxId = lastRow ? lastRow.id : '', count;
@@ -22,7 +22,6 @@ export default class Mock extends Task {
             count = json.items.length;
             for (let item of json.items) {
                 let status = item.status;
-                item.userId = userId;
                 item.id = parseInt(status.id);
                 maxId = status.id;
                 await this.storage.status.add(item);
@@ -31,6 +30,6 @@ export default class Mock extends Task {
     }
 
     get name() {
-        return 'Mock';
+        return '广播';
     }
 }

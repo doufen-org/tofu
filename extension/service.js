@@ -1,5 +1,6 @@
 'use strict';
 import Settings from './settings.js';
+import Storage from './storage.js';
 
 
 /**
@@ -28,19 +29,19 @@ export class Task {
     /**
      * Initialize the task
      * @param {callback} fetch
-     * @param {Storage} storage
      * @param {Logger} logger
      * @param {callback} parseHTML
      * @param {number} jobId
      * @param {Object} session
+     * @param {Dexie} localStorage
      */
-    init(fetch, storage, logger, parseHTML, jobId, session) {
+    init(fetch, logger, parseHTML, jobId, session, localStorage) {
         this.fetch = fetch;
-        this.storage = storage;
         this.logger = logger;
         this.parseHTML = parseHTML;
         this.jobId = jobId;
         this.session = session;
+        this.storage = localStorage;
     }
 
     /**
@@ -104,6 +105,8 @@ class Job extends EventTarget {
      */
     async signin(fetch) {
         const URL_MINE = 'https://m.douban.com/mine/';
+        const URL_USER_INFO = 'https://m.douban.com/rexxar/api/v2/user/{uid}?ck={ck}&for_mobile=1';
+
         let response = await fetch(URL_MINE);
         if (response.redirected) {
             window.open(response.url);
@@ -123,17 +126,28 @@ class Job extends EventTarget {
             'ck': '',
             'dbcl2': '',
         };
-        let cookies = await new Promise(resolve => chrome.cookies.getAll({url: 'https://*.douban.com'}, resolve));
+        let cookies = await new Promise(
+            resolve => chrome.cookies.getAll({url: 'https://*.douban.com'}, resolve)
+        );
         for (let cookie of cookies) {
             if (cookie.name in cookiesNeeded) {
                 cookiesNeeded[cookie.name] = cookie.value;
             }
         }
+
+        let userInfoURL = URL_USER_INFO
+            .replace('{uid}', userid)
+            .replace('{ck}', cookiesNeeded.ck);
+        let userInfo = await (
+            await fetch(userInfoURL, {headers: {'X-Override-Referer': URL_MINE}})
+        ).json();
+
         return this._session = {
             userId: parseInt(userid),
             username: username,
             userSymbol: userSymbol,
             cookies: cookiesNeeded,
+            userInfo: userInfo,
         }
     }
 
@@ -146,41 +160,6 @@ class Job extends EventTarget {
     }
 
     /**
-     * Get session storage
-     * @returns Dexie
-     */
-    get sessionStroage() {
-        if (!this._sessionStorage) {
-            let session = this._session;
-            let db = this._sessionStorage = new Dexie(`${DB_NAME}[${session.userId}]`);
-            db.version(1).stores({
-                job: '++id, userId, username, userSymbol',
-                status: 'id, userId',
-                following: '[id+version], version',
-                follower: '[id+version], version',
-                interest: '[id+version], [version+type+status]',
-                version: 'table, version',
-            });
-        }
-        return this._sessionStorage;
-    }
-
-
-    /**
-     * Get global storage
-     * @returns Dexie
-     */
-    get globalStorage() {
-        if (!this._globalStorage) {
-            let db = this._globalStorage = new Dexie(DB_NAME);
-            db.version(1).stores({
-                account: 'userId, userSymbol',
-            });
-        }
-        return this._globalStorage;
-    }
-
-    /**
      * Run the job
      * @param {callback} fetch 
      * @param {Logger} logger 
@@ -189,30 +168,29 @@ class Job extends EventTarget {
         this._isRunning = true;
         let session = await this.signin(fetch);
 
-        let globalStorage = this.globalStorage;
-        await globalStorage.open();
-        globalStorage.account.put(session);
-        globalStorage.close();
-        
-        let sessionStroage = this.sessionStroage;
-        await sessionStroage.open();
-        let jobId = await sessionStroage.job.add({
+        let storage = new Storage(session.userId);
+        await storage.global.open();
+        storage.global.account.put(session);
+        let jobId = await storage.global.job.add({
             userId: session.userId,
             created: Date.now(),
             progress: 0,
             tasks: JSON.parse(JSON.stringify(this._tasks)),
         });
+        storage.global.close();
+
+        await storage.local.open();
         this._id = jobId;
         for (let task of this._tasks) {
             this._currentTask = task;
-            task.init(fetch, sessionStroage, logger, parseHTML, jobId, session);
+            task.init(fetch, logger, parseHTML, jobId, session, storage.local);
             try {
                 await task.run();
             } catch (e) {
                 logger.error('Fail to run task:' + e);
             }
         }
-        sessionStroage.close();
+        storage.local.close();
         this._currentTask = null;
         this._isRunning = false;
     }

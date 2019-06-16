@@ -22,8 +22,11 @@ export default class Following extends Task {
             }
             let json = await response.json();
             pageCount = Math.ceil(json.total / PAGE_SIZE);
-            for (let row of json.users) {
-                row.version = this.jobId;
+            for (let user of json.users) {
+                let row = {
+                    version: this.jobId,
+                    user: user,
+                };
                 await this.storage.following.put(row);
             }
         }
