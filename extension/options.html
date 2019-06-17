@@ -35,7 +35,12 @@
                 <div class="navbar-end">
                     <div class="navbar-item">
                         <div class="buttons">
-                            <a href="explorer.html" class="button is-primary">浏览备份</a>
+                            <a href="backup.html" class="button">
+                                <span class="icon">
+                                    <i class="fas fa-database"></i>
+                                </span>
+                                <span>浏览备份</span>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -48,6 +53,7 @@
             <div class="tabs is-centered is-boxed">
                 <ul>
                     <li class="page-tab-link is-active" data-tab="general"><a href="#general">常规</a></li>
+                    <li class="page-tab-link" data-tab="account"><a href="#account">账号</a></li>
                     <li class="page-tab-link" data-tab="help"><a href="#help">帮助</a></li>
                     <li class="page-tab-link" data-tab="about"><a href="#about">关于</a></li>
                 </ul>
@@ -55,35 +61,6 @@
         </div>
 
         <div class="container page-tab-content" name="general">
-            <article class="card is-hidden" id="account-error">
-                <div class="card-content">
-                    <p class="has-text-centered">请先<a href="https://accounts.douban.com/passport/login">登录</a>豆瓣</p>
-                </div>
-            </article>
-            <label style="line-height: 2rem;">当前账号：</label>
-            <article class="media card is-hidden" id="account">
-                <figure class="media-left">
-                    <p class="image is-64x64"></p>
-                </figure>
-                <div class="media-content">
-                    <div class="content">
-                        <p>
-                            <strong name="name"></strong>
-                            <small name="symbol"></small><br>
-                            <small><span name="reg-time"></span> 加入</small>
-                        </p>
-                    </div>
-                    <div class="columns" name="collection"></div>
-                </div>
-                <div class="media-right">
-                    <a href="https://www.douban.com/mine/" class="button" target="_blank">
-                        <span>豆瓣主页</span>
-                        <span class="icon is-small">
-                            <i class="fas fa-chevron-right"></i>
-                        </span>
-                    </a>
-                </div>
-            </article>
             <div class="columns">
                 <div class="column is-10">
                     <label>输出调试信息</label>
@@ -117,9 +94,45 @@
                 </p>
             </div>
         </div>
+
+        <div class="container page-tab-content is-hidden" name="account">
+            <article class="card is-hidden" id="account-error">
+                <div class="card-content">
+                    <p class="has-text-centered">请先<a href="https://accounts.douban.com/passport/login">登录</a>豆瓣</p>
+                </div>
+            </article>
+            <article class="media card is-hidden" id="account">
+                <figure class="media-left">
+                    <p class="image is-64x64"></p>
+                </figure>
+                <div class="media-content">
+                    <div class="content">
+                        <p>
+                            <strong name="name"></strong>
+                            <small name="symbol"></small><br>
+                            <small><span name="reg-time"></span> 加入</small>
+                        </p>
+                    </div>
+                    <div class="columns" name="collection"></div>
+                    <div class="content">
+                        <pre name="intro"></pre>
+                    </div>
+                </div>
+                <div class="media-right">
+                    <a href="https://www.douban.com/mine/" class="button" target="_blank">
+                        <span>豆瓣主页</span>
+                        <span class="icon is-small">
+                            <i class="fas fa-chevron-right"></i>
+                        </span>
+                    </a>
+                </div>
+            </article>
+        </div>
+
         <div class="container page-tab-content is-hidden" name="help">
             help
         </div>
+
         <div class="container page-tab-content is-hidden" name="about">
             <div class="content">
                 <h2 class="title is-size-5">联系方式</h2>

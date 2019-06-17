@@ -78,6 +78,7 @@ class AccountPanel {
         this.panel.querySelector('.media-content [name="name"]').innerText = userInfo.name;
         this.panel.querySelector('.media-content [name="symbol"]').innerText = '@' + userInfo.uid;
         this.panel.querySelector('.media-content [name="reg-time"]').innerText = userInfo.reg_time;
+        this.panel.querySelector('.media-content [name="intro"]').innerText = userInfo.intro;
         let collectionPanel = this.panel.querySelector('.media-content [name="collection"]');
         let collection = {
             '关注': {key: 'following_count', url: 'https://www.douban.com/contacts/list'},

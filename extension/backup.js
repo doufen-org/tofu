@@ -106,7 +106,31 @@ class TaskModal {
         modal.element.querySelectorAll('.cancel').forEach(item => {
             item.addEventListener('click', () => modal.close());
         });
+        modal.element.querySelector('.select-all').addEventListener('change', event => {
+            modal.element.querySelectorAll('input[name="task"]').forEach(item => {
+                item.checked = event.target.checked;
+            });
+        });
+        modal.element.querySelector('.button.new').addEventListener('click', async () => {
+            await modal.createJob();
+            modal.close();
+        });
+
         return modal;
+    }
+
+    async createJob() {
+        let service = (await new Promise(resolve => {
+            chrome.runtime.getBackgroundPage(resolve);
+        })).service;
+        let checkedTasks = this.element.querySelectorAll('input[name="task"]:checked');
+        let tasks = new Array(checkedTasks.length);
+        for (let i = 0; i < checkedTasks.length; i ++) {
+            tasks[i] = {
+                name: checkedTasks[i].value,
+            };
+        }
+        await service.createJob.apply(service, [{name: 'Following'}]);
     }
 
     open() {
