@@ -148,6 +148,7 @@ class Job extends EventTarget {
             userSymbol: userSymbol,
             cookies: cookiesNeeded,
             userInfo: userInfo,
+            updated: Date.now(),
         }
     }
 
@@ -170,6 +171,7 @@ class Job extends EventTarget {
 
         let storage = new Storage(session.userId);
         await storage.global.open();
+        logger.debug('Open global database');
         storage.global.account.put(session);
         let jobId = await storage.global.job.add({
             userId: session.userId,
@@ -178,8 +180,10 @@ class Job extends EventTarget {
             tasks: JSON.parse(JSON.stringify(this._tasks)),
         });
         storage.global.close();
+        logger.debug('Close global database');
 
         await storage.local.open();
+        logger.debug('Open local database');
         this._id = jobId;
         for (let task of this._tasks) {
             this._currentTask = task;
@@ -191,6 +195,7 @@ class Job extends EventTarget {
             }
         }
         storage.local.close();
+        logger.debug('Close local database');
         this._currentTask = null;
         this._isRunning = false;
     }

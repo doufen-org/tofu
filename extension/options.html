@@ -60,6 +60,7 @@
                     <p class="has-text-centered">请先<a href="https://accounts.douban.com/passport/login">登录</a>豆瓣</p>
                 </div>
             </article>
+            <label style="line-height: 2rem;">当前账号：</label>
             <article class="media card is-hidden" id="account">
                 <figure class="media-left">
                     <p class="image is-64x64"></p>
@@ -68,14 +69,15 @@
                     <div class="content">
                         <p>
                             <strong name="name"></strong>
-                            <small name="symbol"></small>
+                            <small name="symbol"></small><br>
+                            <small><span name="reg-time"></span> 加入</small>
                         </p>
                     </div>
                     <div class="columns" name="collection"></div>
                 </div>
                 <div class="media-right">
                     <a href="https://www.douban.com/mine/" class="button" target="_blank">
-                        <span>个人主页</span>
+                        <span>豆瓣主页</span>
                         <span class="icon is-small">
                             <i class="fas fa-chevron-right"></i>
                         </span>

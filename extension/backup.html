@@ -10,7 +10,13 @@
     <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
     <script src="vendor/zepto.min.js"></script>
     <style>
-
+        .account:hover {
+            cursor: pointer;
+            background-color: #f7f7f7;
+        }
+        .container.thin {
+            max-width: 50rem;
+        }
     </style>
 </head>
 
@@ -26,10 +32,140 @@
     </nav>
 
     <section class="section">
-        <div class="container" id="accounts">
-            
+        <div class="container thin" style="margin: 1rem auto;">
+            <div class="level">
+                <div class="level-left">
+                    <div class="level-item">
+                        <button class="button is-link" id="new-task">
+                            <span class="icon">
+                                <i class="fas fa-plus"></i>
+                            </span>
+                            <span>新建任务</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="level-right">
+                    <div class="level-item">
+                        <button class="button" id="reload">
+                            <span class="icon">
+                                <i class="fas fa-sync"></i>
+                            </span>
+                            <span>刷新</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="content">
+                <p class="help"><strong>注意：</strong>仅备份当前登录用户的数据。如需备份其他账号数据，请先退出当前账号，再登录需要备份的账号。</p>
+            </div>
+        </div>
+        <div class="container thin" id="accounts">
+            <!-- accounts -->
         </div>
     </section>
+
+    <div class="modal" id="task-modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">新建任务</p>
+                <button class="delete cancel"></button>
+            </header>
+            <section class="modal-card-body">
+                <div class="level">
+                    <div class="level-left">
+                        <div class="level-item">
+                            <label>选择备份的项目：</label>
+                        </div>
+                    </div>
+                    <div class="level-left">
+                        <div class="level-item">
+                            <label class="checkbox">
+                                <input type="checkbox" id="select-all"> 全选
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="columns">
+                    <div class="column">
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="task" value="status"> 广播
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="task" value="interest"> 影/音/书
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="task" value="review"> 影评/乐评/书评
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="task" value="note"> 日记
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="task" value="photo"> 相册
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="task" value="doulist"> 豆列
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="task" value="doumail"> 豆邮
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="task" value="following"> 关注
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="task" value="follower"> 被关注
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-link">新建</button>
+                <button class="button cancel">取消</button>
+            </footer>
+        </div>
+    </div>
+
     <script type="module" src="backup.js"></script>
 </body>
 

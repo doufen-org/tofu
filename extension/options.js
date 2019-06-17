@@ -76,7 +76,8 @@ class AccountPanel {
         let userInfo = await response.json();
         this.panel.querySelector('.media-left>.image').innerHTML = `<img src="${userInfo.avatar}">`;
         this.panel.querySelector('.media-content [name="name"]').innerText = userInfo.name;
-        this.panel.querySelector('.media-content [name="symbol"]').innerText = 'ID: ' + userInfo.uid;
+        this.panel.querySelector('.media-content [name="symbol"]').innerText = '@' + userInfo.uid;
+        this.panel.querySelector('.media-content [name="reg-time"]').innerText = userInfo.reg_time;
         let collectionPanel = this.panel.querySelector('.media-content [name="collection"]');
         let collection = {
             '关注': {key: 'following_count', url: 'https://www.douban.com/contacts/list'},
@@ -92,7 +93,7 @@ class AccountPanel {
             let url = collection[item].url;
             let key = collection[item].key;
             column.classList.add('column');
-            column.innerHTML = `<p class="has-text-centered"><a href="${url}" target="_blank">${userInfo[key]}<br>${item}</a></p>`
+            column.innerHTML = `<p class="has-text-centered is-size-7"><a href="${url}" target="_blank">${userInfo[key]}<br>${item}</a></p>`
             collectionPanel.appendChild(column);
         }
         this.panel.classList.remove('is-hidden');

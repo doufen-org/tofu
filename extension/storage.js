@@ -54,4 +54,18 @@ export default class Storage {
         }
         return this._local;
     }
+
+    async drop(userId) {
+        let localDbName = `${DB_NAME}[${userId}]`;
+        if (await Dexie.exists(localDbName)) {
+            try {
+                await Dexie.delete(localDbName);
+            } catch (e) {
+                return false;
+            }
+        }
+        return await this.global.account.where({
+            userId: parseInt(userId)
+        }).delete() > 0;
+    }
 }

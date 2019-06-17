@@ -16,7 +16,7 @@ class PopupMenu {
     }
 
     clickNew(event) {
-        //
+        window.open(URL_BACKUP + '#new-task');
     }
 
     clickBackup(event) {
@@ -55,7 +55,7 @@ class PopupMenu {
         this.getItem(name).removeAttribute('disabled');
     }
 
-    static async setup() {
+    static async render() {
         let service = (await new Promise(resolve => {
             chrome.runtime.getBackgroundPage(resolve);
         })).service;
@@ -83,4 +83,4 @@ class PopupMenu {
     }
 }
 
-PopupMenu.setup();
+PopupMenu.render();
