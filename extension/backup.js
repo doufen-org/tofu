@@ -1,6 +1,5 @@
 'use strict';
 import Storage from './storage.js';
-import { Task } from './service.js';
 
 
 const ACCOUNT_TEMPLATE = `\
@@ -48,21 +47,6 @@ class AccountList {
                 $account.find('.user-symbol').text('@' + account.userSymbol);
                 $account.find('.reg-time').text(account.userInfo.reg_time);
                 $account.find('.backup-time').text(new Date(account.updated).toLocaleString());
-                /*
-                let $userData = $account.find('.user-data');
-                let userData = {
-                    '关注': 'following_count',
-                    '被关注': 'followers_count',
-                    '日记': 'notes_count',
-                    '相册': 'photo_albums_count',
-                    '小组': 'joined_group_count',
-                    '广播': 'statuses_count',
-                    '豆列': 'owned_doulist_count',
-                };
-                for (let dataName in userData) {
-                    $userData.append(`<div class="column has-text-centered is-size-7">${account.userInfo[userData[dataName]]}<br>${dataName}</div>`);
-                }
-                */
                 $account.data('user-id', account.userId);
                 $account.appendTo($list);
             });
@@ -87,6 +71,9 @@ class AccountList {
             } else {
                 alert('删除失败');
             }
+        }).on('click', '.account', event => {
+            let userId = $(event.currentTarget).data('user-id');
+            window.open('explorer.html?' + userId);
         });
     }
 }
@@ -130,7 +117,8 @@ class TaskModal {
                 name: checkedTasks[i].value,
             };
         }
-        await service.createJob.apply(service, [{name: 'Following'}]);
+        let job = await service.createJob.apply(service, tasks);
+        return job;
     }
 
     open() {

@@ -1,53 +1,7 @@
 import Settings from './settings.js';
 import {SERVICE_SETTINGS} from './service.js';
 import Notification from './ui/notification.js';
-
-
-class TabPanel {
-    constructor(panelSelector, tabSelector, contentSelector) {
-        this.$panel = $(panelSelector);
-        this.$tabs = $(tabSelector);
-        this.$contents = $(contentSelector);
-
-        this.$panel.on('click', '.page-tab-link', event => {
-            let tab = event.currentTarget;
-            if (tab.classList.contains('is-active')) {
-                return false;
-            }
-            this.toggle(tab.dataset.tab, tab);
-        });
-
-        window.addEventListener('hashchange', e => {
-            if (location.hash) {
-                this.toggle(location.hash.substr(1));
-            }
-        }, false);
-
-        if (location.hash) {
-            this.toggle(location.hash.substr(1));
-        }
-    }
-
-    toggle(tabName, tab) {
-        if (!tab) {
-            tab = this.$tabs.find('[href="#' + tabName + '"]').parent('li')[0];
-        }
-        this.$tabs.removeClass('is-active');
-        this.$contents.addClass('is-hidden');
-        tab.classList.add('is-active');
-        this.$contents.each((_, el) => {
-            if (el.getAttribute('name') == tabName) {
-                el.classList.remove('is-hidden');
-            }
-        });
-    }
-
-    static render() {
-        return new TabPanel('.page-tab-panel',
-                            '.page-tab-link',
-                            '.page-tab-content');
-    }
-}
+import TabPanel from './ui/tab.js';
 
 
 class AccountPanel {
@@ -57,6 +11,8 @@ class AccountPanel {
     }
 
     async load() {
+        const URL_LOGOUT = 'https://www.douban.com/accounts/logout?ck={ck}';
+
         let cookies = await new Promise(resolve => chrome.cookies.getAll({url: 'https://*.douban.com'}, resolve));
         let uid, ck;
         for (let cookie of cookies) {
@@ -69,9 +25,14 @@ class AccountPanel {
                     break;
             }
         }
+        if (uid == undefined) {
+            this.error.classList.remove('is-hidden');
+            return;
+        }
         let response = await fetch(`https://m.douban.com/rexxar/api/v2/user/${uid}?ck=${ck}`, {headers: {'X-Override-Referer': 'https://m.douban.com/'}});
         if (response.status != 200) {
             this.error.classList.remove('is-hidden');
+            return;
         }
         let userInfo = await response.json();
         this.panel.querySelector('.media-left>.image').innerHTML = `<img src="${userInfo.avatar}">`;
@@ -79,6 +40,13 @@ class AccountPanel {
         this.panel.querySelector('.media-content [name="symbol"]').innerText = '@' + userInfo.uid;
         this.panel.querySelector('.media-content [name="reg-time"]').innerText = userInfo.reg_time;
         this.panel.querySelector('.media-content [name="intro"]').innerText = userInfo.intro;
+        let logoutLink = this.panel.querySelector('.button[name="logout"]');
+        logoutLink.setAttribute('href', URL_LOGOUT.replace('{ck}', ck));
+        logoutLink.addEventListener('click', event => {
+            if (!confirm('确定要退出当前账号的登录状态吗？')) {
+                event.preventDefault();
+            }
+        });
         let collectionPanel = this.panel.querySelector('.media-content [name="collection"]');
         let collection = {
             '关注': {key: 'following_count', url: 'https://www.douban.com/contacts/list'},
@@ -156,6 +124,7 @@ class GeneralSettings {
         };
 
         const CONTROL_METAS = [
+            {name: 'assistant.enable', type: BoolSwitch},
             {name: 'service.debug', type: BoolSwitch},
             {name: 'service.requestInterval', type: TimeInput},
         ];

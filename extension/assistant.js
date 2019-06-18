@@ -15,6 +15,17 @@ const ASSISTANT_TEMPLATE = `\
 
 
 /**
+ * Assistant settings
+ */
+const ASSISTANT_SETTINGS = {
+    'assistant.enable': false,
+    'assistant.draggable': true,
+    'assistant.closable': true,
+    'assistant.silent': false,
+};
+
+
+/**
  * Class ServiceProxy
  */
 class ServiceProxy {
@@ -551,5 +562,5 @@ class Assistant {
     }
 }
 
-window.assistant = Assistant.setup();
+//window.assistant = Assistant.setup();
 

@@ -172,13 +172,15 @@ class Job extends EventTarget {
         let storage = new Storage(session.userId);
         await storage.global.open();
         logger.debug('Open global database');
-        storage.global.account.put(session);
+        await storage.global.account.put(session);
+        logger.debug('Create the account');
         let jobId = await storage.global.job.add({
             userId: session.userId,
             created: Date.now(),
             progress: 0,
             tasks: JSON.parse(JSON.stringify(this._tasks)),
         });
+        logger.debug('Create the job');
         storage.global.close();
         logger.debug('Close global database');
 
@@ -426,6 +428,13 @@ export default class Service extends EventTarget {
     }
 
     /**
+     * Get name
+     */
+    get name() {
+        return 'service';
+    }
+
+    /**
      * Get debug mode
      * @returns {boolean} 
      */
@@ -459,27 +468,6 @@ export default class Service extends EventTarget {
             this._logger = logger = new Logger();
         }
         return logger;
-    }
-
-    /**
-     * Set settings
-     * @param {object} settings
-     */
-    set settings(settings) {
-        for (let key in settings) {
-            try {
-                let keyPath = key.split('.');
-                if (keyPath.shift() != 'service') {
-                    continue;
-                }
-                let lastNode = keyPath.pop();
-                let target = this;
-                for (let node of keyPath) {
-                    target = target[node];
-                }
-                target[lastNode] = settings[key];
-            } catch (e) {}
-        }
     }
 
     /**
@@ -704,7 +692,8 @@ export default class Service extends EventTarget {
         let service = Service.instance;
         let logger = service.logger;
 
-        service.settings = await Settings.load(SERVICE_SETTINGS);
+        let settings = await Settings.load(SERVICE_SETTINGS);
+        Settings.apply(service, settings);
         logger.debug('Service settings loaded.');
 
         let browserMainVersion = (/Chrome\/([0-9]+)/.exec(navigator.userAgent)||[,0])[1];
