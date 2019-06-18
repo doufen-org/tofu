@@ -4,7 +4,7 @@
 export default class TabPanel extends EventTarget {
     constructor(tabSelector, contentSelector) {
         super();
-        this.$tabs = $(tabSelector);
+        let $tabs = this.$tabs = $(tabSelector);
         this.$contents = $(contentSelector);
 
         window.addEventListener('hashchange', e => {
@@ -16,10 +16,18 @@ export default class TabPanel extends EventTarget {
         if (location.hash) {
             this.toggle(location.hash.substr(1));
         } else {
-            this.dispatchEvent(new CustomEvent('toggle', {
-                detail: $(tabSelector + '.is-active').data('tab')
-            }));
+            for (let i = 0; i < $tabs.length; i ++) {
+                let tab = $tabs[i];
+                if (tab.classList.contains('is-active')) {
+                    this.toggle(tab.dataset.tab, tab);
+                    break;
+                }
+            }
         }
+    }
+
+    get activeTab() {
+        return this.tab;
     }
 
     toggle(tabName, tab) {
@@ -34,7 +42,8 @@ export default class TabPanel extends EventTarget {
                 el.classList.remove('is-hidden');
             }
         });
-        this.dispatchEvent(new CustomEvent('toggle', {detail: tabName}));
+        this.tab = tab;
+        this.dispatchEvent(new Event('toggle'));
     }
 
     static render() {
