@@ -41,11 +41,52 @@ class Panel {
     }
 }
 
+
+const TEMPLATE_STATUS = `\
+<article class="media status">
+  <figure class="media-left">
+    <p class="image is-64x64 avatar"><img></p>
+  </figure>
+  <div class="media-content">
+    <div class="content">
+      <p>
+        <strong class="author name"></strong> <small class="author uid"></small> <span class="activity"></span>
+        <br><small class="created"></small>
+      </p>
+      <p class="text"></p>
+      <div class="columns images"></div>
+      <p class="video"></p>
+    </div>
+  </div>
+</article>`;
+
+
 /**
  * Class Status
  */
 class Status extends Panel {
     async load() {
+        storage.local.open();
+        let collection = await storage.local.status
+            .orderBy('id').reverse()
+            .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
+            .toArray();
+        storage.local.close();
+        for (let {status, comments} of collection) {
+            let $status = $(TEMPLATE_STATUS);
+            $status.find('.avatar>img').attr('src', status.author.avatar);
+            $status.find('.author.name').text(status.author.name);
+            $status.find('.author.uid').text('@' + status.author.uid);
+            $status.find('.activity').text(status.activity + "：");
+            $status.find('.created').text(status.create_time);
+            $status.find('.text').text(status.text);
+            let $images = $status.find('.images');
+            status.images.forEach(image => {
+                $images.append(`<div class="column"><figure class="image is-128x128"><img src="${image.normal.url}"></figure></div>`);
+            });
+            $status.appendTo(this.container);
+            console.log(status);
+        }
     }
 }
 
@@ -113,7 +154,7 @@ class Doulist extends Panel {
     
 }
 
-
+let storage = new Storage(location.search.substr(1));
 let tab = TabPanel.render();
 tab.addEventListener('toggle', async event => await Panel.render(event.target.activeTab));
 Panel.render(tab.activeTab);

@@ -1,5 +1,5 @@
 'use strict';
-import {Task} from '../service.js';
+import {TaskError, Task} from '../service.js';
 
 
 const URL_TIMELINE = 'https://m.douban.com/rexxar/api/v2/status/user_timeline/{uid}?max_id={maxId}&ck={ck}&for_mobile=1';
