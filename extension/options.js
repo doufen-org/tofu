@@ -124,7 +124,7 @@ class GeneralSettings {
         };
 
         const CONTROL_METAS = [
-            {name: 'assistant.enable', type: BoolSwitch},
+            //{name: 'assistant.enable', type: BoolSwitch},
             {name: 'service.debug', type: BoolSwitch},
             {name: 'service.requestInterval', type: TimeInput},
         ];

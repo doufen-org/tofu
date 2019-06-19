@@ -73,7 +73,7 @@ class AccountList {
             }
         }).on('click', '.account', event => {
             let userId = $(event.currentTarget).data('user-id');
-            window.open('explorer.html?' + userId);
+            location = 'explorer.html?' + userId;
         });
     }
 }

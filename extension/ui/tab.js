@@ -27,7 +27,7 @@ export default class TabPanel extends EventTarget {
     }
 
     get activeTab() {
-        return this.tab;
+        return this._activeTab;
     }
 
     toggle(tabName, tab) {
@@ -39,10 +39,10 @@ export default class TabPanel extends EventTarget {
         tab.classList.add('is-active');
         this.$contents.each((_, el) => {
             if (el.getAttribute('name') == tabName) {
+                this._activeTab = el;
                 el.classList.remove('is-hidden');
             }
         });
-        this.tab = tab;
         this.dispatchEvent(new Event('toggle'));
     }
 

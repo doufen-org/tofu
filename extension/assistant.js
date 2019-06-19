@@ -18,7 +18,7 @@ const ASSISTANT_TEMPLATE = `\
  * Assistant settings
  */
 const ASSISTANT_SETTINGS = {
-    'assistant.enable': false,
+    'assistant.enable': true,
     'assistant.draggable': true,
     'assistant.closable': true,
     'assistant.silent': false,
