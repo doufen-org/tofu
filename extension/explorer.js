@@ -9,26 +9,69 @@ const TEMPLATE_PAGINATOR = `\
 <nav class="pagination is-centered" role="navigation">
   <a class="pagination-previous">上一页</a>
   <a class="pagination-next">下一页</a>
-  <ul class="pagination-list">
-    <li><a class="pagination-link">1</a></li>
-    <li><span class="pagination-ellipsis">&hellip;</span></li>
-    <li><a class="pagination-link">45</a></li>
-    <li><a class="pagination-link is-current">46</a></li>
-    <li><a class="pagination-link">47</a></li>
-    <li><span class="pagination-ellipsis">&hellip;</span></li>
-    <li><a class="pagination-link">86</a></li>
-  </ul>
+  <ul class="pagination-list"></ul>
 </nav>`;
 
 
 /**
  * Class Paginator
  */
-class Paginator {
-    constructor(currentPage, pageCount) {
+class Paginator extends EventTarget {
+    constructor(currentPage, pageCount, padding = 6) {
+        super();
         this.currentPage = currentPage;
         this.pageCount = pageCount;
-        this.$pagination = $(TEMPLATE_PAGINATOR);
+        this.padding = padding;
+        this.load();
+    }
+
+    load() {
+        let currentPage = this.currentPage;
+        let pageCount = this.pageCount;
+        let padding = this.padding;
+        let $pagination = this.$pagination = $(TEMPLATE_PAGINATOR);
+        let relativeBeginPage = pageCount - parseInt(padding / 2) > currentPage ?
+            currentPage - parseInt(Math.floor((padding - 1) / 2)) : 
+            pageCount - padding + 1;
+        let beginPage = relativeBeginPage > 0 ? relativeBeginPage : 1;
+        let relativeEndPage = beginPage + padding - 1;
+        let endPage = relativeEndPage < pageCount ? relativeEndPage : pageCount;
+        
+        let $paginationList = $pagination.find('.pagination-list');
+        $paginationList.html('');
+        if (currentPage == 1) {
+            $pagination.find('.pagination-previous').attr('disabled', 'disabled');
+            $paginationList.append('<li><a class="pagination-link is-current">1</a></li>');
+        } else {
+            $paginationList.append('<li><a class="pagination-link">1</a></li>');
+        }
+        if (beginPage > 2) {
+            $paginationList.append('<li><span class="pagination-ellipsis">&hellip;</span></li>');
+        }
+
+        for (let i = beginPage + 1; i < endPage; i ++) {
+            if (i == currentPage) {
+                $paginationList.append('<li><a class="pagination-link is-current">' + i + '</a></li>');
+            } else {
+                $paginationList.append('<li><a class="pagination-link">' + i + '</a></li>');
+            }
+        }
+        
+        if (endPage <= pageCount - 1) {
+            $paginationList.append('<li><span class="pagination-ellipsis">&hellip;</span></li>');
+        }
+
+        if (currentPage == pageCount) {
+            $pagination.find('.pagination-next').attr('disabled', 'disabled');
+            $paginationList.append('<li><a class="pagination-link is-current">' + pageCount + '</a></li>');
+        } else {
+            $paginationList.append('<li><a class="pagination-link">' + pageCount + '</a></li>');
+        }
+
+        $pagination.on('click', '.pagination-link', event => {
+            this.currentPage = parseInt(event.currentTarget.innerText);
+            this.dispatchEvent(new Event('change'));
+        });
     }
 
     appendTo(node) {
@@ -74,7 +117,7 @@ class Panel {
         this.container.innerHTML = '';
     }
 
-    async load() {
+    async load(total) {
         throw new Error('Not implemented');
     }
 
@@ -106,6 +149,13 @@ class Panel {
         let panel = new (PANEL_CLASSES[name])(tab, page, pageSize);
         let total = await panel.load();
         let paginator = new Paginator(page, Math.ceil(total / pageSize));
+        paginator.addEventListener('change', async event => {
+            panel.clear();
+            paginator.currentPage = panel.page = event.target.currentPage;
+            await panel.load(total);
+            paginator.load();
+            paginator.appendTo(panel.container);
+        })
         paginator.appendTo(panel.container);
     }
 }
@@ -166,13 +216,15 @@ const TEMPLATE_STATUS = `\
  * Class Status
  */
 class Status extends Panel {
-    async load() {
+    async load(total) {
         storage.local.open();
         let collection = await storage.local.status
             .orderBy('id').reverse()
             .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
             .toArray();
-        let total = await storage.local.status.count();
+        if (!total) {
+            total = await storage.local.status.count();
+        }
         storage.local.close();
         for (let {status, comments} of collection) {
             let $status = $(TEMPLATE_STATUS);
@@ -199,13 +251,17 @@ class Status extends Panel {
                 let $card = $status.find('.card');
                 let card = status.card;
                 $card.removeClass('is-hidden');
-                if (card.image) {
-                    $card.find('.image>img').attr('src', card.image.normal.url);
+                if (card.card_style == 'obsolete') {
+                    $card.find('.subtitle').text(card.obsolete_msg);
+                } else {
+                    if (card.image) {
+                        $card.find('.image>img').attr('src', card.image.normal.url);
+                    }
+                    let $title = $card.find('.title>a');
+                    $title.text(card.title);
+                    $title.attr('href', card.url);
+                    $card.find('.subtitle').text(card.subtitle);
                 }
-                let $title = $card.find('.title>a');
-                $title.text(card.title);
-                $title.attr('href', card.url);
-                $card.find('.subtitle').text(card.subtitle);
             }
             $status.appendTo(this.container);
         }
