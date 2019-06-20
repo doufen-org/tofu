@@ -23,6 +23,7 @@ export default class Status extends Task {
             for (let item of json.items) {
                 let status = item.status;
                 item.id = parseInt(status.id);
+                item.created = Date.now();
                 maxId = status.id;
                 await this.storage.status.add(item);
             }

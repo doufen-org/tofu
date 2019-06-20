@@ -14,6 +14,34 @@
             margin-top: 3rem;
             max-width: 50rem;
         }
+
+        .columns.images {
+            width: 30rem;
+        }
+
+        .image.preview img {
+            cursor: pointer;
+        }
+
+        .level.stat {
+            color: #ccc;
+        }
+
+        .card .image img {
+            max-width: 5rem;
+        }
+
+        .card .subtitle {
+            margin-top: -0.5rem!important;
+        }
+
+        figure {
+            overflow: hidden;
+        }
+
+        .pagination {
+            margin-top: 3rem;
+        }
     </style>
 </head>
 
@@ -23,6 +51,11 @@
             <div class="navbar-brand">
                 <a class="navbar-item" href="https://doufen.org/" target="_blank">
                     <img src="images/logo-main.png" alt="豆伴" title="豆伴">
+                </a>
+                <a role="button" class="navbar-burger">
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
                 </a>
             </div>
             <div class="navbar-menu">
@@ -41,6 +74,7 @@
             </div>
         </div>
     </nav>
+    <script src="./ui/navbar.js"></script>
 
     <section class="section">
         <div class="container">
@@ -77,6 +111,17 @@
 
         <div class="container page-tab-content is-hidden" name="doulist"></div>
     </section>
+
+    <div class="modal" id="picture-modal">
+        <div class="modal-background"></div>
+        <div class="modal-content">
+            <p class="image">
+                <img>
+            </p>
+        </div>
+        <button class="modal-close is-large"></button>
+    </div>
+
     <script type="module" src="explorer.js"></script>
 </body>
 
