@@ -1,83 +1,10 @@
+'use strict';
 import TabPanel from './ui/tab.js';
+import Paginator from './ui/paginator.js';
 import Storage from './storage.js';
 
 
 const PAGE_SIZE = 50;
-
-
-const TEMPLATE_PAGINATOR = `\
-<nav class="pagination is-centered" role="navigation">
-  <a class="pagination-previous">上一页</a>
-  <a class="pagination-next">下一页</a>
-  <ul class="pagination-list"></ul>
-</nav>`;
-
-
-/**
- * Class Paginator
- */
-class Paginator extends EventTarget {
-    constructor(currentPage, pageCount, padding = 6) {
-        super();
-        this.currentPage = currentPage;
-        this.pageCount = pageCount;
-        this.padding = padding;
-        this.load();
-    }
-
-    load() {
-        let currentPage = this.currentPage;
-        let pageCount = this.pageCount;
-        let padding = this.padding;
-        let $pagination = this.$pagination = $(TEMPLATE_PAGINATOR);
-        let relativeBeginPage = pageCount - parseInt(padding / 2) > currentPage ?
-            currentPage - parseInt(Math.floor((padding - 1) / 2)) : 
-            pageCount - padding + 1;
-        let beginPage = relativeBeginPage > 0 ? relativeBeginPage : 1;
-        let relativeEndPage = beginPage + padding - 1;
-        let endPage = relativeEndPage < pageCount ? relativeEndPage : pageCount;
-        
-        let $paginationList = $pagination.find('.pagination-list');
-        $paginationList.html('');
-        if (currentPage == 1) {
-            $pagination.find('.pagination-previous').attr('disabled', 'disabled');
-            $paginationList.append('<li><a class="pagination-link is-current">1</a></li>');
-        } else {
-            $paginationList.append('<li><a class="pagination-link">1</a></li>');
-        }
-        if (beginPage > 2) {
-            $paginationList.append('<li><span class="pagination-ellipsis">&hellip;</span></li>');
-        }
-
-        for (let i = beginPage + 1; i < endPage; i ++) {
-            if (i == currentPage) {
-                $paginationList.append('<li><a class="pagination-link is-current">' + i + '</a></li>');
-            } else {
-                $paginationList.append('<li><a class="pagination-link">' + i + '</a></li>');
-            }
-        }
-        
-        if (endPage <= pageCount - 1) {
-            $paginationList.append('<li><span class="pagination-ellipsis">&hellip;</span></li>');
-        }
-
-        if (currentPage == pageCount) {
-            $pagination.find('.pagination-next').attr('disabled', 'disabled');
-            $paginationList.append('<li><a class="pagination-link is-current">' + pageCount + '</a></li>');
-        } else {
-            $paginationList.append('<li><a class="pagination-link">' + pageCount + '</a></li>');
-        }
-
-        $pagination.on('click', '.pagination-link', event => {
-            this.currentPage = parseInt(event.currentTarget.innerText);
-            this.dispatchEvent(new Event('change'));
-        });
-    }
-
-    appendTo(node) {
-        this.$pagination.appendTo(node);
-    }
-}
 
 
 /**
@@ -302,11 +229,72 @@ class Photo extends Panel {
 }
 
 
+const TEMPLATE_USER_INFO = `\
+<article class="media">
+  <figure class="media-left">
+    <p class="image is-64x64 avatar">
+      <a class="user-url" target="_blank"><img></a>
+    </p>
+  </figure>
+  <div class="media-content">
+    <div class="content">
+      <p>
+        <a class="user-url" target="_blank"><strong class="username"></strong></a>
+        <small class="user-symbol"></small>
+        <small class="is-hidden">(<span class="remark"></span>)</small>
+        <br>
+        <small class="is-hidden">常居：<span class="loc"></span></small>
+        <br>
+        <small class="is-hidden">签名：<span class="signature"></span></small>
+        <br>
+        <small class="is-hidden">被 <span class="followers"></span> 人关注</small>
+        <small class="is-hidden">关注 <span class="following"></span> 人</small>
+        <small class="followed is-hidden">已关注</small>
+      </p>
+    </div>
+    <div class="columns user-data"></div>
+  </div>
+</article>`;
+
+
 /**
  * Class Following
  */
 class Following extends Panel {
-    
+    async load(total) {
+        storage.local.open();
+        let versionInfo = await storage.local.table('version').get({
+            table: 'following',
+        });
+        if (!versionInfo) {
+            storage.local.close();
+            return 0;
+        }
+        let version = versionInfo.version;
+        let collection = await storage.local.following.where({ version: version })
+            .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
+            .toArray();
+        if (!total) {
+            total = await storage.local.following.where({ version: version }).count();
+        }
+        storage.local.close();
+
+        for (let {user} of collection) {
+            let $userInfo = $(TEMPLATE_USER_INFO);
+            $userInfo.find('.avatar img').attr('src', user.avatar);
+            $userInfo.find('.user-url').attr('href', user.url);
+            $userInfo.find('.username').text(user.name);
+            $userInfo.find('.user-symbol').text('@' + user.uid);
+            user.following_count && $userInfo.find('.following').text(user.following_count).parent().removeClass('is-hidden');
+            user.followers_count && $userInfo.find('.followers').text(user.followers_count).parent().removeClass('is-hidden');
+            user.loc && $userInfo.find('.loc').text(user.loc.name).parent().removeClass('is-hidden');
+            user.remark && $userInfo.find('.remark').text(user.remark).parent().removeClass('is-hidden');
+            user.signature && $userInfo.find('.signature').text(user.signature).parent().removeClass('is-hidden');
+            $userInfo.appendTo(this.container);
+        }
+
+        return total;
+    }
 }
 
 
@@ -314,7 +302,39 @@ class Following extends Panel {
  * Class Follower
  */
 class Follower extends Panel {
-    
+    async load(total) {
+        storage.local.open();
+        let versionInfo = await storage.local.table('version').get({
+            table: 'follower',
+        });
+        if (!versionInfo) {
+            storage.local.close();
+            return 0;
+        }
+        let version = versionInfo.version;
+        let collection = await storage.local.follower.where({ version: version })
+            .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
+            .toArray();
+        if (!total) {
+            total = await storage.local.follower.where({ version: version }).count();
+        }
+        storage.local.close();
+
+        for (let {user} of collection) {
+            let $userInfo = $(TEMPLATE_USER_INFO);
+            $userInfo.find('.avatar img').attr('src', user.avatar);
+            $userInfo.find('.user-url').attr('href', user.url);
+            $userInfo.find('.username').text(user.name);
+            $userInfo.find('.user-symbol').text('@' + user.uid);
+            user.loc && $userInfo.find('.loc').text(user.loc.name).parent().removeClass('is-hidden');
+            user.following_count && $userInfo.find('.following').text(user.following_count).parent().removeClass('is-hidden');
+            user.followers_count && $userInfo.find('.followers').text(user.followers_count).parent().removeClass('is-hidden');
+            user.signature && $userInfo.find('.signature').text(user.signature).parent().removeClass('is-hidden');
+            $userInfo.appendTo(this.container);
+        }
+
+        return total;
+    }
 }
 
 
