@@ -71,8 +71,8 @@ class AccountList {
             } else {
                 alert('删除失败');
             }
-        }).on('click', '.account', event => {
-            let userId = $(event.currentTarget).data('user-id');
+        }).on('click', '.account .media-left, .account .media-content', event => {
+            let userId = $(event.currentTarget).parents('.account').data('user-id');
             location = 'explorer.html?' + userId;
         });
     }

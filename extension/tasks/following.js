@@ -41,7 +41,7 @@ export default class Following extends Task {
             }
             let html =  this.parseHTML(await response.text());
             totalPage = parseInt(html.querySelector('.paginator .thispage').dataset.totalPage);
-            html.querySelectorAll('.user-list>li').forEach(async li => {
+            for (let li of html.querySelectorAll('.user-list>li')) {
                 let idText = li.id.substr(1);
                 let avatar = li.querySelector('.face');
                 let userLink = li.querySelector('.info>h3>a').href;
@@ -60,14 +60,14 @@ export default class Following extends Task {
                         name: avatar.alt,
                         uid: userLink.match(/https:\/\/www\.douban\.com\/people\/(.+)\//)[1],
                         uri: 'douban://douban.com/user/' + idText,
-                        url: `https://www.douban.com/people/${idText}/`,
+                        url: userLink,
                         signature: signature,
                         remark: remark,
                         followers_count: null,
                     }
                 };
                 await this.storage.following.put(row);
-            });
+            }
         }
     }
 

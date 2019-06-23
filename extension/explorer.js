@@ -52,12 +52,34 @@ class Panel {
         this.container = container;
         this.page = page;
         this.pageSize = pageSize;
+        this.userId = parseInt(location.search.substr(1));
         this.clear();
         $(container).on(
             'click',
             '.image.preview>img',
             event => PictureModal.show(event.currentTarget.dataset.src)
         );
+    }
+
+    get storage() {
+        return new Storage(this.userId);
+    }
+
+    paging() {
+        let page = this.page;
+        let total = this.total;
+        let pageSize = this.pageSize;
+        let panel = this;
+
+        let paginator = new Paginator(page, Math.ceil(total / pageSize));
+        paginator.addEventListener('change', async event => {
+            panel.clear();
+            paginator.currentPage = panel.page = event.target.currentPage;
+            await panel.load(total);
+            paginator.load();
+            paginator.appendTo(panel.container);
+        })
+        paginator.appendTo(panel.container);
     }
 
     static async render(tab, page = 1, pageSize = PAGE_SIZE) {
@@ -69,21 +91,41 @@ class Panel {
             photo: Photo,
             following: Following,
             follower: Follower,
+            blacklist: Blacklist,
             doumail: Doumail,
             doulist: Doulist,
         };
         let name = tab.getAttribute('name');
         let panel = new (PANEL_CLASSES[name])(tab, page, pageSize);
-        let total = await panel.load();
-        let paginator = new Paginator(page, Math.ceil(total / pageSize));
-        paginator.addEventListener('change', async event => {
-            panel.clear();
-            paginator.currentPage = panel.page = event.target.currentPage;
-            await panel.load(total);
-            paginator.load();
-            paginator.appendTo(panel.container);
-        })
-        paginator.appendTo(panel.container);
+        panel.total = await panel.load();
+        panel.paging();
+    }
+}
+
+
+class SegmentsPanel extends Panel {
+    onToggle($target) {
+        throw new Error('Not implemented');
+    }
+
+    constructor(container, page, pageSize) {
+        let segments = container.querySelector('.segments.tabs');
+        container = container.querySelector('.sub-container');
+        super(container, page, pageSize);
+        this.segments = segments;
+        let $segmentLinks = $(this.segments).find('ul>li a');
+        $segmentLinks.parent().removeClass('is-active');
+        this.segments.querySelector('ul>li').classList.add('is-active');
+        $segmentLinks.off('click');
+        $segmentLinks.on('click', async event => {
+            let $target = $(event.currentTarget);
+            $segmentLinks.parent().removeClass('is-active');
+            $target.parent().addClass('is-active');
+            this.onToggle($target);
+            this.clear();
+            this.total = await this.load();
+            this.paging();
+        });
     }
 }
 
@@ -113,6 +155,12 @@ const TEMPLATE_STATUS = `\
         </div>
       </div>
     </div>
+    <div class="box content topic is-hidden">
+      <p>
+        话题：<a class="topic-title" target="_blank" title="前往豆瓣查看"></a>
+        <small class="topic-subtitle"></small>
+      </p>
+    </div>
     <div class="level stat">
       <div class="level-left">
         <div class="level-item">
@@ -133,7 +181,16 @@ const TEMPLATE_STATUS = `\
           </span>
           <small class="comments"></small>
         </div>
+      </div>
+      <div class="level-right">
+        <div class="level-item">
+          <a class="status-url" target="_blank" title="前往豆瓣查看">
+            <span class="icon">
+              <i class="fas fa-external-link-alt"></i>
+            </span>
+          </a>
         </div>
+      </div>
     </div>
   </div>
 </article>`;
@@ -144,6 +201,7 @@ const TEMPLATE_STATUS = `\
  */
 class Status extends Panel {
     async load(total) {
+        let storage = this.storage;
         storage.local.open();
         let collection = await storage.local.status
             .orderBy('id').reverse()
@@ -161,6 +219,7 @@ class Status extends Panel {
             $status.find('.activity').text(status.activity + "：");
             $status.find('.created').text(status.create_time);
             $status.find('.text').text(status.text);
+            $status.find('.status-url').attr('href', status.sharing_url);
             let $images = $status.find('.images');
             status.images.forEach(image => {
                 $images.append(`\
@@ -190,6 +249,13 @@ class Status extends Panel {
                     $card.find('.subtitle').text(card.subtitle);
                 }
             }
+            if (status.topic) {
+                let $topic = $status.find('.topic');
+                let topic = status.topic;
+                $topic.find('.topic-title').text(topic.title).attr('href', topic.url);
+                $topic.find('.topic-subtitle').text(topic.card_subtitle);
+                $topic.removeClass('is-hidden');
+            }
             $status.appendTo(this.container);
         }
         return total;
@@ -197,27 +263,260 @@ class Status extends Panel {
 }
 
 
+const TEMPLATE_ENTRY = `\
+<article class="media subject">
+  <figure class="media-left">
+    <p class="image subject-cover">
+      <a class="subject-url" target="_blank" title="前往豆瓣查看"><img></a>
+    </p>
+  </figure>
+  <div class="media-content">
+    <div class="content">
+      <p>
+        <a class="subject-url title is-size-5" target="_blank" title="前往豆瓣查看"></a>
+        <span class="rating">
+          <label><span class="rating-count"></span>人评价</label>
+          <label>豆瓣评分：<span class="rating-value is-size-4 has-text-danger"></span></label>
+        </span>
+      </p>
+      <p class="subtitle is-size-6"></p>
+    </div>
+    <div class="box content my-rating">
+      <p>
+        <small class="create-time"></small>
+        <small>标签：<span class="my-tags"></span></small><br>
+        <span class="my-comment"></span>
+      </p>
+    </div>
+  </div>
+</article>`;
+
+
 /**
  * Class Interest
  */
-class Interest extends Panel {
-    
+class Interest extends SegmentsPanel {
+    onToggle($target) {
+        this.type = $target.data('type');
+        this.status = $target.data('status');
+    }
+
+    constructor(container, page, pageSize) {
+        super(container, page, pageSize);
+        this.type = 'movie';
+        this.status = 'done';
+    }
+
+    async load(total) {
+        let storage = this.storage;
+        storage.local.open();
+        let versionInfo = await storage.local.table('version').get({
+            table: 'interest',
+        });
+        if (!versionInfo) {
+            storage.local.close();
+            return 0;
+        }
+        let version = versionInfo.version;
+        let collection = await storage.local.interest
+            .where({ version: version, type: this.type, status: this.status })
+            .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
+            .reverse()
+            .toArray();
+        if (!total) {
+            total = await storage.local.interest
+                .where({ version: version, type: this.type, status: this.status })
+                .count();
+        }
+        storage.local.close();
+        for (let entry of collection) {
+            let $entry = $(TEMPLATE_ENTRY);
+            $entry.find('.subject-cover img').attr('src', entry.subject.pic.normal);
+            $entry.find('.title').text(entry.subject.title);
+            $entry.find('.subject-url').attr('href', entry.subject.url);
+            if (entry.subject.null_rating_reason) {
+                $entry.find('.rating').text(entry.subject.null_rating_reason);
+            } else {
+                $entry.find('.rating-value').text(entry.subject.rating.value.toFixed(1));
+                $entry.find('.rating-count').text(entry.subject.rating.count);
+            }
+            $entry.find('.subtitle').text(entry.subject.card_subtitle);
+            $entry.find('.create-time').text(entry.create_time);
+            $entry.find('.my-comment').text(entry.comment);
+            $entry.find('.my-tags').text(entry.tags);
+            $entry.appendTo(this.container);
+        }
+        return total;
+    }
 }
+
+
+const TEMPLATE_REVIEW = `\
+<article class="media subject">
+  <figure class="media-left">
+    <p class="image subject-cover">
+      <a class="subject-url" target="_blank" title="前往豆瓣查看"><img></a>
+    </p>
+  </figure>
+  <div class="media-content">
+    <div class="content">
+      <p>
+        <a class="subject-url title is-size-5" target="_blank" title="前往豆瓣查看"></a>
+        <span class="rating">
+          <label><span class="rating-count"></span>人评价</label>
+          <label>豆瓣评分：<span class="rating-value is-size-4 has-text-danger"></span></label>
+        </span>
+      </p>
+      <p class="subtitle is-size-6"></p>
+    </div>
+    <div class="box content review">
+      <p>
+        <a class="review-title review-url is-size-5" target="_blank" title="前往豆瓣查看"></a>
+        <small>我的评分：<span class="my-rating is-size-5 has-text-danger"></span></small><br>
+        <small class="create-time"></small>
+        <span class="tag is-normal useful"></span>
+        <span class="tag is-normal useless"></span>
+        <span class="tag is-normal comments"></span>
+        <span class="tag is-normal reads"></span>
+      </p>
+      <p class="abstract"></p>
+      <p class="has-text-centered"><a class="button">查看全部</a></p>
+    </div>
+  </div>
+</article>`;
 
 
 /**
  * Class Review
  */
-class Review extends Panel {
-    
+class Review extends SegmentsPanel {
+    onToggle($target) {
+        this.type = $target.data('type');
+    }
+
+    constructor(container, page, pageSize) {
+        super(container, page, pageSize);
+        this.type = 'movie';
+    }
+
+    async load(total) {
+        let storage = this.storage;
+        storage.local.open();
+        let versionInfo = await storage.local.table('version').get({
+            table: 'review',
+        });
+        if (!versionInfo) {
+            storage.local.close();
+            return 0;
+        }
+        let version = versionInfo.version;
+        let collection = await storage.local.review
+            .where({ version: version, type: this.type })
+            .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
+            .reverse()
+            .toArray();
+        if (!total) {
+            total = await storage.local.review
+                .where({ version: version, type: this.type })
+                .count();
+        }
+        storage.local.close();
+        for (let {review} of collection) {
+            let $review = $(TEMPLATE_REVIEW);
+            $review.find('.subject-cover img').attr('src', review.subject.pic.normal);
+            $review.find('.subject-url').attr('href', review.subject.url);
+            $review.find('.title').text(review.subject.title);
+            $review.find('.review-title').text(review.title);
+            $review.find('.review-url').attr('href', review.url);
+            $review.find('.subtitle').text(review.subject.card_subtitle);
+            if (review.subject.null_rating_reason) {
+                $review.find('.rating').text(review.subject.null_rating_reason);
+            } else {
+                $review.find('.rating-value').text(review.subject.rating.value.toFixed(1));
+                $review.find('.rating-count').text(review.subject.rating.count);
+            }
+            $review.find('.create-time').text(review.create_time);
+            if (review.rating) {
+                $review.find('.my-rating').text(review.rating.value);
+            } else {
+                $review.find('.my-rating').parent().addClass('is-hidden');
+            }
+            $review.find('.useful').text('有用 ' + review.useful_count);
+            $review.find('.useless').text('没用 ' + review.useless_count);
+            $review.find('.comments').text(review.comments_count + ' 回应');
+            $review.find('.reads').text(review.read_count + ' 阅读');
+            $review.find('.abstract').text(review.abstract);
+            $review.appendTo(this.container);
+        }
+        return total;
+    }
 }
+
+
+const TEMPLATE_NOTE = `\
+<article class="media note">
+  <div class="media-content">
+    <div class="content">
+      <p>
+        <a class="title is-size-5" target="_blank" title="前往豆瓣查看"></a>
+        <br>
+        <small class="create-time"></small>
+        <span class="tag is-normal comments"></span>
+        <span class="tag is-normal reads"></span>
+      </p>
+      <p class="abstract"></p>
+      <p><a class="button">查看全部</a></p>
+    </div>
+  </div>
+  <figure class="media-right is-hidden">
+    <p class="image cover">
+      <img>
+    </p>
+  </figure>
+</article>
+`;
 
 
 /**
  * Class Note
  */
 class Note extends Panel {
-    
+    async load(total) {
+        let storage = this.storage;
+        storage.local.open();
+        let versionInfo = await storage.local.table('version').get({
+            table: 'note',
+        });
+        if (!versionInfo) {
+            storage.local.close();
+            return 0;
+        }
+        let version = versionInfo.version;
+        let collection = await storage.local.note
+            .where({ version: version })
+            .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
+            .reverse()
+            .toArray();
+        if (!total) {
+            total = await storage.local.note
+                .where({ version: version })
+                .count();
+        }
+        storage.local.close();
+        for (let {note} of collection) {
+            let $note = $(TEMPLATE_NOTE);
+            $note.find('.title').text(note.title).attr('href', note.url);
+            $note.find('.create-time').text(note.create_time);
+            note.cover_url && $note.find('.media-right .image>img')
+                .attr('src', note.cover_url)
+                .parents('.media-right').removeClass('is-hidden');
+            $note.find('.comments').text(note.comments_count + ' 回应');
+            $note.find('.reads').text(note.read_count + ' 阅读');
+            $note.find('.abstract').text(note.abstract);
+            $note.appendTo(this.container);
+        }
+        return total;
+    }
 }
 
 
@@ -233,19 +532,17 @@ const TEMPLATE_USER_INFO = `\
 <article class="media">
   <figure class="media-left">
     <p class="image is-64x64 avatar">
-      <a class="user-url" target="_blank"><img></a>
+      <a class="user-url" target="_blank" title="前往豆瓣查看"><img></a>
     </p>
   </figure>
   <div class="media-content">
     <div class="content">
       <p>
-        <a class="user-url" target="_blank"><strong class="username"></strong></a>
+        <a class="user-url" target="_blank" title="前往豆瓣查看"><strong class="username"></strong></a>
         <small class="user-symbol"></small>
         <small class="is-hidden">(<span class="remark"></span>)</small>
-        <br>
-        <small class="is-hidden">常居：<span class="loc"></span></small>
-        <br>
-        <small class="is-hidden">签名：<span class="signature"></span></small>
+        <small class="is-hidden"><br>常居：<span class="loc"></span></small>
+        <small class="is-hidden"><br>签名：<span class="signature"></span></small>
         <br>
         <small class="is-hidden">被 <span class="followers"></span> 人关注</small>
         <small class="is-hidden">关注 <span class="following"></span> 人</small>
@@ -262,6 +559,7 @@ const TEMPLATE_USER_INFO = `\
  */
 class Following extends Panel {
     async load(total) {
+        let storage = this.storage;
         storage.local.open();
         let versionInfo = await storage.local.table('version').get({
             table: 'following',
@@ -303,6 +601,7 @@ class Following extends Panel {
  */
 class Follower extends Panel {
     async load(total) {
+        let storage = this.storage;
         storage.local.open();
         let versionInfo = await storage.local.table('version').get({
             table: 'follower',
@@ -339,6 +638,43 @@ class Follower extends Panel {
 
 
 /**
+ * Class Blacklist
+ */
+class Blacklist extends Panel {
+    async load(total) {
+        let storage = this.storage;
+        storage.local.open();
+        let versionInfo = await storage.local.table('version').get({
+            table: 'blacklist',
+        });
+        if (!versionInfo) {
+            storage.local.close();
+            return 0;
+        }
+        let version = versionInfo.version;
+        let collection = await storage.local.blacklist.where({ version: version })
+            .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
+            .toArray();
+        if (!total) {
+            total = await storage.local.blacklist.where({ version: version }).count();
+        }
+        storage.local.close();
+
+        for (let {user} of collection) {
+            let $userInfo = $(TEMPLATE_USER_INFO);
+            $userInfo.find('.avatar img').attr('src', user.avatar);
+            $userInfo.find('.user-url').attr('href', user.url);
+            $userInfo.find('.username').text(user.name);
+            $userInfo.find('.user-symbol').text('@' + user.uid);
+            $userInfo.appendTo(this.container);
+        }
+
+        return total;
+    }
+}
+
+
+/**
  * Class Doumail
  */
 class Doumail extends Panel {
@@ -353,7 +689,7 @@ class Doulist extends Panel {
     
 }
 
-let storage = new Storage(location.search.substr(1));
+
 let tab = TabPanel.render();
 tab.addEventListener('toggle', async event => await Panel.render(event.target.activeTab));
 Panel.render(tab.activeTab);

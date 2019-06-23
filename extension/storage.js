@@ -18,6 +18,9 @@ const SCHEMA_LOCAL = [
         status: 'id',
         following: '++id, version',
         follower: '++id, version',
+        blacklist: '++id, version',
+        review: '[id+version], [version+type]',
+        note: '[id+version], version',
         interest: '[id+version], [version+type+status]',
         version: 'table, version',
     },
@@ -44,7 +47,7 @@ export default class Storage {
 
     get local() {
         if (!this._local) {
-            if (this.userId == null) {
+            if (!this.userId) {
                 throw new Error('No local storage');
             }
             let db = this._local = new Dexie(`${DB_NAME}[${this.userId}]`);
