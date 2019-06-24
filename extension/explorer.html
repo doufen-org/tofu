@@ -50,6 +50,10 @@
         .note .cover {
             width: 8rem;
         }
+
+        .tabs.is-small .is-active {
+            font-size: 1rem;
+        }
     </style>
 </head>
 
@@ -89,13 +93,11 @@
             <div class="tabs is-centered is-boxed">
                 <ul>
                     <li class="page-tab-link is-active" data-tab="status"><a href="#status">广播</a></li>
-                    <li class="page-tab-link" data-tab="interest"><a href="#interest">影/音/书</a></li>
+                    <li class="page-tab-link" data-tab="interest"><a href="#interest">影/音/书/游</a></li>
                     <li class="page-tab-link" data-tab="review"><a href="#review">评论</a></li>
                     <li class="page-tab-link" data-tab="note"><a href="#note">日记</a></li>
                     <li class="page-tab-link" data-tab="photo"><a href="#photo">相册</a></li>
-                    <li class="page-tab-link" data-tab="following"><a href="#following">关注</a></li>
-                    <li class="page-tab-link" data-tab="follower"><a href="#follower">被关注</a></li>
-                    <li class="page-tab-link" data-tab="blacklist"><a href="#blacklist">黑名单</a></li>
+                    <li class="page-tab-link" data-tab="follow"><a href="#follow">关注</a></li>
                     <li class="page-tab-link" data-tab="doumail"><a href="#doumail">豆邮</a></li>
                     <li class="page-tab-link" data-tab="doulist"><a href="#doulist">豆列</a></li>
                 </ul>
@@ -105,7 +107,7 @@
         <div class="container page-tab-content is-hidden" name="status"></div>
 
         <div class="container page-tab-content is-hidden" name="interest">
-            <div class="segments tabs is-toggle is-centered">
+            <div class="segments tabs is-toggle is-centered is-small">
                 <ul>
                     <li>
                         <a data-type="movie" data-status="done">
@@ -143,6 +145,18 @@
                     <li>
                         <a data-type="book" data-status="mark">想读</a>
                     </li>
+                    <li>
+                        <a data-type="game" data-status="done">
+                            <span class="icon is-small"><i class="fas fa-gamepad"></i></i></span>
+                            <span>玩过</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a data-type="game" data-status="doing">在玩</a>
+                    </li>
+                    <li>
+                        <a data-type="game" data-status="mark">想玩</a>
+                    </li>
                 </ul>
             </div>
             <div class="sub-container"></div>
@@ -178,11 +192,22 @@
 
         <div class="container page-tab-content is-hidden" name="photo"></div>
 
-        <div class="container page-tab-content is-hidden" name="following"></div>
-
-        <div class="container page-tab-content is-hidden" name="follower"></div>
-
-        <div class="container page-tab-content is-hidden" name="blacklist"></div>
+        <div class="container page-tab-content is-hidden" name="follow">
+            <div class="segments tabs is-toggle is-centered">
+                <ul>
+                    <li>
+                        <a data-type="following">我关注的</a>
+                    </li>
+                    <li>
+                        <a data-type="follower">关注我的</a>
+                    </li>
+                    <li>
+                        <a data-type="blacklist">黑名单</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="sub-container"></div>
+        </div>
 
         <div class="container page-tab-content is-hidden" name="doumail"></div>
 

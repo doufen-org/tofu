@@ -55,7 +55,11 @@ class AccountList {
 
     async remove(userId) {
         let storage = new Storage();
-        return await storage.drop(userId);
+        try {
+            return await storage.drop(userId);
+        } catch (e) {
+            return false;
+        }
     }
 
     static async render() {
@@ -69,7 +73,8 @@ class AccountList {
             if (await list.remove(userId)) {
                 $account.fadeOut();
             } else {
-                alert('删除失败');
+                alert('删除失败。请在刷新页面后重试。');
+                location.reload();
             }
         }).on('click', '.account .media-left, .account .media-content', event => {
             let userId = $(event.currentTarget).parents('.account').data('user-id');

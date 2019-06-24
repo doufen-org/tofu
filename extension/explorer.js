@@ -89,9 +89,7 @@ class Panel {
             review: Review,
             note: Note,
             photo: Photo,
-            following: Following,
-            follower: Follower,
-            blacklist: Blacklist,
+            follow: Follow,
             doumail: Doumail,
             doulist: Doulist,
         };
@@ -103,6 +101,9 @@ class Panel {
 }
 
 
+/**
+ * Class SegmentsPanel
+ */
 class SegmentsPanel extends Panel {
     onToggle($target) {
         throw new Error('Not implemented');
@@ -524,7 +525,30 @@ class Note extends Panel {
  * Class Photo
  */
 class Photo extends Panel {
-    
+    async load(total) {
+        let storage = this.storage;
+        storage.local.open();
+        let versionInfo = await storage.local.table('version').get({
+            table: 'photo',
+        });
+        if (!versionInfo) {
+            storage.local.close();
+            return 0;
+        }
+        let version = versionInfo.version;
+        let collection = await storage.local.note
+            .where({ version: version })
+            .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
+            .reverse()
+            .toArray();
+        if (!total) {
+            total = await storage.local.note
+                .where({ version: version })
+                .count();
+        }
+        storage.local.close();
+        return total;
+    }
 }
 
 
@@ -673,6 +697,34 @@ class Blacklist extends Panel {
     }
 }
 
+
+/**
+ * Class Follow
+ */
+class Follow extends SegmentsPanel {
+    onToggle($target) {
+        switch ($target.data('type')) {
+            case 'following':
+                this.target = new Following(this.container, this.page, this.pageSize);
+                break;
+            case 'follower':
+                this.target = new Follower(this.container, this.page, this.pageSize);
+                break;
+            case 'blacklist':
+                this.target = new Blacklist(this.container, this.page, this.pageSize);
+                break;
+        }
+    }
+
+    constructor(container, page, pageSize) {
+        super(container, page, pageSize);
+        this.target = new Following(this.container, page, pageSize);
+    }
+
+    async load(total) {
+        return await this.target.load(total);
+    }
+}
 
 /**
  * Class Doumail

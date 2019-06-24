@@ -2,8 +2,8 @@
 import {TaskError, Task} from '../service.js';
 
 
-const PAGE_SIZE = 20;
-const URL_PHOTOS = 'https://www.douban.com/people/{uid}/photos?start={start}';
+const PAGE_SIZE = 50;
+const URL_PHOTOS = 'https://m.douban.com/rexxar/api/v2/user/{uid}/photo_albums?start={start}&count=50&ck={ck}&for_mobile=1';
 
 
 export default class Photo extends Task {
