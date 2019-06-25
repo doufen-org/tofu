@@ -40,7 +40,9 @@ export default class Follower extends Task {
                 throw new TaskError('豆瓣服务器返回错误');
             }
             let html =  this.parseHTML(await response.text());
-            totalPage = parseInt(html.querySelector('.paginator .thispage').dataset.totalPage);
+            try {
+                totalPage = parseInt(html.querySelector('.paginator .thispage').dataset.totalPage);
+            } catch (e) {}
             for (let li of html.querySelectorAll('.user-list>li')) {
                 let idText = li.id.substr(1);
                 let avatar = li.querySelector('.face');

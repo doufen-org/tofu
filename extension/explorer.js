@@ -521,6 +521,20 @@ class Note extends Panel {
 }
 
 
+const TEMPLATE_ALBUMS = '<div class="columns is-multiline"></div>';
+const TEMPLATE_ALBUM = `\
+<div class="column album is-one-quarter">
+  <figure class="image is-fullwidth" style="margin-bottom: 0.5rem;">
+    <img>
+  </figure>
+  <p class="has-text-centered">
+    <span class="title is-size-6 has-text-weight-normal"></span>
+    (<small class="total"></small>)<br>
+    <small class="create-time"></small>
+  </p>
+  <p class="subtitle is-size-7 description"></p>
+</div>`;
+
 /**
  * Class Photo
  */
@@ -528,25 +542,25 @@ class Photo extends Panel {
     async load(total) {
         let storage = this.storage;
         storage.local.open();
-        let versionInfo = await storage.local.table('version').get({
-            table: 'photo',
-        });
-        if (!versionInfo) {
-            storage.local.close();
-            return 0;
-        }
-        let version = versionInfo.version;
-        let collection = await storage.local.note
-            .where({ version: version })
+        let collection = await storage.local.album
             .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
             .reverse()
             .toArray();
         if (!total) {
-            total = await storage.local.note
-                .where({ version: version })
-                .count();
+            total = await storage.local.album.count();
         }
         storage.local.close();
+        let $albums = $(TEMPLATE_ALBUMS);
+        for (let {album} of collection) {
+            let $album = $(TEMPLATE_ALBUM);
+            $album.find('.image>img').attr('src', album.cover_url);
+            $album.find('.title').text(album.title);
+            $album.find('.total').text(album.photos_count);
+            $album.find('.description').text(album.description);
+            $album.find('.create-time').text(album.create_time);
+            $album.appendTo($albums);
+        }
+        $albums.appendTo(this.container);
         return total;
     }
 }

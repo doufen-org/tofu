@@ -15,8 +15,9 @@ export default class Photo extends Task {
                 throw new TaskError('豆瓣服务器返回错误');
             }
             let html =  this.parseHTML(await response.text());
-            pageCount = parseInt(html.querySelector('.paginator .thispage').dataset.totalPage);
-            //
+            try {
+                pageCount = parseInt(html.querySelector('.paginator .thispage').dataset.totalPage);
+            } catch (e) {}
         }
     }
 
