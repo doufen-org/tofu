@@ -54,10 +54,6 @@
         .tabs.is-small .is-active {
             font-size: 1rem;
         }
-
-        .album.column .image {
-            cursor: pointer;
-        }
     </style>
 </head>
 
@@ -215,8 +211,25 @@
 
         <div class="container page-tab-content is-hidden" name="doumail"></div>
 
-        <div class="container page-tab-content is-hidden" name="doulist"></div>
+        <div class="container page-tab-content is-hidden" name="doulist">
+            <div class="segments tabs is-toggle is-centered">
+                <ul>
+                    <li>
+                        <a data-type="owned">我创建的</a>
+                    </li>
+                    <li>
+                        <a data-type="following">我收藏的</a>
+                </ul>
+            </div>
+            <div class="sub-container"></div>
+        </div>
     </section>
+
+    <div class="modal" id="minor-modal">
+        <div class="modal-background"></div>
+        <div class="modal-content box" style="width: 800px;"></div>
+        <button class="modal-close is-large"></button>
+    </div>
 
     <div class="modal" id="picture-modal">
         <div class="modal-background"></div>

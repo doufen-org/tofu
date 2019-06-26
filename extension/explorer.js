@@ -8,33 +8,57 @@ const PAGE_SIZE = 50;
 
 
 /**
- * Class PictureModal
+ * Class Modal
  */
-class PictureModal {
-    constructor() {
-        this.modal = document.querySelector('#picture-modal');
+class Modal {
+    constructor(selector) {
+        this.modal = document.querySelector(selector);
     }
 
     static get instance() {
-        if (!PictureModal._instance) {
-            let instance = PictureModal._instance = new PictureModal();
+        if (!this._instance) {
+            let instance = this._instance = new this();
             instance.modal.querySelector('.modal-close')
-                .addEventListener('click', () => PictureModal.close());
+                .addEventListener('click', () => this.close());
         }
-        return PictureModal._instance;
+        return this._instance;
     }
 
-    static show(src) {
-        let instance = PictureModal.instance;
-        instance.modal.querySelector('.image>img').setAttribute('src', src);
-        instance.modal.classList.add('is-active');
+    static show() {
+        this.instance.modal.classList.add('is-active');
     }
 
     static close() {
-        let instance = PictureModal.instance;
+        let instance = this.instance;
         instance.modal.classList.remove('is-active');
     }
 }
+
+
+/**
+ * Class PictureModal
+ */
+class PictureModal extends Modal {
+    constructor() {
+        super('#picture-modal');
+    }
+
+    static show(src) {
+        this.instance.modal.querySelector('.image>img').setAttribute('src', src);
+        super.show();
+    }
+}
+
+
+/**
+ * Class MinorModal
+ */
+class MinorModal extends Modal {
+    constructor() {
+        super('#minor-modal');
+    }
+}
+
 
 /**
  * Class Panel
@@ -88,7 +112,7 @@ class Panel {
             interest: Interest,
             review: Review,
             note: Note,
-            photo: Photo,
+            photo: PhotoAlbum,
             follow: Follow,
             doumail: Doumail,
             doulist: Doulist,
@@ -264,7 +288,7 @@ class Status extends Panel {
 }
 
 
-const TEMPLATE_ENTRY = `\
+const TEMPLATE_INTEREST = `\
 <article class="media subject">
   <figure class="media-left">
     <p class="image subject-cover">
@@ -330,22 +354,23 @@ class Interest extends SegmentsPanel {
                 .count();
         }
         storage.local.close();
-        for (let entry of collection) {
-            let $entry = $(TEMPLATE_ENTRY);
-            $entry.find('.subject-cover img').attr('src', entry.subject.pic.normal);
-            $entry.find('.title').text(entry.subject.title);
-            $entry.find('.subject-url').attr('href', entry.subject.url);
-            if (entry.subject.null_rating_reason) {
-                $entry.find('.rating').text(entry.subject.null_rating_reason);
+        for (let {interest} of collection) {
+            let $interest = $(TEMPLATE_INTEREST);
+            let subject = interest.subject;
+            $interest.find('.subject-cover img').attr('src', subject.pic.normal);
+            $interest.find('.title').text(subject.title);
+            $interest.find('.subject-url').attr('href', subject.url);
+            if (interest.subject.null_rating_reason) {
+                $interest.find('.rating').text(subject.null_rating_reason);
             } else {
-                $entry.find('.rating-value').text(entry.subject.rating.value.toFixed(1));
-                $entry.find('.rating-count').text(entry.subject.rating.count);
+                $interest.find('.rating-value').text(subject.rating.value.toFixed(1));
+                $interest.find('.rating-count').text(subject.rating.count);
             }
-            $entry.find('.subtitle').text(entry.subject.card_subtitle);
-            $entry.find('.create-time').text(entry.create_time);
-            $entry.find('.my-comment').text(entry.comment);
-            $entry.find('.my-tags').text(entry.tags);
-            $entry.appendTo(this.container);
+            $interest.find('.subtitle').text(subject.card_subtitle);
+            $interest.find('.create-time').text(interest.create_time);
+            $interest.find('.my-comment').text(interest.comment);
+            $interest.find('.my-tags').text(interest.tags);
+            $interest.appendTo(this.container);
         }
         return total;
     }
@@ -521,24 +546,40 @@ class Note extends Panel {
 }
 
 
-const TEMPLATE_ALBUMS = '<div class="columns is-multiline"></div>';
+const TEMPLATE_COLUMNS = '<div class="columns is-multiline"></div>';
 const TEMPLATE_ALBUM = `\
 <div class="column album is-one-quarter">
   <figure class="image is-fullwidth" style="margin-bottom: 0.5rem;">
-    <img>
+    <a class="album-url"><img></a>
   </figure>
   <p class="has-text-centered">
-    <span class="title is-size-6 has-text-weight-normal"></span>
+    <a class="album-url title is-size-6 has-text-weight-normal"></a>
     (<small class="total"></small>)<br>
     <small class="create-time"></small>
   </p>
   <p class="subtitle is-size-7 description"></p>
 </div>`;
+const TEMPLATE_PHOTO = `\
+<div class="column photo is-one-quarter">
+  <figure class="image is-fullwidth is-square" style="margin-bottom: 0.5rem;">
+    <a class="album-url"><img></a>
+  </figure>
+  <p class="subtitle is-size-7 description"></p>
+</div>`;
 
 /**
- * Class Photo
+ * Class PhotoAlbum
  */
-class Photo extends Panel {
+class PhotoAlbum extends Panel {
+    async showAlbum(albumId) {
+        let container = MinorModal.instance.modal.querySelector('.box');
+        let panel = new Photo(container, 1, PAGE_SIZE);
+        MinorModal.show();
+        panel.album = albumId;
+        panel.total = await panel.load();
+        panel.paging();
+    }
+
     async load(total) {
         let storage = this.storage;
         storage.local.open();
@@ -550,17 +591,58 @@ class Photo extends Panel {
             total = await storage.local.album.count();
         }
         storage.local.close();
-        let $albums = $(TEMPLATE_ALBUMS);
-        for (let {album} of collection) {
+        let $albums = $(TEMPLATE_COLUMNS);
+        for (let {id, album} of collection) {
             let $album = $(TEMPLATE_ALBUM);
-            $album.find('.image>img').attr('src', album.cover_url);
+            $album.find('.image img').attr('src', album.cover_url);
             $album.find('.title').text(album.title);
             $album.find('.total').text(album.photos_count);
             $album.find('.description').text(album.description);
             $album.find('.create-time').text(album.create_time);
+            $album.find('.album-url').attr('href', album.url).click(async event => {
+                event.preventDefault();
+                await this.showAlbum(id);
+                return false;
+            });
             $album.appendTo($albums);
         }
         $albums.appendTo(this.container);
+        return total;
+    }
+}
+
+
+/**
+ * Class Photo
+ */
+class Photo extends Panel {
+    async load(total) {
+        let albumId = this.album;
+        let storage = this.storage;
+        storage.local.open();
+        let collection = await storage.local.photo
+            .where({album: albumId})
+            .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
+            .reverse()
+            .toArray();
+        if (!total) {
+            total = await storage.local.photo
+                .where({album: albumId})
+                .count();
+        }
+        storage.local.close();
+        let $photos = $(TEMPLATE_COLUMNS);
+        for (let photo of collection) {
+            let $photo = $(TEMPLATE_PHOTO);
+            console.log(photo);
+            $photo.find('.image img').attr('src', photo.cover).click(() => {
+                PictureModal.show(photo.cover.replace('/m/','/l/'));
+            });
+            $photo.find('.description').text(photo.description);
+            $photo.appendTo($photos);
+            
+        }
+        $photos.appendTo(this.container);
         return total;
     }
 }
@@ -748,11 +830,50 @@ class Doumail extends Panel {
 }
 
 
+const TEMPLATE_DOULIST = `\
+<article class="media doulist">
+  <div class="media-content">
+    <div class="content">
+      <p class="title"></p>
+    </div>
+  </div>
+</article>
+`;
+
 /**
  * Class Doulist
  */
-class Doulist extends Panel {
-    
+class Doulist extends SegmentsPanel {
+    onToggle($target) {
+        this.type = $target.data('type');
+    }
+
+    constructor(container, page, pageSize) {
+        super(container, page, pageSize);
+        this.type = 'owned';
+    }
+
+    async load(total) {
+        let storage = this.storage;
+        storage.local.open();
+        let collection = await storage.local.doulist
+            .where({ type: this.type })
+            .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
+            .reverse()
+            .toArray();
+        if (!total) {
+            total = await storage.local.doulist
+                .where({ type: this.type })
+                .count();
+        }
+        storage.local.close();
+        for (let {doulist} of collection) {
+            let $doulist = $(TEMPLATE_DOULIST);
+            $doulist.find('.title').text(doulist.title);
+            $doulist.appendTo(this.container);
+        }
+        return total;
+    }
 }
 
 

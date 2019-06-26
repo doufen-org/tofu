@@ -43,9 +43,10 @@ export default class Photo extends Task {
                         let photoId = photoAnchor.href.match(/https:\/\/www\.douban\.com\/photos\/photo\/(\d+)\//)[1];
                         let photo = {
                             id: parseInt(photoId),
+                            album: albumId,
                             url: photoAnchor.href,
                             cover: photoImg.src,
-                            descroption: photoAnchor.title,
+                            description: photoAnchor.title,
                         }
                         await this.storage.photo.put(photo);
                     }

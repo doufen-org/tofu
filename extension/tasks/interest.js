@@ -27,9 +27,14 @@ export default class Interest extends Task {
                     }
                     let json = await response.json();
                     pageCount = Math.ceil(json.total / PAGE_SIZE);
-                    for (let row of json.interests) {
-                        row.type = type;
-                        row.version = this.jobId;
+                    for (let interest of json.interests) {
+                        let row = {
+                            id: parseInt(interest.id),
+                            version: this.jobId,
+                            type: type,
+                            status: interest.status,
+                            interest: interest,
+                        };
                         await this.storage.interest.put(row);
                     }
                 }
@@ -38,6 +43,6 @@ export default class Interest extends Task {
     }
 
     get name() {
-        return '书/影/音';
+        return '书/影/音/游';
     }
 }

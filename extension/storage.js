@@ -21,9 +21,10 @@ const SCHEMA_LOCAL = [
         blacklist: '++id, version',
         review: '[id+version], [version+type]',
         note: '[id+version], version',
-        album: 'id',
-        photo: 'id',
         interest: '[id+version], [version+type+status]',
+        album: 'id',
+        photo: 'id, album',
+        doulist: 'id, type',
         version: 'table, version',
     },
 ];
