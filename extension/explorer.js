@@ -952,9 +952,9 @@ class DoulistItem extends Panel {
         storage.local.close();
         for (let {abstract, item, source} of collection) {
             let $item = $(TEMPLATE_DOULIST_ITEM);
-            item.picture && $item.find('.picture').attr('src', item.picture)
-                .parent().removeClass('is-hidden');
-            $item.find('.title').text(item.title);
+            item.picture && $item.find('.picture>img').attr('src', item.picture)
+                .parents('.media-left').removeClass('is-hidden');
+            $item.find('.title').text(item.title).attr('href', item.url);
             $item.find('.abstract').text(abstract);
             $item.appendTo(this.container);
         }
