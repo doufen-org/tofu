@@ -32,6 +32,7 @@ export default class Photo extends Task {
                 for (let i = 0; i < albumTotalPage; i ++) {
                     let response = await this.fetch(album.url + '?m_start=' + i * ALBUM_PAGE_SIZE);
                     if (response.status != 200) {
+                        if (response.status < 500) continue;
                         throw new TaskError('豆瓣服务器返回错误');
                     }
                     let html = this.parseHTML(await response.text());

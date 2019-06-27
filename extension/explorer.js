@@ -634,7 +634,6 @@ class Photo extends Panel {
         let $photos = $(TEMPLATE_COLUMNS);
         for (let photo of collection) {
             let $photo = $(TEMPLATE_PHOTO);
-            console.log(photo);
             $photo.find('.image img').attr('src', photo.cover).click(() => {
                 PictureModal.show(photo.cover.replace('/m/','/l/'));
             });
@@ -832,13 +831,29 @@ class Doumail extends Panel {
 
 const TEMPLATE_DOULIST = `\
 <article class="media doulist">
+  <figure class="media-left">
+    <p class="image cover">
+      <img>
+    </p>
+  </figure>
   <div class="media-content">
     <div class="content">
-      <p class="title"></p>
+      <p>
+        <a class="title is-size-6" target="_blank"></a>
+        <span class="is-private icon is-hidden">
+          <i class="fas fa-lock"></i>
+        </span>
+        <small>(<span class="items-count"></span>)</small><br>
+        <small>作者：<a class="author" target="_blank"></a></small>
+        <small>创建于 <span class="create-time"></span></small>
+        <small>更新于 <span class="update-time"></span></small><br>
+        <small>标签：<span class="doulist-tags"></span></small>
+        <small>分类：<span class="category"></span></small>
+      </p>
+      <p class="description is-size-7"></p>
     </div>
   </div>
-</article>
-`;
+</article>`;
 
 /**
  * Class Doulist
@@ -851,6 +866,15 @@ class Doulist extends SegmentsPanel {
     constructor(container, page, pageSize) {
         super(container, page, pageSize);
         this.type = 'owned';
+    }
+
+    async showDoulist(doulistId) {
+        let container = MinorModal.instance.modal.querySelector('.box');
+        let panel = new DoulistItem(container, 1, PAGE_SIZE);
+        MinorModal.show();
+        panel.doulist = doulistId;
+        panel.total = await panel.load();
+        panel.paging();
     }
 
     async load(total) {
@@ -867,10 +891,72 @@ class Doulist extends SegmentsPanel {
                 .count();
         }
         storage.local.close();
-        for (let {doulist} of collection) {
+        for (let {id, doulist} of collection) {
             let $doulist = $(TEMPLATE_DOULIST);
-            $doulist.find('.title').text(doulist.title);
+            $doulist.find('.cover img').attr('src', doulist.cover_url);
+            $doulist.find('.title').text(doulist.title).attr('href', doulist.url).click(async event => {
+                event.preventDefault();
+                await this.showDoulist(id);
+                return false;
+            });
+            $doulist.find('.author').text(doulist.owner.name).attr('href', doulist.owner.url);
+            $doulist.find('.create-time').text(doulist.create_time);
+            doulist.is_private && $doulist.find('.is-private').removeClass('is-hidden');
+            $doulist.find('.update-time').text(doulist.update_time);
+            $doulist.find('.doulist-tags').text(doulist.tags);
+            $doulist.find('.items-count').text(doulist.items_count);
+            $doulist.find('.description').text(doulist.desc);
+            $doulist.find('.category').text(doulist.category);
             $doulist.appendTo(this.container);
+        }
+        return total;
+    }
+}
+
+
+const TEMPLATE_DOULIST_ITEM = `\
+<article class="media doulist-item">
+  <figure class="media-left is-hidden">
+    <p class="image picture">
+      <img>
+    </p>
+  </figure>
+  <div class="media-content">
+    <div class="content">
+      <p>
+        <a class="title is-size-6" target="_blank"></a>
+      </p>
+      <p class="abstract is-size-7"></p>
+    </div>
+  </div>
+</article>`;
+
+/**
+ * Class DoulistItem
+ */
+class DoulistItem extends Panel {
+    async load(total) {
+        let doulistId = this.doulist;
+        let storage = this.storage;
+        storage.local.open();
+        let collection = await storage.local.doulistItem
+            .where({doulist: doulistId})
+            .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
+            .reverse()
+            .toArray();
+        if (!total) {
+            total = await storage.local.doulistItem
+                .where({doulist: doulistId})
+                .count();
+        }
+        storage.local.close();
+        for (let {abstract, item, source} of collection) {
+            let $item = $(TEMPLATE_DOULIST_ITEM);
+            item.picture && $item.find('.picture').attr('src', item.picture)
+                .parent().removeClass('is-hidden');
+            $item.find('.title').text(item.title);
+            $item.find('.abstract').text(abstract);
+            $item.appendTo(this.container);
         }
         return total;
     }
