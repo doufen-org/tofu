@@ -26,6 +26,8 @@ const SCHEMA_LOCAL = [
         photo: 'id, album',
         doulist: 'id, type',
         doulistItem: 'id, doulist',
+        doumail: 'id, contact',
+        doumailContact: 'id, rank',
         version: 'table, version',
     },
 ];

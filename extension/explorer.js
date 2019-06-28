@@ -397,7 +397,7 @@ const TEMPLATE_REVIEW = `\
     </div>
     <div class="box content review">
       <p>
-        <a class="review-title review-url is-size-5" target="_blank" title="前往豆瓣查看"></a>
+        <a class="review-title review-url is-size-5" target="_blank"></a>
         <small>我的评分：<span class="my-rating is-size-5 has-text-danger"></span></small><br>
         <small class="create-time"></small>
         <span class="tag is-normal useful"></span>
@@ -406,7 +406,6 @@ const TEMPLATE_REVIEW = `\
         <span class="tag is-normal reads"></span>
       </p>
       <p class="abstract"></p>
-      <p class="has-text-centered"><a class="button">查看全部</a></p>
     </div>
   </div>
 </article>`;
@@ -416,6 +415,23 @@ const TEMPLATE_REVIEW = `\
  * Class Review
  */
 class Review extends SegmentsPanel {
+    async showReview(reviewId, version) {
+        let storage = this.storage;
+        storage.local.open();
+        let { review } = await storage.local.review.get({
+            id: reviewId,
+            version: version,
+        });
+        storage.local.close();
+        let container = MinorModal.instance.modal.querySelector('.box');
+        container.innerHTML = '';
+        let $article = $(TEMPLATE_ARTICLE);
+        $article.find('.title').text(review.title);
+        $article.find('.content').html(review.fulltext);
+        $article.appendTo(container);
+        MinorModal.show();
+    }
+
     onToggle($target) {
         this.type = $target.data('type');
     }
@@ -447,12 +463,16 @@ class Review extends SegmentsPanel {
                 .count();
         }
         storage.local.close();
-        for (let {review} of collection) {
+        for (let {id, review} of collection) {
             let $review = $(TEMPLATE_REVIEW);
             $review.find('.subject-cover img').attr('src', review.subject.pic.normal);
             $review.find('.subject-url').attr('href', review.subject.url);
             $review.find('.title').text(review.subject.title);
-            $review.find('.review-title').text(review.title);
+            $review.find('.review-title').text(review.title).click(async event => {
+                event.preventDefault();
+                await this.showReview(id, version);
+                return false;
+            });
             $review.find('.review-url').attr('href', review.url);
             $review.find('.subtitle').text(review.subject.card_subtitle);
             if (review.subject.null_rating_reason) {
@@ -484,14 +504,13 @@ const TEMPLATE_NOTE = `\
   <div class="media-content">
     <div class="content">
       <p>
-        <a class="title is-size-5" target="_blank" title="前往豆瓣查看"></a>
+        <a class="title is-size-5" target="_blank"></a>
         <br>
         <small class="create-time"></small>
         <span class="tag is-normal comments"></span>
         <span class="tag is-normal reads"></span>
       </p>
       <p class="abstract"></p>
-      <p><a class="button">查看全部</a></p>
     </div>
   </div>
   <figure class="media-right is-hidden">
@@ -499,14 +518,37 @@ const TEMPLATE_NOTE = `\
       <img>
     </p>
   </figure>
-</article>
-`;
+</article>`;
+
+
+const TEMPLATE_ARTICLE = `\
+<div class="content article">
+    <h1 class="title"></h1>
+    <div class="content"></div>
+</div>`;
 
 
 /**
  * Class Note
  */
 class Note extends Panel {
+    async showNote(noteId, version) {
+        let storage = this.storage;
+        storage.local.open();
+        let { note } = await storage.local.note.get({
+            id: noteId,
+            version: version,
+        });
+        storage.local.close();
+        let container = MinorModal.instance.modal.querySelector('.box');
+        container.innerHTML = '';
+        let $article = $(TEMPLATE_ARTICLE);
+        $article.find('.title').text(note.title);
+        $article.find('.content').html(note.fulltext);
+        $article.appendTo(container);
+        MinorModal.show();
+    }
+
     async load(total) {
         let storage = this.storage;
         storage.local.open();
@@ -529,9 +571,13 @@ class Note extends Panel {
                 .count();
         }
         storage.local.close();
-        for (let {note} of collection) {
+        for (let {id, note} of collection) {
             let $note = $(TEMPLATE_NOTE);
-            $note.find('.title').text(note.title).attr('href', note.url);
+            $note.find('.title').text(note.title).attr('href', note.url).click(async event => {
+                event.preventDefault();
+                await this.showNote(id, version);
+                return false;
+            });
             $note.find('.create-time').text(note.create_time);
             note.cover_url && $note.find('.media-right .image>img')
                 .attr('src', note.cover_url)
@@ -648,7 +694,7 @@ class Photo extends Panel {
 
 
 const TEMPLATE_USER_INFO = `\
-<article class="media">
+<article class="media user">
   <figure class="media-left">
     <p class="image is-64x64 avatar">
       <a class="user-url" target="_blank" title="前往豆瓣查看"><img></a>
@@ -821,11 +867,56 @@ class Follow extends SegmentsPanel {
     }
 }
 
+
+const TEMPLATE_DOUMAIL_CONTACT = `\
+<article class="media contact">
+  <figure class="media-left">
+    <p class="image is-48x48 avatar">
+      <a class="doumail-url" target="_blank" title="前往豆瓣查看"><img></a>
+    </p>
+  </figure>
+  <div class="media-content">
+    <div class="content">
+      <p>
+        <a class="doumail-url username" target="_blank"></a>
+        <br>
+        <span class="abstract"></span>
+      </p>
+    </div>
+    <div class="columns user-data"></div>
+  </div>
+  <div class="media-right">
+    <span class="time"></span>
+  </div>
+</article>`;
+
+
 /**
  * Class Doumail
  */
 class Doumail extends Panel {
-    
+    async load(total) {
+        let storage = this.storage;
+        storage.local.open();
+        let collection = await storage.local.doumailContact
+            .orderBy('rank').reverse()
+            .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
+            .toArray();
+        if (!total) {
+            total = await storage.local.doumailContact.count();
+        }
+        storage.local.close();
+        for (let {contact, abstract, time, url} of collection) {
+            let $contact = $(TEMPLATE_DOUMAIL_CONTACT);
+            contact.avatar && $contact.find('.avatar img').attr('src', contact.avatar);
+            $contact.find('.doumail-url').attr('href', url);
+            $contact.find('.username').text(contact.name);
+            $contact.find('.abstract').text(abstract);
+            $contact.find('.time').text(time);
+            $contact.appendTo(this.container);
+        }
+        return total;
+    }
 }
 
 
@@ -925,6 +1016,7 @@ const TEMPLATE_DOULIST_ITEM = `\
     <div class="content">
       <p>
         <a class="title is-size-6" target="_blank"></a>
+        <small>来源：<span class="source"></span></small>
       </p>
       <p class="abstract is-size-7"></p>
     </div>
@@ -956,6 +1048,7 @@ class DoulistItem extends Panel {
                 .parents('.media-left').removeClass('is-hidden');
             $item.find('.title').text(item.title).attr('href', item.url);
             $item.find('.abstract').text(abstract);
+            $item.find('.source').text(source);
             $item.appendTo(this.container);
         }
         return total;
