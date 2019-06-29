@@ -64,13 +64,34 @@ export default class Photo extends Task {
                     }
                     let doumailList = document.createElement('DIV');
                     doumailList.innerHTML = json.html;
-                    let currentContactDate = null;
+                    let lastDate = null;
                     for (let div of doumailList.children) {
                         if (div.className == 'split-line') {
-                            currentContactDate = div.innerText.trim();
+                            lastDate = div.innerText.trim();
                         } else if (div.className == 'chat') {
                             let chatId = parseInt(div.getAttribute('data'));
-                            
+                            let time = div.querySelector('.info>.time').innerText;
+                            let datetime = `${lastDate} ${time}`;
+                            let senderAvatarImg = div.querySelector('.pic img');
+                            let senderAvatar = senderAvatarImg.src;
+                            let senderName = senderAvatarImg.alt;
+                            let senderAnchor = div.querySelector('.pic>a');
+                            let senderUrl = senderAnchor ? senderAnchor.href : null;
+                            let content = div.querySelector('.content');
+                            let contentSender = content.querySelector('div.sender');
+                            contentSender && contentSender.remove();
+                            let doumail = {
+                                id: chatId,
+                                contact: userId,
+                                sender: {
+                                    avatar: senderAvatar,
+                                    name: senderName,
+                                    url: senderUrl,
+                                },
+                                datetime: datetime,
+                                content: content.innerHTML,
+                            };
+                            await this.storage.doumail.put(doumail);
                         }
                     }
                 }

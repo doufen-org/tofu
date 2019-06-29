@@ -114,7 +114,7 @@ class Panel {
             note: Note,
             photo: PhotoAlbum,
             follow: Follow,
-            doumail: Doumail,
+            doumail: DoumailContact,
             doulist: Doulist,
         };
         let name = tab.getAttribute('name');
@@ -892,9 +892,18 @@ const TEMPLATE_DOUMAIL_CONTACT = `\
 
 
 /**
- * Class Doumail
+ * Class DoumailContact
  */
-class Doumail extends Panel {
+class DoumailContact extends Panel {
+    async showDoumail(contactId) {
+        let container = MinorModal.instance.modal.querySelector('.box');
+        let panel = new Doumail(container, 1, PAGE_SIZE);
+        MinorModal.show();
+        panel.contact = contactId;
+        panel.total = await panel.load();
+        panel.paging();
+    }
+
     async load(total) {
         let storage = this.storage;
         storage.local.open();
@@ -906,14 +915,67 @@ class Doumail extends Panel {
             total = await storage.local.doumailContact.count();
         }
         storage.local.close();
-        for (let {contact, abstract, time, url} of collection) {
+        for (let {id, contact, abstract, time, url} of collection) {
             let $contact = $(TEMPLATE_DOUMAIL_CONTACT);
             contact.avatar && $contact.find('.avatar img').attr('src', contact.avatar);
-            $contact.find('.doumail-url').attr('href', url);
+            $contact.find('.doumail-url').attr('href', url).click(async event => {
+                event.preventDefault();
+                await this.showDoumail(id);
+                return false;
+            });
             $contact.find('.username').text(contact.name);
             $contact.find('.abstract').text(abstract);
             $contact.find('.time').text(time);
             $contact.appendTo(this.container);
+        }
+        return total;
+    }
+}
+
+
+const TEMPLATE_DOUMAIL = `\
+<article class="media doumail">
+  <figure class="media-left">
+    <p class="image is-48x48 avatar">
+      <a class="sender-url" target="_blank" title="前往豆瓣查看"><img></a>
+    </p>
+  </figure>
+  <div class="media-content">
+    <a class="sender-url sender" target="_blank"></a><br>
+    <small class="datetime"></small>
+    <div class="content"></div>
+  </div>
+  <div class="media-right">
+  </div>
+</article>`;
+
+
+/**
+ * Class Doumail
+ */
+class Doumail extends Panel {
+    async load(total) {
+        let contactId = this.contact;
+        let storage = this.storage;
+        storage.local.open();
+        let collection = await storage.local.doumail
+            .where({contact: contactId})
+            .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
+            .toArray();
+        if (!total) {
+            total = await storage.local.doumail
+                .where({contact: contactId})
+                .count();
+        }
+        storage.local.close();
+        for (let mail of collection) {
+            let $mail = $(TEMPLATE_DOUMAIL);
+            $mail.find('.avatar img').attr('src', mail.sender.avatar);
+            $mail.find('.datetime').text(mail.datetime);
+            $mail.find('.sender').text(mail.sender.name);
+            $mail.find('.content').html(mail.content);
+            $mail.find('.sender-url').attr('href', mail.sender.url);
+            $mail.appendTo(this.container);
         }
         return total;
     }
@@ -945,6 +1007,7 @@ const TEMPLATE_DOULIST = `\
     </div>
   </div>
 </article>`;
+
 
 /**
  * Class Doulist
@@ -1022,6 +1085,7 @@ const TEMPLATE_DOULIST_ITEM = `\
     </div>
   </div>
 </article>`;
+
 
 /**
  * Class DoulistItem
