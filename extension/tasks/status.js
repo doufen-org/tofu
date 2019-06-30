@@ -25,7 +25,15 @@ export default class Status extends Task {
                 item.id = parseInt(status.id);
                 item.created = Date.now();
                 maxId = status.id;
-                await this.storage.status.add(item);
+                try {
+                    await this.storage.status.add(item);
+                } catch (e) {
+                    if (e.name == 'ConstraintError') {
+                        this.logger.debug(e.message);
+                        return;
+                    }
+                    throw e;
+                }
             }
         } while (count > 0 || (maxId = '') == '');
     }
