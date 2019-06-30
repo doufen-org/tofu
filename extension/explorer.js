@@ -846,15 +846,23 @@ class Follow extends SegmentsPanel {
     onToggle($target) {
         switch ($target.data('type')) {
             case 'following':
-                this.target = new Following(this.container, this.page, this.pageSize);
+                this.target = new Following(this.container, 1, this.pageSize);
                 break;
             case 'follower':
-                this.target = new Follower(this.container, this.page, this.pageSize);
+                this.target = new Follower(this.container, 1, this.pageSize);
                 break;
             case 'blacklist':
-                this.target = new Blacklist(this.container, this.page, this.pageSize);
+                this.target = new Blacklist(this.container, 1, this.pageSize);
                 break;
         }
+    }
+
+    get page() {
+        return this.target.page;
+    }
+
+    set page(value) {
+        this.target && (this.target.page = value);
     }
 
     constructor(container, page, pageSize) {
