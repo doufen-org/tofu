@@ -1,5 +1,5 @@
 import Settings from './settings.js';
-import {SERVICE_SETTINGS} from './service.js';
+import {SERVICE_SETTINGS, Task} from './service.js';
 import Notification from './ui/notification.js';
 import TabPanel from './ui/tab.js';
 
@@ -92,7 +92,7 @@ class Control {
 }
 
 
-class GeneralSettings {
+class GeneralPanel {
     constructor(selector, settings, defaults) {
         this.panel = document.querySelector(selector);
         this.settings = settings;
@@ -166,11 +166,65 @@ class GeneralSettings {
     static async render() {
         let settings = await Settings.load(SERVICE_SETTINGS);
         let defaults = SERVICE_SETTINGS;
-        return new GeneralSettings('.page-tab-content[name="general"]', settings, defaults);
+        return new GeneralPanel('.page-tab-content[name="general"]', settings, defaults);
+    }
+}
+
+
+class TaskPanel {
+    constructor(selector, service) {
+        this.panel = document.querySelector(selector);
+        this.service = service;
+
+        let $panel = $(this.panel);
+        this.$start = $panel.find('.service-ctrl[name="start"]');
+        this.$stop = $panel.find('.service-ctrl[name="stop"]');
+        this.$loading = $panel.find('.service-ctrl[name="loading"]');
+        this.reload();
+        this.$start.click(event => service.start());
+        this.$stop.click(event => service.stop());
+        service.addEventListener('statechange', event => this.reload());
+    }
+
+    reload() {
+        let service = this.service;
+        let $panel = $(this.panel);
+        $panel.find('.service-ctrl').addClass('is-hidden');
+
+        let statusName;
+        switch (service.status) {
+            case service.STATE_STOPPED:
+                statusName = '已停止';
+                this.$start.removeClass('is-hidden');
+                break;
+            case service.STATE_START_PENDING:
+                this.$stop.removeClass('is-hidden');
+                statusName = '等待任务';
+                break;
+            case service.STATE_STOP_PENDING:
+                this.$loading.removeClass('is-hidden');
+                statusName = '正在停止';
+                break;
+            case service.STATE_RUNNING:
+                this.$stop.removeClass('is-hidden');
+                statusName = '运行中';
+                break;
+        }
+        $panel.find('.service-status')
+            .data('status', service.status)
+            .text(statusName);
+    }
+
+    static async render() {
+        let service = (await new Promise(resolve => {
+            chrome.runtime.getBackgroundPage(resolve);
+        })).service;
+        return new TaskPanel('.page-tab-content[name="task"]', service);
     }
 }
 
 
 TabPanel.render();
+GeneralPanel.render();
 AccountPanel.render();
-GeneralSettings.render();
+TaskPanel.render();

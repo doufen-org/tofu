@@ -60,7 +60,7 @@
                 <ul>
                     <li class="page-tab-link is-active" data-tab="general"><a href="#general">常规</a></li>
                     <li class="page-tab-link" data-tab="account"><a href="#account">账号</a></li>
-                    <li class="page-tab-link" data-tab="service"><a href="#service">服务</a></li>
+                    <li class="page-tab-link" data-tab="task"><a href="#task">任务</a></li>
                     <li class="page-tab-link" data-tab="help"><a href="#help">帮助</a></li>
                     <li class="page-tab-link" data-tab="about"><a href="#about">关于</a></li>
                 </ul>
@@ -151,12 +151,33 @@
             </article>
         </div>
 
-        <div class="container page-tab-content is-hidden" name="service">
-            service
+        <div class="container page-tab-content is-hidden" name="task">
+            <div class="columns is-vcentered">
+                <div class="column is-10">
+                    <label>服务状态：</label>
+                    <span class="tag service-status"></span>
+                </div>
+                <div class="column">
+                    <button class="button service-ctrl is-hidden" name="start">
+                        <span class="icon">
+                            <i class="fas fa-play"></i>
+                        </span>
+                        <label>开始</label>
+                    </button>
+                    <button class="button service-ctrl is-hidden" name="stop">
+                        <span class="icon">
+                            <i class="fas fa-stop"></i>
+                        </span>
+                        <label>停止</label>
+                    </button>
+                    <button class="button service-ctrl is-loading is-hidden" name="loading">Loading</button>
+                </div>
+            </div>
         </div>
 
         <div class="container page-tab-content is-hidden" name="help">
-            help
+            <h2 class="title is-size-5">使用方法</h2>
+            <h2 class="title is-size-5">常见问题</h2>
         </div>
 
         <div class="container page-tab-content is-hidden" name="about">
@@ -171,7 +192,17 @@
                                 <i class="fab fa-twitter"></i>
                             </span>
                         </a>
+                        <a href="https://github.com/doufen-org" target="_blank">
+                            <span class="icon">
+                                <i class="fab fa-github"></i>
+                            </span>
+                        </a>
                     </li>
+                </ul>
+                <h2 class="title is-size-5">网站</h2>
+                <ul>
+                    <li>博客：<a href="https://blog.doufen.org/" target="_blank">https://blog.doufen.org/</a></li>
+                    <li>GitHub主页：<a href="https://github.com/doufen-org" target="_blank">https://github.com/doufen-org</a></li>
                 </ul>
                 <h2 class="title is-size-5">支持</h2>
                 <p>Powered by <a href="https://doufen.org/" target="_blank">豆坟</a></p>

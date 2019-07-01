@@ -49,6 +49,6 @@ export default class Following extends Task {
     }
 
     get name() {
-        return '关注';
+        return '黑名单';
     }
 }
