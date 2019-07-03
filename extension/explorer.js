@@ -1127,7 +1127,32 @@ class DoulistItem extends Panel {
     }
 }
 
+class ExportModal {
+    constructor(selector) {
+        this.element = document.querySelector(selector);
+    }
+
+    static init() {
+        let modal = new ExportModal('#export-modal');
+        ExportModal.instance = modal;
+        modal.element.querySelectorAll('.cancel').forEach(item => {
+            item.addEventListener('click', () => modal.close());
+        });
+        $('.button[name="export"]').click(() => modal.open());
+        return modal;
+    }
+
+    open() {
+        this.element.classList.add('is-active');
+    }
+
+    close() {
+        this.element.classList.remove('is-active');
+    }
+}
+
 
 let tab = TabPanel.render();
 tab.addEventListener('toggle', async event => await Panel.render(event.target.activeTab));
 Panel.render(tab.activeTab);
+ExportModal.init();

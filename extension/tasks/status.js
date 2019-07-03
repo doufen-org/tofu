@@ -7,6 +7,8 @@ const URL_TIMELINE = 'https://m.douban.com/rexxar/api/v2/status/user_timeline/{u
 
 export default class Status extends Task {
     async run() {
+        this.total = this.session.userInfo.statuses_count;
+
         let baseURL = URL_TIMELINE
             .replace('{ck}', this.session.cookies.ck)
             .replace('{uid}', this.session.userId);
@@ -30,12 +32,15 @@ export default class Status extends Task {
                 } catch (e) {
                     if (e.name == 'ConstraintError') {
                         this.logger.debug(e.message);
+                        this.complete();
                         return;
                     }
                     throw e;
                 }
+                this.step();
             }
         } while (count > 0 || (maxId = '') == '');
+        this.complete();
     }
 
     get name() {

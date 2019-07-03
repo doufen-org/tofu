@@ -42,6 +42,8 @@ export class Task {
         this.jobId = jobId;
         this.session = session;
         this.storage = localStorage;
+        this.total = 1;
+        this.completion = 0;
     }
 
     /**
@@ -65,6 +67,20 @@ export class Task {
      */
     get name() {
         throw new TaskError('Not implemented.');
+    }
+
+    /**
+     * Task completed
+     */
+    complete() {
+        this.completion = this.total;
+    }
+
+    /**
+     * Progress step
+     */
+    step() {
+        this.completion += 1;
     }
 }
 
@@ -177,7 +193,7 @@ class Job extends EventTarget {
         let jobId = await storage.global.job.add({
             userId: session.userId,
             created: Date.now(),
-            progress: 0,
+            progress: {},
             tasks: JSON.parse(JSON.stringify(this._tasks)),
         });
         logger.debug('Create the job');
@@ -216,6 +232,14 @@ class Job extends EventTarget {
      */
     get currentTask() {
         return this._currentTask;
+    }
+
+    /**
+     * Get tasks
+     * @returns {Array}
+     */
+    get tasks() {
+        return this._tasks;
     }
 
     /**
@@ -420,6 +444,7 @@ export default class Service extends EventTarget {
             STATE_STOP_PENDING: 3,
             STATE_RUNNING: 4
         });
+        this._currentJob = null;
         this._ports = new Map();
         this._jobQueue = new AsyncBlockingQueue();
         this._status = this.STATE_STOPPED;
@@ -672,6 +697,14 @@ export default class Service extends EventTarget {
     }
 
     /**
+     * Get current job
+     * @returns {Job|null}
+     */
+    get currentJob() {
+        return this._currentJob;
+    }
+
+    /**
      * Get singleton instance
      * @returns {Service}
      */
@@ -719,27 +752,28 @@ export default class Service extends EventTarget {
                     });
                 });
             }
-            return promise.then(() => {
+            promise = promise.then(() => {
                 let url = Request.prototype.isPrototypeOf(resource) ? resource.url : resource.toString();
                 lastRequest = Date.now();
                 logger.debug(`Fetching ${url}...`, resource);
                 return fetch(resource, init);
             });
+            service.dispatchEvent(new Event('progress'));
+            return promise;
         };
 
-        let currentJob;
         while (RUN_FOREVER) {
             await service.ready();
-            if (typeof currentJob == 'undefined') {
-                logger.debug('Waiting for a job...');
-                currentJob = await service._jobQueue.dequeue();
+            if (!service._currentJob) {
+                logger.debug('Waiting for the job...');
+                service._currentJob = await service._jobQueue.dequeue();
             }
             try {
                 await service.continue();
                 logger.debug('Performing job...');
-                await currentJob.run(fetchURL, logger);
+                await service._currentJob.run(fetchURL, logger);
                 logger.debug('Job completed...');
-                currentJob = undefined;
+                service._currentJob = null;
             } catch (e) {
                 logger.error(e);
                 service.stop();

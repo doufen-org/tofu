@@ -46,6 +46,7 @@ export default class Following extends Task {
             };
             await this.storage.blacklist.put(row);
         }
+        this.complete();
     }
 
     get name() {

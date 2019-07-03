@@ -8,6 +8,7 @@ const URL_REVIEWS = 'https://m.douban.com/rexxar/api/v2/user/{uid}/reviews?type=
 
 export default class Review extends Task {
     async run() {
+        this.total = this.session.userInfo.reviews_count;
         await this.storage.table('version').put({table: 'review', version: this.jobId, updated: Date.now()});
 
         let baseURL = URL_REVIEWS
@@ -39,9 +40,11 @@ export default class Review extends Task {
                         review: review,
                     }
                     await this.storage.review.put(row);
+                    this.step();
                 }
             }
         }
+        this.complete();
     }
 
     get name() {

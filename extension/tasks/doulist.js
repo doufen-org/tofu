@@ -8,6 +8,8 @@ const URL_DOULIST = 'https://m.douban.com/rexxar/api/v2/user/{uid}/{type}_doulis
 
 export default class Doulist extends Task {
     async run() {
+        this.total = this.session.userInfo.following_doulist_count + this.session.userInfo.owned_doulist_count;
+
         let baseURL = URL_DOULIST
             .replace('{ck}', this.session.cookies.ck)
             .replace('{uid}', this.session.userId);
@@ -75,9 +77,11 @@ export default class Doulist extends Task {
                         }
                     }
                     await this.storage.doulist.put(row);
+                    this.step();
                 }
             }
         }
+        this.complete();
     }
 
     get name() {

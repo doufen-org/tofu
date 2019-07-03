@@ -171,7 +171,17 @@ class GeneralPanel {
 }
 
 
-class TaskPanel {
+const TEMPLATE_TASK = `\
+<tr>
+  <td width="20%" class="task-name"></td>
+  <td><progress class="progress is-info"></progress></td>
+</tr>`;
+
+
+/**
+ * class ServicePanel
+ */
+class ServicePanel {
     constructor(selector, service) {
         this.panel = document.querySelector(selector);
         this.service = service;
@@ -180,14 +190,27 @@ class TaskPanel {
         this.$start = $panel.find('.service-ctrl[name="start"]');
         this.$stop = $panel.find('.service-ctrl[name="stop"]');
         this.$loading = $panel.find('.service-ctrl[name="loading"]');
-        this.reload();
+        this.$logs = $panel.find('.logs');
+        this.$job = $panel.find('.job');
         this.$start.click(event => service.start());
         this.$stop.click(event => service.stop());
-        service.addEventListener('statechange', event => this.reload());
+        service.addEventListener('statechange', event => this.onStateChange(event.target));
+        service.addEventListener('progress', event => this.onProgress(event.target));
+        if (service.debug) {
+            service.logger.addEventListener('log', event => this.onLog(event.detail));
+            this.$logs.parent().removeClass('is-hidden');
+        }
+        this.onStateChange(service);
     }
 
-    reload() {
-        let service = this.service;
+    onLog(entry) {
+        let { time, levelName, message } = entry;
+        let datetime = new Date(time).toISOString();
+        $('<P>').text(`[${datetime}] ${levelName}: ${message}`).appendTo(this.$logs);
+        this.$logs.scrollTop(this.$logs.prop('scrollHeight'));
+    }
+
+    onStateChange(service) {
         let $panel = $(this.panel);
         $panel.find('.service-ctrl').addClass('is-hidden');
 
@@ -213,13 +236,31 @@ class TaskPanel {
         $panel.find('.service-status')
             .data('status', service.status)
             .text(statusName);
+        this.onProgress(service);
+    }
+
+    onProgress(service) {
+        this.$job.empty();
+        let currentJob = service.currentJob;
+        if (!currentJob || !currentJob.tasks) {
+            return;
+        }
+        for (let task of currentJob.tasks) {
+            let $task = $(TEMPLATE_TASK);
+            if (task === currentJob.currentTask) {
+                $task.addClass('is-selected');
+            }
+            $task.find('.progress').val(task.completion).attr('max', task.total);
+            $task.find('.task-name').text(task.name);
+            $task.appendTo(this.$job);
+        }
     }
 
     static async render() {
         let service = (await new Promise(resolve => {
             chrome.runtime.getBackgroundPage(resolve);
         })).service;
-        return new TaskPanel('.page-tab-content[name="task"]', service);
+        return new ServicePanel('.page-tab-content[name="service"]', service);
     }
 }
 
@@ -227,4 +268,4 @@ class TaskPanel {
 TabPanel.render();
 GeneralPanel.render();
 AccountPanel.render();
-TaskPanel.render();
+ServicePanel.render();

@@ -106,7 +106,7 @@ class TaskModal {
         modal.element.querySelector('.button.new').addEventListener('click', async () => {
             await modal.createJob();
             modal.close();
-            window.open(chrome.extension.getURL('options.html#task'));
+            window.open(chrome.extension.getURL('options.html#service'));
         });
 
         return modal;

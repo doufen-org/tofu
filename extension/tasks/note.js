@@ -8,6 +8,7 @@ const URL_NOTES = 'https://m.douban.com/rexxar/api/v2/user/{uid}/notes?start={st
 
 export default class Note extends Task {
     async run() {
+        this.total = this.session.userInfo.notes_count;
         await this.storage.table('version').put({table: 'note', version: this.jobId, updated: Date.now()});
 
         let baseURL = URL_NOTES
@@ -36,8 +37,10 @@ export default class Note extends Task {
                     note: note,
                 }
                 await this.storage.note.put(row);
+                this.step();
             }
         }
+        this.complete();
     }
 
     get name() {

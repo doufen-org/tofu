@@ -8,6 +8,8 @@ const URL_PHOTOS = 'https://m.douban.com/rexxar/api/v2/user/{uid}/photo_albums?s
 
 export default class Photo extends Task {
     async run() {
+        this.total = this.session.userInfo.photo_albums_count;
+
         let baseURL = URL_PHOTOS
             .replace('{uid}', this.session.userId)
             .replace('{ck}', this.session.cookies.ck);
@@ -53,8 +55,10 @@ export default class Photo extends Task {
                     }
                 }
                 await this.storage.album.put(row);
+                this.step();
             }
         }
+        this.complete();
     }
 
     get name() {

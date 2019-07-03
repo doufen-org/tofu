@@ -4,10 +4,24 @@ import {TaskError, Task} from '../service.js';
 
 const PAGE_SIZE = 50;
 const URL_INTERESTS = 'https://m.douban.com/rexxar/api/v2/user/{uid}/interests?type={type}&status={status}&start={start}&count=50&ck={ck}&for_mobile=1';
+const URL_TOTAL = 'https://m.douban.com/rexxar/api/v2/user/{uid}/interests?ck={ck}&for_mobile=1';
 
 
 export default class Interest extends Task {
+    async getTotal() {
+        let totalURL = URL_TOTAL
+            .replace('{ck}', this.session.cookies.ck)
+            .replace('{uid}', this.session.userId);
+        let response = await this.fetch(totalURL, {headers: {'X-Override-Referer': 'https://m.douban.com/mine/'}});
+        if (response.status != 200) {
+            throw new TaskError('豆瓣服务器返回错误');
+        }
+        let json = await response.json();
+        return parseInt(json.total);
+    }
+
     async run() {
+        this.total = await this.getTotal();
         await this.storage.table('version').put({table: 'interest', version: this.jobId, updated: Date.now()});
 
         let baseURL = URL_INTERESTS
@@ -36,10 +50,13 @@ export default class Interest extends Task {
                             interest: interest,
                         };
                         await this.storage.interest.put(row);
+                        this.step();
                     }
                 }
             }
         }
+        delete this._name;
+        this.complete();
     }
 
     get name() {

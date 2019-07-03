@@ -20,6 +20,16 @@
             margin-bottom: 3rem;
             padding: 1rem;
         }
+
+        .content .logs {
+            padding: 4px;
+            height: 20rem;
+            overflow: scroll;
+        }
+        .content .logs p {
+            margin: 0;
+            padding: 0;
+        }
     </style>
 </head>
 
@@ -60,7 +70,7 @@
                 <ul>
                     <li class="page-tab-link is-active" data-tab="general"><a href="#general">常规</a></li>
                     <li class="page-tab-link" data-tab="account"><a href="#account">账号</a></li>
-                    <li class="page-tab-link" data-tab="task"><a href="#task">任务</a></li>
+                    <li class="page-tab-link" data-tab="service"><a href="#service">服务</a></li>
                     <li class="page-tab-link" data-tab="help"><a href="#help">帮助</a></li>
                     <li class="page-tab-link" data-tab="about"><a href="#about">关于</a></li>
                 </ul>
@@ -151,7 +161,7 @@
             </article>
         </div>
 
-        <div class="container page-tab-content is-hidden" name="task">
+        <div class="container page-tab-content is-hidden" name="service">
             <div class="columns is-vcentered">
                 <div class="column is-10">
                     <label>服务状态：</label>
@@ -173,11 +183,33 @@
                     <button class="button service-ctrl is-loading is-hidden" name="loading">Loading</button>
                 </div>
             </div>
+            <table class="table is-fullwidth">
+                <tbody class="job"></tbody>
+            </table>
+            <div class="content is-hidden" style="margin-top: 2rem;">
+                <p class="is-size-6">服务日志</p>
+                <pre class="logs is-size-7"></pre>
+            </div>
         </div>
 
         <div class="container page-tab-content is-hidden" name="help">
-            <h2 class="title is-size-5">使用方法</h2>
-            <h2 class="title is-size-5">常见问题</h2>
+            <div class="content">
+                <h2 class="title is-size-5">使用方法</h2>
+                <p>开始备份：</p>
+                <ol>
+                    <li>点击浏览器地址栏边上的「豆坟」图标；</li>
+                    <li>选择「新建任务」菜单；</li>
+                    <li>勾选所要备份的项目，点击「新建」按钮；</li>
+                    <li>等待备份完成。</li>
+                </ol>
+                <p>浏览备份：</p>
+                <ol>
+                    <li>点击浏览器地址栏边上的「豆坟」图标；</li>
+                    <li>选择「浏览备份」菜单；</li>
+                    <li>在列表中选择所要浏览的帐户。</li>
+                </ol>
+                <h2 class="title is-size-5">常见问题</h2>
+            </div>
         </div>
 
         <div class="container page-tab-content is-hidden" name="about">

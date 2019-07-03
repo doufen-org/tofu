@@ -28,6 +28,7 @@ export default class Following extends Task {
                     user: user,
                 };
                 await this.storage.following.put(row);
+                this.step();
             }
         }
     }
@@ -69,13 +70,16 @@ export default class Following extends Task {
                     }
                 };
                 await this.storage.following.put(row);
+                this.step();
             }
         }
     }
 
     async run() {
+        this.total = this.session.userInfo.following_count;
         await this.storage.table('version').put({table: 'following', version: this.jobId, updated: Date.now()});
-        return this.session.userInfo.following_count > 5000 ? await this.crawlByWebpage() : await this.crawlByApi();
+        this.session.userInfo.following_count > 5000 ? await this.crawlByWebpage() : await this.crawlByApi();
+        this.complete();
     }
 
     get name() {
