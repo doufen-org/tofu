@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+    <script src="vendor/zepto.min.js"></script>
+    <style>
+        html {
+            font-size: 14px;
+        }
+
+        .menu {
+            min-width: 10rem;
+            font-size: 1rem;
+            padding: 0;
+            margin: 0;
+        }
+
+        .menu-item {
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            color: darkcyan;
+        }
+
+        .menu-item[disabled] {
+            color: gainsboro;
+            cursor: default;
+        }
+
+        .menu-item:hover[disabled] {
+            background-color: transparent;
+            color: gainsboro;
+        }
+
+        .menu-item:hover {
+            background-color: dodgerblue;
+            color: white;
+        }
+
+        .menu-item>label {
+            cursor: pointer;
+        }
+
+        .menu-item[disabled]>label {
+            cursor: default;
+        }
+
+        .menu-item>span.icon {
+            cursor: pointer;
+            font-size: 0.75rem;
+            width: 1rem;
+            height: 1rem;
+            display: inline-block;
+            line-height: 1rem;
+        }
+
+        .menu-item[disabled]>span.icon {
+            cursor: default;
+        }
+
+        .menu-separator {
+            border-top: 1px solid gainsboro;
+            height: 0;
+            font-size: 0;
+            overflow: hidden;
+            margin: 1px 0;
+        }
+    </style>
+</head>
+
+<body class="menu">
+    <div class="menu-item" name="New">
+        <span class="icon">
+            <i class="fas fa-plus"></i>
+        </span>
+        <label>新建任务</label>
+    </div>
+    <div class="menu-separator">-</div>
+    <div class="menu-item" name="Backup">
+        <span class="icon">
+            <i class="fas fa-database"></i>
+        </span>
+        <label>浏览备份</label>
+    </div>
+    <div class="menu-separator">-</div>
+    <div class="menu-item" name="Start" disabled>
+        <span class="icon">
+            <i class="fas fa-play"></i>
+        </span>
+        <label>开始</label>
+    </div>
+    <div class="menu-item" name="Stop" disabled>
+        <span class="icon">
+            <i class="fas fa-stop"></i>
+        </span>
+        <label>停止</label>
+    </div>
+    <div class="menu-separator">-</div>
+    <div class="menu-item" name="Settings">
+        <span class="icon">
+            <i class="fas fa-cog"></i>
+        </span>
+        <label>设置</label>
+    </div>
+    <div class="menu-separator">-</div>
+    <div class="menu-item" name="Help">
+        <span class="icon"></span>
+        <label>帮助</label>
+    </div>
+    <div class="menu-item" name="About">
+        <span class="icon">
+            <i class="fas fa-info-circle"></i>
+        </span>
+        <label>关于</label>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>

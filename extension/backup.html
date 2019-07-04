@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <title>浏览备份</title>
+    <link rel="shortcut icon" href="images/icon-32x32.png" type="image/png">
+    <link type="text/css" rel="stylesheet" href="vendor/bulma.min.css">
+    <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+    <script src="vendor/zepto.min.js"></script>
+    <style>
+        .account:hover {
+            cursor: pointer;
+            background-color: #f7f7f7;
+        }
+        .container.thin {
+            max-width: 50rem;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <a class="navbar-item" href="https://doufen.org/" target="_blank">
+                    <img src="images/logo-main.png" alt="豆伴" title="豆伴">
+                </a>
+                <a role="button" class="navbar-burger">
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                </a>
+            </div>
+            <div class="navbar-menu">
+                <div class="navbar-end">
+                    <div class="navbar-item">
+                        <div class="buttons">
+                            <a class="button" href="options.html">
+                                <span class="icon">
+                                    <i class="fas fa-cog"></i>
+                                </span>
+                                <span>设置</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <script src="./ui/navbar.js"></script>
+
+    <section class="section">
+        <div class="container thin" style="margin: 1rem auto;">
+            <div class="level">
+                <div class="level-left">
+                    <div class="level-item">
+                        <button class="button is-link" id="new-task">
+                            <span class="icon">
+                                <i class="fas fa-plus"></i>
+                            </span>
+                            <span>新建任务</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="level-right">
+                    <div class="level-item">
+                        <button class="button" id="reload">
+                            <span class="icon">
+                                <i class="fas fa-sync"></i>
+                            </span>
+                            <span>刷新</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="content">
+                <p class="help"><strong>注意：</strong>仅备份当前登录用户的数据。如需备份其他账号数据，请先退出当前账号，再登录需要备份的账号。</p>
+            </div>
+        </div>
+        <div class="container thin" id="accounts">
+            <!-- accounts -->
+        </div>
+    </section>
+
+    <div class="modal" id="task-modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">新建任务</p>
+                <button class="delete cancel"></button>
+            </header>
+            <section class="modal-card-body">
+                <div class="level">
+                    <div class="level-left">
+                        <div class="level-item">
+                            <label>选择备份的项目：</label>
+                        </div>
+                    </div>
+                    <div class="level-left">
+                        <div class="level-item">
+                            <label class="checkbox">
+                                <input type="checkbox" class="select-all"> 全选
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="columns">
+                    <div class="column">
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="task" value="Interest"> 影/音/书/游
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="task" value="Review"> 评论
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="task" value="Status"> 广播
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="task" value="Following"> 关注
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="task" value="Follower"> 被关注
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="task" value="Blacklist"> 黑名单
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="task" value="Note"> 日记
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="task" value="Photo"> 相册
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="task" value="Doumail"> 豆邮
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="task" value="Doulist"> 豆列
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button new is-link">新建</button>
+                <button class="button cancel">取消</button>
+            </footer>
+        </div>
+    </div>
+
+    <script type="module" src="backup.js"></script>
+</body>
+
+</html>

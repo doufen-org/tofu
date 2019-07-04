@@ -1,0 +1,167 @@
+#tofu-assistant {
+    position: fixed;
+    padding: 12px;
+    margin: 0;
+    top: 100px;
+    left: 0;
+    z-index: 20000;
+    width: 54px;
+    visibility: hidden;
+    border-radius: 4px;
+    background-color: rgba(200, 200, 200, 0.5);
+}
+
+#tofu-assistant.draggable {
+    cursor: move;
+}
+
+#tofu-assistant:hover {
+    visibility: visible;
+}
+
+#tofu-assistant .sprite {
+    margin-top: 4px;
+    border: 3px solid gray;
+    width: 32px;
+    height: 32px;
+    border-radius: 30px;
+    padding: 8px;
+    background-color: #eee;
+    clear: both;
+    cursor: pointer;
+    visibility: visible;
+    background-repeat: no-repeat;
+    background-position: 8px 8px;
+}
+
+#tofu-assistant.flash .sprite {
+    background-position: -100px -100px;
+}
+
+#tofu-assistant .sprite:hover {
+    border-color: aquamarine;
+}
+
+#tofu-assistant .icon.close {
+    width: 11px;
+    height: 18px;
+    float: right;
+    margin: -8px -6px auto auto;
+    padding: 0;
+    cursor: pointer;
+    display: none;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 512"><path fill="gray" d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path></svg>');
+}
+
+#tofu-assistant.closable .icon.close {
+    display: block;
+}
+
+#tofu-assistant .icon.close:hover {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 512"><path fill="black" d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path></svg>');
+}
+
+#tofu-assistant .speaker {
+    display: none;
+}
+
+#tofu-assistant .dialog {
+    font-size: 16px;
+    line-height: 20px;
+    position: absolute;
+    visibility: visible;
+    cursor: pointer;
+    visibility: hidden;
+}
+
+#tofu-assistant .dialog.show {
+    visibility: visible;
+}
+
+#tofu-assistant .dialog .message {
+    padding: 10px;
+    margin: 0;
+    border-radius: 4px;
+    background-color: #fffadc;
+    border: 1px solid black/*#FAF3CA8*/;
+    max-width: 400px;
+    min-width: 16px;
+    word-break: keep-all;
+    white-space: nowrap;
+    position: absolute;
+}
+
+#tofu-assistant .dialog .message.alignment {
+    word-break: normal;
+    white-space: normal;
+}
+
+#tofu-assistant .dialog .arrow {
+    font-size: 0;
+    overflow: hidden;
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    z-index: 19999;
+}
+
+#tofu-assistant .dialog .arrow > div {
+    width: 0px;
+    height: 0px;
+    border-width: 10px;
+    border-style: solid dashed dashed;
+    border-color: transparent;
+    position: absolute;
+}
+
+#tofu-assistant .dialog.east .arrow {
+    margin: -37px auto auto 50px;
+}
+
+#tofu-assistant .dialog.east .arrow .border {
+    border-right-color: black;
+}
+
+#tofu-assistant .dialog.east .arrow .filler {
+    border-right-color: #fffadc;
+    margin-left: 1px;
+}
+
+#tofu-assistant .dialog.north .arrow {
+    margin: -70px auto auto 17px;
+}
+
+#tofu-assistant .dialog.north .arrow .border {
+    border-top-color: black;
+}
+
+#tofu-assistant .dialog.north .arrow .filler {
+    border-top-color: #fffadc;
+    margin-top: -1px;
+}
+
+#tofu-assistant .dialog.west .arrow {
+    margin: -37px auto auto -16px;
+}
+
+#tofu-assistant .dialog.west .arrow .border {
+    border-left-color: black;
+}
+
+#tofu-assistant .dialog.west .arrow .filler {
+    border-left-color: #fffadc;
+    margin-left: -1px;
+}
+
+#tofu-assistant .dialog.south .arrow {
+    margin: -4px auto auto 17px;
+}
+
+#tofu-assistant .dialog.south .arrow .border {
+    border-bottom-color: black;
+}
+
+#tofu-assistant .dialog.south .arrow .filler {
+    border-bottom-color: #fffadc;
+    margin-top: 1px;
+}

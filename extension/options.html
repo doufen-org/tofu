@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <title>设置</title>
+    <link rel="shortcut icon" href="images/icon-32x32.png" type="image/png">
+    <link type="text/css" rel="stylesheet" href="vendor/bulma.min.css">
+    <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="vendor/switchery.min.css">
+    <script src="vendor/zepto.min.js"></script>
+    <script src="vendor/switchery.min.js"></script>
+    <style>
+        .page-tab-content {
+            margin-top: 3rem;
+            max-width: 50rem;
+        }
+        .card {
+            margin-bottom: 3rem;
+            padding: 1rem;
+        }
+
+        .content .logs {
+            padding: 4px;
+            height: 20rem;
+            overflow: scroll;
+        }
+        .content .logs p {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <a class="navbar-item" href="https://doufen.org/" target="_blank">
+                    <img src="images/logo-main.png" alt="豆伴" title="豆伴">
+                </a>
+                <a role="button" class="navbar-burger">
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                </a>
+            </div>
+            <div class="navbar-menu">
+                <div class="navbar-end">
+                    <div class="navbar-item">
+                        <div class="buttons">
+                            <a href="backup.html" class="button">
+                                <span class="icon">
+                                    <i class="fas fa-database"></i>
+                                </span>
+                                <span>浏览备份</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <script src="./ui/navbar.js"></script>
+
+    <section class="section">
+        <div class="container">
+            <div class="tabs is-centered is-boxed">
+                <ul>
+                    <li class="page-tab-link is-active" data-tab="general"><a href="#general">常规</a></li>
+                    <li class="page-tab-link" data-tab="account"><a href="#account">账号</a></li>
+                    <li class="page-tab-link" data-tab="service"><a href="#service">服务</a></li>
+                    <li class="page-tab-link" data-tab="help"><a href="#help">帮助</a></li>
+                    <li class="page-tab-link" data-tab="about"><a href="#about">关于</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="container page-tab-content is-hidden" name="general">
+            <!--
+            <div class="columns">
+                <div class="column is-10">
+                    <label>启用网页助手</label>
+                </div>
+                <div class="column">
+                    <input type="checkbox" name="assistant.enable">
+                </div>
+            </div>
+            -->
+            <div class="columns">
+                <div class="column is-10">
+                    <label>输出调试信息</label>
+                </div>
+                <div class="column">
+                    <input type="checkbox" name="service.debug">
+                </div>
+            </div>
+            <div class="columns">
+                <div class="column is-10">
+                    <label>请求间隔：</label>
+                    <p class="help">请求间隔过短可能导致被豆瓣服务器屏蔽。</p>
+                </div>
+                <div class="column">
+                    <div class="field has-addons">
+                        <p class="control">
+                            <input class="input" type="text" name="service.requestInterval">
+                        </p>
+                        <p class="control">
+                            <a class="button is-static">秒</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="field is-grouped is-grouped-centered">
+                <p class="control">
+                    <a class="button is-link" name="save">保存</a>
+                </p>
+                <p class="control">
+                    <a class="button" name="reset">重置</a>
+                </p>
+            </div>
+        </div>
+
+        <div class="container page-tab-content is-hidden" name="account">
+            <article class="card is-hidden" id="account-error">
+                <div class="card-content">
+                    <p class="has-text-centered">请先<a href="https://accounts.douban.com/passport/login">登录</a>豆瓣</p>
+                </div>
+            </article>
+            <article class="media card is-hidden" id="account">
+                <figure class="media-left">
+                    <p class="image is-64x64"></p>
+                </figure>
+                <div class="media-content">
+                    <div class="content">
+                        <p>
+                            <strong name="name"></strong>
+                            <small name="symbol"></small><br>
+                            <small><span name="reg-time"></span> 加入</small>
+                        </p>
+                    </div>
+                    <div class="columns" name="collection"></div>
+                    <div class="content">
+                        <pre name="intro"></pre>
+                    </div>
+                </div>
+                <div class="media-right">
+                        <div class="field">
+                            <a href="https://www.douban.com/mine/" class="button" target="_blank">
+                                <span>豆瓣主页</span>
+                                <span class="icon is-small">
+                                    <i class="fas fa-chevron-right"></i>
+                                </span>
+                            </a>
+                        </div>
+                        <div class="field">
+                            <a class="button is-fullwidth" target="_blank" name="logout">退出</a>
+                        </div>
+                </div>
+            </article>
+        </div>
+
+        <div class="container page-tab-content is-hidden" name="service">
+            <div class="columns is-vcentered">
+                <div class="column is-10">
+                    <label>服务状态：</label>
+                    <span class="tag service-status"></span>
+                </div>
+                <div class="column">
+                    <button class="button service-ctrl is-hidden" name="start">
+                        <span class="icon">
+                            <i class="fas fa-play"></i>
+                        </span>
+                        <label>开始</label>
+                    </button>
+                    <button class="button service-ctrl is-hidden" name="stop">
+                        <span class="icon">
+                            <i class="fas fa-stop"></i>
+                        </span>
+                        <label>停止</label>
+                    </button>
+                    <button class="button service-ctrl is-loading is-hidden" name="loading">Loading</button>
+                </div>
+            </div>
+            <table class="table is-fullwidth">
+                <tbody class="job"></tbody>
+            </table>
+            <div class="content is-hidden" style="margin-top: 2rem;">
+                <p class="is-size-6">服务日志</p>
+                <pre class="logs is-size-7"></pre>
+            </div>
+        </div>
+
+        <div class="container page-tab-content is-hidden" name="help">
+            <div class="content">
+                <h2 class="title is-size-5">使用方法</h2>
+                <p>开始备份：</p>
+                <ol>
+                    <li>点击浏览器地址栏边上的「豆坟」图标；</li>
+                    <li>选择「新建任务」菜单；</li>
+                    <li>勾选所要备份的项目，点击「新建」按钮；</li>
+                    <li>等待备份完成。</li>
+                </ol>
+                <p>浏览备份：</p>
+                <ol>
+                    <li>点击浏览器地址栏边上的「豆坟」图标；</li>
+                    <li>选择「浏览备份」菜单；</li>
+                    <li>在列表中选择所要浏览的帐户。</li>
+                </ol>
+                <h2 class="title is-size-5">常见问题</h2>
+            </div>
+        </div>
+
+        <div class="container page-tab-content is-hidden" name="about">
+            <div class="content">
+                <h2 class="title is-size-5">联系方式</h2>
+                <ul>
+                    <li>发现错误？<a href="https://github.com/doufen-org/tofu/issues" target="_blank">提交错误报告</a></li>
+                    <li>电子邮件：<a href="mailto:tofu@doufen.org">tofu@doufen.org</a></li>
+                    <li>关注社交账号：
+                        <a href="https://twitter.com/doufen-org" target="_blank">
+                            <span class="icon">
+                                <i class="fab fa-twitter"></i>
+                            </span>
+                        </a>
+                        <a href="https://github.com/doufen-org" target="_blank">
+                            <span class="icon">
+                                <i class="fab fa-github"></i>
+                            </span>
+                        </a>
+                    </li>
+                </ul>
+                <h2 class="title is-size-5">网站</h2>
+                <ul>
+                    <li>博客：<a href="https://blog.doufen.org/" target="_blank">https://blog.doufen.org/</a></li>
+                    <li>GitHub主页：<a href="https://github.com/doufen-org" target="_blank">https://github.com/doufen-org</a></li>
+                </ul>
+                <h2 class="title is-size-5">支持</h2>
+                <p>Powered by <a href="https://doufen.org/" target="_blank">豆坟</a></p>
+            </div>
+        </div>
+    </section>
+    <script type="module" src="options.js"></script>
+</body>
+
+</html>

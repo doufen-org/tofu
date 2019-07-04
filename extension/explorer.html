@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <title>浏览备份</title>
+    <link rel="shortcut icon" href="images/icon-32x32.png" type="image/png">
+    <link type="text/css" rel="stylesheet" href="vendor/bulma.min.css">
+    <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+    <script src="vendor/zepto.min.js"></script>
+    <style>
+        .page-tab-content {
+            margin-top: 3rem;
+            max-width: 50rem;
+        }
+
+        .columns.images {
+            width: 30rem;
+        }
+
+        .image.preview img {
+            cursor: pointer;
+        }
+
+        .level.stat {
+            color: #ccc;
+        }
+
+        .card .image img {
+            max-width: 5rem;
+        }
+
+        .card .subtitle {
+            margin-top: -0.5rem!important;
+        }
+
+        figure {
+            overflow: hidden;
+        }
+
+        .pagination {
+            margin-top: 3rem;
+        }
+
+        .subject-cover {
+            width: 8rem;
+        }
+
+        .note .cover {
+            width: 8rem;
+        }
+
+        .tabs.is-small .is-active {
+            font-size: 1rem;
+        }
+
+        .doulist .cover {
+            width: 100px;
+        }
+
+        .doulist-item .picture img {
+            width: 120px;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <a class="navbar-item" href="https://doufen.org/" target="_blank">
+                    <img src="images/logo-main.png" alt="豆伴" title="豆伴">
+                </a>
+                <a role="button" class="navbar-burger">
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                </a>
+            </div>
+            <div class="navbar-menu">
+                <div class="navbar-end">
+                    <div class="navbar-item">
+                        <div class="buttons">
+                            <a class="button" href="backup.html">
+                                <span class="icon">
+                                    <i class="fas fa-chevron-left"></i>
+                                </span>
+                                <span>返回</span>
+                            </a>
+                            <a class="button" name="export">
+                                <span class="icon">
+                                    <i class="fas fa-file-export"></i>
+                                </span>
+                                <span>导出数据</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <script src="./ui/navbar.js"></script>
+
+    <section class="section">
+        <div class="container">
+            <div class="tabs is-centered is-boxed">
+                <ul>
+                    <li class="page-tab-link is-active" data-tab="status"><a href="#status">广播</a></li>
+                    <li class="page-tab-link" data-tab="interest"><a href="#interest">影/音/书/游</a></li>
+                    <li class="page-tab-link" data-tab="review"><a href="#review">评论</a></li>
+                    <li class="page-tab-link" data-tab="note"><a href="#note">日记</a></li>
+                    <li class="page-tab-link" data-tab="photo"><a href="#photo">相册</a></li>
+                    <li class="page-tab-link" data-tab="follow"><a href="#follow">关注</a></li>
+                    <li class="page-tab-link" data-tab="doumail"><a href="#doumail">豆邮</a></li>
+                    <li class="page-tab-link" data-tab="doulist"><a href="#doulist">豆列</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="container page-tab-content is-hidden" name="status"></div>
+
+        <div class="container page-tab-content is-hidden" name="interest">
+            <div class="segments tabs is-toggle is-centered is-small">
+                <ul>
+                    <li>
+                        <a data-type="movie" data-status="done">
+                            <span class="icon is-small"><i class="fas fa-film"></i></span>
+                            <span>看过</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a data-type="movie" data-status="doing">在看</a>
+                    </li>
+                    <li>
+                        <a data-type="movie" data-status="mark">想看</a>
+                    </li>
+                    <li>
+                        <a data-type="music" data-status="done">
+                            <span class="icon is-small"><i class="fas fa-music"></i></span>
+                            <span>听过</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a data-type="music" data-status="doing">在听</a>
+                    </li>
+                    <li>
+                        <a data-type="music" data-status="mark">想听</a>
+                    </li>
+                    <li>
+                        <a data-type="book" data-status="done">
+                            <span class="icon is-small"><i class="fas fa-book"></i></i></span>
+                            <span>读过</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a data-type="book" data-status="doing">在读</a>
+                    </li>
+                    <li>
+                        <a data-type="book" data-status="mark">想读</a>
+                    </li>
+                    <li>
+                        <a data-type="game" data-status="done">
+                            <span class="icon is-small"><i class="fas fa-gamepad"></i></i></span>
+                            <span>玩过</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a data-type="game" data-status="doing">在玩</a>
+                    </li>
+                    <li>
+                        <a data-type="game" data-status="mark">想玩</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="sub-container"></div>
+        </div>
+
+        <div class="container page-tab-content is-hidden" name="review">
+            <div class="segments tabs is-toggle is-centered">
+                <ul>
+                    <li>
+                        <a data-type="movie">
+                            <span class="icon is-small"><i class="fas fa-film"></i></span>
+                            <span>影评</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a data-type="music">
+                            <span class="icon is-small"><i class="fas fa-music"></i></span>
+                            <span>乐评</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a data-type="book">
+                            <span class="icon is-small"><i class="fas fa-book"></i></span>
+                            <span>书评</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="sub-container"></div>
+        </div>
+
+        <div class="container page-tab-content is-hidden" name="note"></div>
+
+        <div class="container page-tab-content is-hidden" name="photo"></div>
+
+        <div class="container page-tab-content is-hidden" name="follow">
+            <div class="segments tabs is-toggle is-centered">
+                <ul>
+                    <li>
+                        <a data-type="following">我关注的</a>
+                    </li>
+                    <li>
+                        <a data-type="follower">关注我的</a>
+                    </li>
+                    <li>
+                        <a data-type="blacklist">黑名单</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="sub-container"></div>
+        </div>
+
+        <div class="container page-tab-content is-hidden" name="doumail"></div>
+
+        <div class="container page-tab-content is-hidden" name="doulist">
+            <div class="segments tabs is-toggle is-centered">
+                <ul>
+                    <li>
+                        <a data-type="owned">我创建的</a>
+                    </li>
+                    <li>
+                        <a data-type="following">我收藏的</a>
+                </ul>
+            </div>
+            <div class="sub-container"></div>
+        </div>
+    </section>
+
+    <div class="modal" id="minor-modal">
+        <div class="modal-background"></div>
+        <div class="modal-content box" style="width: 800px;"></div>
+        <button class="modal-close is-large"></button>
+    </div>
+
+    <div class="modal" id="picture-modal">
+        <div class="modal-background"></div>
+        <div class="modal-content">
+            <p class="image">
+                <img>
+            </p>
+        </div>
+        <button class="modal-close is-large"></button>
+    </div>
+    
+
+    <div class="modal" id="export-modal">
+        <div class="modal-background"></div>
+        <div class="modal-content box">
+            <p>功能还未完成。</p>
+        </div>
+        <button class="modal-close is-large cancel"></button>
+    </div>
+
+    <script type="module" src="explorer.js"></script>
+</body>
+
+</html>
