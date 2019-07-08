@@ -2,7 +2,7 @@
 import Dexie from './vendor/dexie.js';
 
 
-const DB_NAME = 'grave';
+const DB_NAME = 'tofu';
 
 const SCHEMA_GLOBAL = [
     null,
@@ -20,7 +20,7 @@ const SCHEMA_LOCAL = [
         follower: '++id, version',
         blacklist: '++id, version',
         review: '[id+version], [version+type]',
-        note: '[id+version], version',
+        note: 'id, version',
         interest: '[id+version], [version+type+status]',
         album: 'id',
         photo: 'id, album',
