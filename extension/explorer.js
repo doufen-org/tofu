@@ -451,26 +451,28 @@ class Review extends SegmentsPanel {
             storage.local.close();
             return 0;
         }
-        let version = versionInfo.version;
+        let currentVersion = versionInfo.version;
         let collection = await storage.local.review
-            .where({ version: version, type: this.type })
+            //.where({ version: currentVersion, type: this.type })
+            .where({ type: this.type })
             .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
             .reverse()
             .toArray();
         if (!total) {
             total = await storage.local.review
-                .where({ version: version, type: this.type })
+                //.where({ version: currentVersion, type: this.type })
+                .where({ type: this.type })
                 .count();
         }
         storage.local.close();
-        for (let {id, review} of collection) {
+        for (let {id, version, review} of collection) {
             let $review = $(TEMPLATE_REVIEW);
             $review.find('.subject-cover img').attr('src', review.subject.pic.normal);
             $review.find('.subject-url').attr('href', review.subject.url);
             $review.find('.title').text(review.subject.title);
             $review.find('.review-title').text(review.title).click(async event => {
                 event.preventDefault();
-                await this.showReview(id, version);
+                await this.showReview(id, currentVersion);
                 return false;
             });
             $review.find('.review-url').attr('href', review.url);
@@ -492,6 +494,7 @@ class Review extends SegmentsPanel {
             $review.find('.comments').text(review.comments_count + ' 回应');
             $review.find('.reads').text(review.read_count + ' 阅读');
             $review.find('.abstract').text(review.abstract);
+            version < currentVersion && $review.addClass('is-obsolete');
             $review.appendTo(this.container);
         }
         return total;
@@ -559,19 +562,19 @@ class Note extends Panel {
             storage.local.close();
             return 0;
         }
-        let version = versionInfo.version;
+        let currentVersion = versionInfo.version;
         let collection = await storage.local.note
-            .where({ version: version })
+            //.where({ version: currentVersion })
             .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
             .reverse()
             .toArray();
         if (!total) {
             total = await storage.local.note
-                .where({ version: version })
+                //.where({ version: currentVersion })
                 .count();
         }
         storage.local.close();
-        for (let {id, note} of collection) {
+        for (let {id, version, note} of collection) {
             let $note = $(TEMPLATE_NOTE);
             $note.find('.title').text(note.title).attr('href', note.url).click(async event => {
                 event.preventDefault();
@@ -585,6 +588,7 @@ class Note extends Panel {
             $note.find('.comments').text(note.comments_count + ' 回应');
             $note.find('.reads').text(note.read_count + ' 阅读');
             $note.find('.abstract').text(note.abstract);
+            version < currentVersion && $note.addClass('is-obsolete');
             $note.appendTo(this.container);
         }
         return total;

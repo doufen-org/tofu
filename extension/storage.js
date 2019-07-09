@@ -19,7 +19,7 @@ const SCHEMA_LOCAL = [
         following: '++id, version',
         follower: '++id, version',
         blacklist: '++id, version',
-        review: '[id+version], [version+type]',
+        review: 'id, type, [type+version]',
         note: 'id, version',
         interest: '[id+version], [version+type+status]',
         album: 'id',
