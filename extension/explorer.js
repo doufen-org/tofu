@@ -418,10 +418,7 @@ class Review extends SegmentsPanel {
     async showReview(reviewId, version) {
         let storage = this.storage;
         storage.local.open();
-        let { review } = await storage.local.review.get({
-            id: reviewId,
-            version: version,
-        });
+        let { review } = await storage.local.review.get({ id: reviewId });
         storage.local.close();
         let container = MinorModal.instance.modal.querySelector('.box');
         container.innerHTML = '';
@@ -538,10 +535,7 @@ class Note extends Panel {
     async showNote(noteId, version) {
         let storage = this.storage;
         storage.local.open();
-        let { note } = await storage.local.note.get({
-            id: noteId,
-            version: version,
-        });
+        let { note } = await storage.local.note.get({ id: noteId });
         storage.local.close();
         let container = MinorModal.instance.modal.querySelector('.box');
         container.innerHTML = '';
