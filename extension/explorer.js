@@ -309,7 +309,9 @@ const TEMPLATE_INTEREST = `\
     <div class="box content my-rating">
       <p>
         <small class="create-time"></small>
-        <small>标签：<span class="my-tags"></span></small><br>
+        <small>我的评分：<span class="my-rating-value is-size-5 has-text-danger"></span></small>
+        <small>标签：<span class="my-tags"></span></small>
+        <br>
         <span class="my-comment"></span>
       </p>
     </div>
@@ -342,19 +344,21 @@ class Interest extends SegmentsPanel {
             storage.local.close();
             return 0;
         }
-        let version = versionInfo.version;
+        let currentVersion = versionInfo.version;
         let collection = await storage.local.interest
-            .where({ version: version, type: this.type, status: this.status })
+            //.where({ version: currentVersion, type: this.type, status: this.status })
+            .where({ type: this.type, status: this.status })
             .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
             .reverse()
             .toArray();
         if (!total) {
             total = await storage.local.interest
-                .where({ version: version, type: this.type, status: this.status })
+                //.where({ version: currentVersion, type: this.type, status: this.status })
+                .where({ type: this.type, status: this.status })
                 .count();
         }
         storage.local.close();
-        for (let {interest} of collection) {
+        for (let {interest, version} of collection) {
             let $interest = $(TEMPLATE_INTEREST);
             let subject = interest.subject;
             $interest.find('.subject-cover img').attr('src', subject.pic.normal);
@@ -370,6 +374,8 @@ class Interest extends SegmentsPanel {
             $interest.find('.create-time').text(interest.create_time);
             $interest.find('.my-comment').text(interest.comment);
             $interest.find('.my-tags').text(interest.tags);
+            interest.rating && $interest.find('.my-rating-value').text(interest.rating.value);
+            version < currentVersion && $interest.addClass('is-obsolete');
             $interest.appendTo(this.container);
         }
         return total;

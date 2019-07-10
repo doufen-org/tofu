@@ -36,11 +36,11 @@ export default class Review extends Task {
                 let json = await response.json();
                 pageCount = Math.ceil(json.total / PAGE_SIZE);
                 for (let review of json.reviews) {
+                    let fulltext = await this.fetchReview(review.url);
                     let row = await this.storage.review.get(parseInt(review.id));
                     if (row) {
                         let lastVersion = row.version;
                         row.version = version;
-                        let fulltext = await this.fetchReview(review.url);
                         if (fulltext != row.review.fulltext) {
                             !row.history && (row.history = {});
                             row.history[lastVersion] = row.review;
@@ -48,7 +48,7 @@ export default class Review extends Task {
                             row.review = review;
                         }
                     } else {
-                        review.fulltext = await this.fetchReview(review.url);
+                        review.fulltext = fulltext;
                         row = {
                             id: parseInt(review.id),
                             version: version,
