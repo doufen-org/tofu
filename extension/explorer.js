@@ -623,7 +623,7 @@ const TEMPLATE_PHOTO = `\
 class PhotoAlbum extends Panel {
     async showAlbum(albumId) {
         let container = MinorModal.instance.modal.querySelector('.box');
-        let panel = new Photo(container, 1, PAGE_SIZE);
+        let panel = new Photo(container, 1, 40);
         MinorModal.show();
         panel.album = albumId;
         panel.total = await panel.load();
@@ -633,6 +633,14 @@ class PhotoAlbum extends Panel {
     async load(total) {
         let storage = this.storage;
         storage.local.open();
+        let versionInfo = await storage.local.table('version').get({
+            table: 'photo',
+        });
+        if (!versionInfo) {
+            storage.local.close();
+            return 0;
+        }
+        let currentVersion = versionInfo.version;
         let collection = await storage.local.album
             .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
             .reverse()
@@ -642,7 +650,7 @@ class PhotoAlbum extends Panel {
         }
         storage.local.close();
         let $albums = $(TEMPLATE_COLUMNS);
-        for (let {id, album} of collection) {
+        for (let {id, album, version } of collection) {
             let $album = $(TEMPLATE_ALBUM);
             $album.find('.image img').attr('src', album.cover_url);
             $album.find('.title').text(album.title);
@@ -654,6 +662,7 @@ class PhotoAlbum extends Panel {
                 await this.showAlbum(id);
                 return false;
             });
+            version < currentVersion && $album.addClass('is-obsolete');
             $album.appendTo($albums);
         }
         $albums.appendTo(this.container);
@@ -670,6 +679,14 @@ class Photo extends Panel {
         let albumId = this.album;
         let storage = this.storage;
         storage.local.open();
+        let versionInfo = await storage.local.table('version').get({
+            table: 'photo',
+        });
+        if (!versionInfo) {
+            storage.local.close();
+            return 0;
+        }
+        let currentVersion = versionInfo.version;
         let collection = await storage.local.photo
             .where({album: albumId})
             .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
@@ -682,12 +699,13 @@ class Photo extends Panel {
         }
         storage.local.close();
         let $photos = $(TEMPLATE_COLUMNS);
-        for (let photo of collection) {
+        for (let { photo, version } of collection) {
             let $photo = $(TEMPLATE_PHOTO);
             $photo.find('.image img').attr('src', photo.cover).click(() => {
                 PictureModal.show(photo.cover.replace('/m/','/l/'));
             });
             $photo.find('.description').text(photo.description);
+            version < currentVersion && $photo.addClass('is-obsolete');
             $photo.appendTo($photos);
             
         }
@@ -1094,6 +1112,10 @@ const TEMPLATE_DOULIST_ITEM = `\
         <small>来源：<span class="source"></span></small>
       </p>
       <p class="abstract is-size-7"></p>
+      <div class="status box is-hidden">
+        <p class="status-text"></p>
+      </div>
+      <blockquote class="comment is-hidden"></blockquote>
     </div>
   </div>
 </article>`;
@@ -1118,13 +1140,19 @@ class DoulistItem extends Panel {
                 .count();
         }
         storage.local.close();
-        for (let {abstract, item, source} of collection) {
+        for (let {item} of collection) {
             let $item = $(TEMPLATE_DOULIST_ITEM);
             item.picture && $item.find('.picture>img').attr('src', item.picture)
                 .parents('.media-left').removeClass('is-hidden');
             $item.find('.title').text(item.title).attr('href', item.url);
-            $item.find('.abstract').text(abstract);
-            $item.find('.source').text(source);
+            $item.find('.abstract').text(item.abstract);
+            $item.find('.source').text(item.source);
+            item.comment && $item.find('.comment').text(item.comment).removeClass('is-hidden');
+            if (item.extra.status) {
+                $item.find('.status').removeClass('is-hidden');
+                $item.find('.status-text').text(item.extra.status.text);
+                console.log(item.extra)
+            }
             $item.appendTo(this.container);
         }
         return total;

@@ -7,8 +7,15 @@ const URL_PHOTOS = 'https://m.douban.com/rexxar/api/v2/user/{uid}/photo_albums?s
 
 
 export default class Photo extends Task {
+    compareAlbum(l, r) {
+        if (l.description != r.description) return false;
+        return true;
+    }
+
     async run() {
+        let version = this.jobId;
         this.total = this.session.userInfo.photo_albums_count;
+        await this.storage.table('version').put({table: 'photo', version: version, updated: Date.now()});
 
         let baseURL = URL_PHOTOS
             .replace('{uid}', this.session.userId)
@@ -25,10 +32,22 @@ export default class Photo extends Task {
             for (let album of json.photo_albums) {
                 let albumId = parseInt(album.id);
                 if (isNaN(albumId)) continue;
-                let row = {
-                    id: albumId,
-                    album: album,
-                };
+                let row = await this.storage.album.get(albumId);
+                if (row) {
+                    let lastVersion = row.version;
+                    row.version = version;
+                    if (!this.compareAlbum(album, row.album)) {
+                        !row.history && (row.history = {});
+                        row.history[lastVersion] = row.album;
+                        row.album = album;
+                    }
+                } else {
+                    row = {
+                        id: albumId,
+                        version: version,
+                        album: album,
+                    };
+                }
                 const ALBUM_PAGE_SIZE = 18;
                 let albumTotalPage = 1;
                 for (let i = 0; i < albumTotalPage; i ++) {
@@ -42,16 +61,33 @@ export default class Photo extends Task {
                         albumTotalPage = parseInt(html.querySelector('.paginator .thispage').dataset.totalPage);
                     } catch (e) {}
                     for (let photoAnchor of html.querySelectorAll('.photolst_photo')) {
+                        let photoId = parseInt(
+                            photoAnchor.href.match(/https:\/\/www\.douban\.com\/photos\/photo\/(\d+)\//)[1]
+                        );
                         let photoImg = photoAnchor.querySelector('img');
-                        let photoId = photoAnchor.href.match(/https:\/\/www\.douban\.com\/photos\/photo\/(\d+)\//)[1];
-                        let photo = {
-                            id: parseInt(photoId),
-                            album: albumId,
-                            url: photoAnchor.href,
-                            cover: photoImg.src,
-                            description: photoAnchor.title,
+                        let photoDescription = photoAnchor.title;
+                        let row = await this.storage.photo.get(photoId);
+                        if (row) {
+                            let lastVersion = row.version;
+                            row.version = version;
+                            if (row.photo.description != photoDescription) {
+                                !row.history && (row.history = {});
+                                row.history[lastVersion] = row.photo;
+                                row.photo.description = photoDescription;
+                            }
+                        } else {
+                            row = {
+                                id: photoId,
+                                album: albumId,
+                                version: version,
+                                photo: {
+                                    url: photoAnchor.href,
+                                    cover: photoImg.src,
+                                    description: photoDescription,
+                                }
+                            }
                         }
-                        await this.storage.photo.put(photo);
+                        await this.storage.photo.put(row);
                     }
                 }
                 await this.storage.album.put(row);
