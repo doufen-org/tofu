@@ -281,6 +281,9 @@ class Status extends Panel {
                 $topic.find('.topic-subtitle').text(topic.card_subtitle);
                 $topic.removeClass('is-hidden');
             }
+            if (status.reshared_status) {
+                // TODO:
+            }
             $status.appendTo(this.container);
         }
         return total;
@@ -611,7 +614,7 @@ const TEMPLATE_ALBUM = `\
 </div>`;
 const TEMPLATE_PHOTO = `\
 <div class="column photo is-one-quarter">
-  <figure class="image is-fullwidth is-square" style="margin-bottom: 0.5rem;">
+  <figure class="image is-fullwidth" style="margin-bottom: 0.5rem; max-height: 170px; overflow: hidden;">
     <a class="album-url"><img></a>
   </figure>
   <p class="subtitle is-size-7 description"></p>
@@ -1112,9 +1115,8 @@ const TEMPLATE_DOULIST_ITEM = `\
         <small>来源：<span class="source"></span></small>
       </p>
       <p class="abstract is-size-7"></p>
-      <div class="status box is-hidden">
-        <p class="status-text"></p>
-      </div>
+      <p class="status-text is-size-7"></p>
+      <div class="status-images columns is-multiline is-hidden"></div>
       <blockquote class="comment is-hidden"></blockquote>
     </div>
   </div>
@@ -1149,9 +1151,17 @@ class DoulistItem extends Panel {
             $item.find('.source').text(item.source);
             item.comment && $item.find('.comment').text(item.comment).removeClass('is-hidden');
             if (item.extra.status) {
-                $item.find('.status').removeClass('is-hidden');
                 $item.find('.status-text').text(item.extra.status.text);
-                console.log(item.extra)
+                let $images = $item.find('.status-images').removeClass('is-hidden');
+                for (let src of item.extra.status.images) {
+                    $images.append(`\
+<div class="column is-one-third">
+  <figure class="image preview is-128x128">
+    <img src="${src}" data-src="${src}" style="overflow: hidden;">
+  </figure>
+</div>`
+                    )
+                }
             }
             $item.appendTo(this.container);
         }

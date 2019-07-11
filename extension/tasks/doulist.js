@@ -88,13 +88,13 @@ export default class Doulist extends Task {
                             if (itemCategory == 3055) {
                                 // 广播
                                 try {
-                                    let statusText = this.parseHTML(item.querySelector('.status-text').dataset.full);
+                                    let statusText = item.querySelector('.status-text');
                                     let statusImages = [];
                                     for (let statusImage of item.querySelectorAll('.status-images>a')) { 
                                         statusImages.push(statusImage.style.backgroundImage.slice(5,-2));
                                     }
                                     let status = {
-                                        text: statusText.innerText,
+                                        text: statusText.innerText.trim(),
                                         images: statusImages,
                                     };
                                     extra.status = status;
