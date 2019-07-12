@@ -273,7 +273,16 @@ class Status extends Panel {
             $status.find('.author.uid').text('@' + status.author.uid);
             $status.find('.activity').text(status.activity + "：");
             $status.find('.created').text(status.create_time);
-            $status.find('.text').text(status.text);
+            if (status.parent_status) {
+                let parentStatus = status.parent_status;
+                $status.find('.text').append($('<span>').text(status.text))
+                    .append('<span class="icon"><i class="fas fa-retweet"></i></span>')
+                    .append($(`<a>`).text(parentStatus.author.name).attr('href', parentStatus.author.url))
+                    .append(': ')
+                    .append($('<span>').text(parentStatus.text));
+            } else {
+                $status.find('.text').text(status.text);
+            }
             $status.find('.status-url').attr('href', status.sharing_url);
             if (status.images && status.images.length > 0) {
                 let $images = $status.find('.images').removeClass('is-hidden');
@@ -1248,6 +1257,11 @@ class ExportModal {
             item.addEventListener('click', () => modal.close());
         });
         $('.button[name="export"]').click(() => modal.open());
+        modal.element.querySelector('.select-all').addEventListener('change', event => {
+            modal.element.querySelectorAll('input[name="task"]').forEach(item => {
+                item.checked = event.target.checked;
+            });
+        });
         return modal;
     }
 
