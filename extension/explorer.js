@@ -1245,6 +1245,10 @@ class DoulistItem extends Panel {
     }
 }
 
+
+/**
+ * Class ExporModal
+ */
 class ExportModal {
     constructor(selector) {
         this.element = document.querySelector(selector);
@@ -1258,9 +1262,31 @@ class ExportModal {
         });
         $('.button[name="export"]').click(() => modal.open());
         modal.element.querySelector('.select-all').addEventListener('change', event => {
-            modal.element.querySelectorAll('input[name="task"]').forEach(item => {
+            modal.element.querySelectorAll('input[name="item"]').forEach(item => {
                 item.checked = event.target.checked;
             });
+        });
+        modal.element.querySelector('.button[name="export"]').addEventListener('click', async () => {
+            modal.close();
+            let checkedItems = modal.element.querySelectorAll('input[name="item"]:checked');
+            if (!checkedItems.length) return false;
+            let items = new Array(checkedItems.length);
+            for (let i = 0; i < checkedItems.length; i ++) {
+                items[i] = checkedItems[i].value;
+            }
+            let $loading = $(`\
+<div class="modal is-active">
+  <div class="modal-background"></div>
+  <div class="modal-content" style="width: 5rem;">
+    <a class="button is-loading is-fullwidth">Loading</a>
+  </div>
+</div>`
+            );
+            $loading.appendTo(document.body);
+            let exporter = new Exporter();
+            await exporter.export(items);
+            exporter.save();
+            $loading.remove();
         });
         return modal;
     }
@@ -1271,6 +1297,61 @@ class ExportModal {
 
     close() {
         this.element.classList.remove('is-active');
+    }
+}
+
+
+/**
+ * Class Exporter
+ */
+class Exporter {
+    constructor() {
+        this.userId = parseInt(location.search.substr(1));
+        this.workbook = XLSX.utils.book_new();
+    }
+
+    async exportInterest(storage) {
+        let collection = await storage.local.interest.where(
+            { type: type, status: status }
+        ).reverse();
+        worksheet = XLSX.utils.json_to_sheet(data);
+        XLSX.utils.book_append_sheet(workbook, worksheet, '广播');
+    }
+
+    async export(items) {
+        let storage = new Storage(this.userId);
+        storage.local.open();
+        for (let item of items) {
+            switch (item) {
+                case 'Interest':
+                    await this.exportInterest(storage);
+                    break;
+                case 'Review':
+                    break;
+                case 'Status':
+                    break;
+                case 'Following':
+                    break;
+                case 'Follower':
+                    break;
+                case 'Blacklist':
+                    break;
+                case 'Note':
+                    break;
+                case 'Photo':
+                    break;
+                case 'Doumail':
+                    break;
+                case 'Doulist':
+                    break;
+            }
+        }
+        storage.local.close();
+    }
+
+    save() {
+        let filename = `豆伴(${this.userId}).xlsx`;
+        XLSX.writeFile(this.workbook, filename);
     }
 }
 
