@@ -20,7 +20,6 @@ export default class Photo extends Task {
                 pageCount = parseInt(html.querySelector('.paginator .thispage').dataset.totalPage);
             } catch (e) {}
             this.total = pageCount * PAGE_SIZE;
-            console.log(this.total);
             for (let contact of html.querySelectorAll('.doumail-list>ul>li')) {
                 let operationAnchor = contact.querySelector('.operations>.post_link.report');
                 let userId = parseInt(operationAnchor.dataset.id);

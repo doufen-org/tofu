@@ -168,7 +168,8 @@ const TEMPLATE_STATUS = `\
       </p>
       <p class="text"></p>
     </div>
-    <div class="columns is-1 is-multiline images"></div>
+    <div class="reshared-status is-hidden" style="margin-bottom: 1rem;"></div>
+    <div class="columns is-1 is-multiline images is-hidden"></div>
     <div class="media box card is-hidden">
       <figure class="media-left">
         <p class="image"><img></p>
@@ -221,6 +222,35 @@ const TEMPLATE_STATUS = `\
 </article>`;
 
 
+const TEMPLATE_RESHARED_STATUS = `\
+<article class="media status box">
+  <figure class="media-left">
+    <p class="image is-48x48 avatar"><img></p>
+  </figure>
+  <div class="media-content">
+    <div class="content">
+      <p class="is-size-7">
+        <strong class="author name"></strong> <small class="author uid"></small> <span class="activity"></span>
+        <br><small class="created"></small>
+      </p>
+      <p class="text is-size-7"></p>
+    </div>
+    <div class="columns is-1 is-multiline images is-hidden"></div>
+    <div class="media box card is-hidden">
+      <figure class="media-left">
+        <p class="image"><img></p>
+      </figure>
+      <div class="media-content">
+        <div class="content">
+          <p class="title is-size-6"><a></a></p>
+          <p class="subtitle is-size-7"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</article>`;
+
+
 /**
  * Class Status
  */
@@ -245,23 +275,24 @@ class Status extends Panel {
             $status.find('.created').text(status.create_time);
             $status.find('.text').text(status.text);
             $status.find('.status-url').attr('href', status.sharing_url);
-            let $images = $status.find('.images');
-            status.images.forEach(image => {
-                $images.append(`\
+            if (status.images && status.images.length > 0) {
+                let $images = $status.find('.images').removeClass('is-hidden');
+                status.images.forEach(image => {
+                    $images.append(`\
 <div class="column is-one-third">
   <figure class="image preview is-128x128">
     <img src="${image.normal.url}" data-src="${image.large.url}">
   </figure>
 </div>`
-                );
-            });
+                    );
+                });
+            }
             $status.find('.likes').text(status.like_count);
             $status.find('.reshares').text(status.reshares_count);
             $status.find('.comments').text(status.comments_count);
             if (status.card) {
-                let $card = $status.find('.card');
+                let $card = $status.find('.card').removeClass('is-hidden');
                 let card = status.card;
-                $card.removeClass('is-hidden');
                 if (card.card_style == 'obsolete') {
                     $card.find('.subtitle').text(card.obsolete_msg);
                 } else {
@@ -282,7 +313,43 @@ class Status extends Panel {
                 $topic.removeClass('is-hidden');
             }
             if (status.reshared_status) {
-                // TODO:
+                let resharedStatus = status.reshared_status;
+                let $resharedStatus = $(TEMPLATE_RESHARED_STATUS);
+                let $container = $status.find('.reshared-status').removeClass('is-hidden');
+                $resharedStatus.find('.avatar>img').attr('src', resharedStatus.author.avatar);
+                $resharedStatus.find('.author.name').text(resharedStatus.author.name);
+                $resharedStatus.find('.author.uid').text('@' + resharedStatus.author.uid);
+                $resharedStatus.find('.activity').text(resharedStatus.activity + "：");
+                $resharedStatus.find('.created').text(resharedStatus.create_time);
+                $resharedStatus.find('.text').text(resharedStatus.text);
+                if (resharedStatus.images && resharedStatus.images.length > 0) {
+                    let $images = $resharedStatus.find('.images').removeClass('is-hidden');
+                    resharedStatus.images.forEach(image => {
+                        $images.append(`\
+<div class="column is-one-third">
+  <figure class="image preview is-128x128">
+    <img src="${image.normal.url}" data-src="${image.large.url}">
+  </figure>
+</div>`
+                        );
+                    });
+                }
+                if (resharedStatus.card) {
+                    let $card = $resharedStatus.find('.card').removeClass('is-hidden');
+                    let card = resharedStatus.card;
+                    if (card.card_style == 'obsolete') {
+                        $card.find('.subtitle').text(card.obsolete_msg);
+                    } else {
+                        if (card.image) {
+                            $card.find('.image>img').attr('src', card.image.normal.url);
+                        }
+                        let $title = $card.find('.title>a');
+                        $title.text(card.title);
+                        $title.attr('href', card.url);
+                        $card.find('.subtitle').text(card.subtitle);
+                    }
+                }
+                $container.append($resharedStatus);
             }
             $status.appendTo(this.container);
         }
@@ -1155,7 +1222,7 @@ class DoulistItem extends Panel {
                 let $images = $item.find('.status-images').removeClass('is-hidden');
                 for (let src of item.extra.status.images) {
                     $images.append(`\
-<div class="column is-one-third">
+<div class="column is-one-quarter">
   <figure class="image preview is-128x128">
     <img src="${src}" data-src="${src}" style="overflow: hidden;">
   </figure>
