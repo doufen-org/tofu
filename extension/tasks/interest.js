@@ -20,9 +20,26 @@ export default class Interest extends Task {
         return parseInt(json.total);
     }
 
+    compareInterest(l, r) {
+        if (l.status != r.status) return false;
+        if (l.comment != r.comment) return false;
+        if (l.rating != r.rating) {
+            if (l.rating && r.rating) {
+                if (l.rating.value != r.rating.value) {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        }
+        if (l.tags.sort().toString() != r.tags.sort().toString()) return false;
+        return true;
+    }
+
     async run() {
+        let version = this.jobId;
         this.total = await this.getTotal();
-        await this.storage.table('version').put({table: 'interest', version: this.jobId, updated: Date.now()});
+        await this.storage.table('version').put({table: 'interest', version: version, updated: Date.now()});
 
         let baseURL = URL_INTERESTS
             .replace('{ck}', this.session.cookies.ck)
@@ -42,13 +59,36 @@ export default class Interest extends Task {
                     let json = await response.json();
                     pageCount = Math.ceil(json.total / PAGE_SIZE);
                     for (let interest of json.interests) {
-                        let row = {
-                            id: parseInt(interest.id),
-                            version: this.jobId,
-                            type: type,
-                            status: interest.status,
-                            interest: interest,
-                        };
+                        let subjectId = parseInt(interest.subject.id)
+                        let interestId = parseInt(interest.id);
+                        let row = await this.storage.interest.get({ subject: subjectId });
+                        if (row) {
+                            let lastVersion = row.version;
+                            let changed = false;
+                            row.version = version;
+                            if (row.id != interestId) {
+                                await this.storage.interest.delete(row.id);
+                                row.id = interestId;
+                                changed = true;
+                            } else {
+                                changed = !this.compareInterest(row.interest, interest);
+                            }
+                            if (changed) {
+                                !row.history && (row.history = {});
+                                row.history[lastVersion] = row.interest;
+                                row.status = interest.status;
+                                row.interest = interest;
+                            }
+                        } else {
+                            row = {
+                                id: interestId,
+                                subject: subjectId,
+                                version: version,
+                                type: type,
+                                status: interest.status,
+                                interest: interest,
+                            };
+                        }
                         await this.storage.interest.put(row);
                         this.step();
                     }

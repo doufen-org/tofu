@@ -1,8 +1,8 @@
 {
     "name": "豆伴",
     "author": "四不象",
-    "version": "0.1.0",
-    "description": "豆瓣功能加强外挂",
+    "version": "0.2.0",
+    "description": "豆瓣账号备份工具",
     "manifest_version": 2,
     "icons": {
         "16": "images/icon-16x16.png",

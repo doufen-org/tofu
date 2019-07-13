@@ -7,9 +7,19 @@ const URL_NOTES = 'https://m.douban.com/rexxar/api/v2/user/{uid}/notes?start={st
 
 
 export default class Note extends Task {
+    async fetchNote(url) {
+        let response = await this.fetch(url);
+        if (response.status != 200) {
+            return;
+        }
+        let html = this.parseHTML(await response.text());
+        return html.querySelector('#link-report>.note').innerHTML;
+    }
+
     async run() {
+        let version = this.jobId;
         this.total = this.session.userInfo.notes_count;
-        await this.storage.table('version').put({table: 'note', version: this.jobId, updated: Date.now()});
+        await this.storage.table('version').put({table: 'note', version: version, updated: Date.now()});
 
         let baseURL = URL_NOTES
             .replace('{ck}', this.session.cookies.ck)
@@ -24,17 +34,23 @@ export default class Note extends Task {
             let json = await response.json();
             pageCount = Math.ceil(json.total / PAGE_SIZE);
             for (let note of json.notes) {
-                let response = await this.fetch(note.url);
-                if (response.status != 200) {
-                    note.fulltext = null;
+                let row = await this.storage.note.get(parseInt(note.id));
+                if (row) {
+                    let lastVersion = row.version;
+                    row.version = version;
+                    if (note.update_time != row.note.update_time) {
+                        !row.history && (row.history = {});
+                        row.history[lastVersion] = row.note;
+                        note.fulltext = await this.fetchNote(note.url);
+                        row.note = note;
+                    }
                 } else {
-                    let html = this.parseHTML(await response.text());
-                    note.fulltext = html.querySelector('#link-report>.note').innerHTML;
-                }
-                let row = {
-                    id: parseInt(note.id),
-                    version: this.jobId,
-                    note: note,
+                    note.fulltext = await this.fetchNote(note.url);
+                    row = {
+                        id: parseInt(note.id),
+                        version: version,
+                        note: note,
+                    }
                 }
                 await this.storage.note.put(row);
                 this.step();

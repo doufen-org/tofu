@@ -8,6 +8,7 @@
     <link rel="shortcut icon" href="images/icon-32x32.png" type="image/png">
     <link type="text/css" rel="stylesheet" href="vendor/bulma.min.css">
     <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+    <script src="vendor/xlsx.full.min.js"></script>
     <script src="vendor/zepto.min.js"></script>
     <style>
         .page-tab-content {
@@ -61,6 +62,16 @@
 
         .doulist-item .picture img {
             width: 120px;
+        }
+
+        .is-obsolete {
+            background-color: #ccc;
+            padding: 1rem;
+            margin-bottom: -1rem;
+        }
+
+        .status-images figure {
+            margin-left: 0;
         }
     </style>
 </head>
@@ -258,10 +269,112 @@
 
     <div class="modal" id="export-modal">
         <div class="modal-background"></div>
-        <div class="modal-content box">
-            <p>功能还未完成。</p>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">导出数据</p>
+                <button class="delete cancel"></button>
+            </header>
+            <section class="modal-card-body">
+                <div class="level">
+                    <div class="level-left">
+                        <div class="level-item">
+                            <label>选择导出的项目：</label>
+                        </div>
+                    </div>
+                    <div class="level-left">
+                        <div class="level-item">
+                            <label class="checkbox">
+                                <input type="checkbox" class="select-all"> 全选
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="columns">
+                    <div class="column">
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="item" value="Interest"> 影/音/书/游
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="item" value="Review"> 评论
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="item" value="Status"> 广播
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="item" value="Following"> 关注
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="item" value="Follower"> 被关注
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="item" value="Blacklist"> 黑名单
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="item" value="Note"> 日记
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="item" value="Photo"> 相册
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="item" value="Doumail"> 豆邮
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="item" value="Doulist"> 豆列
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-link" name="export">导出</button>
+                <button class="button cancel">取消</button>
+            </footer>
         </div>
-        <button class="modal-close is-large cancel"></button>
     </div>
 
     <script type="module" src="explorer.js"></script>

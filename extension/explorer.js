@@ -168,7 +168,8 @@ const TEMPLATE_STATUS = `\
       </p>
       <p class="text"></p>
     </div>
-    <div class="columns is-1 is-multiline images"></div>
+    <div class="reshared-status is-hidden" style="margin-bottom: 1rem;"></div>
+    <div class="columns is-1 is-multiline images is-hidden"></div>
     <div class="media box card is-hidden">
       <figure class="media-left">
         <p class="image"><img></p>
@@ -180,9 +181,12 @@ const TEMPLATE_STATUS = `\
         </div>
       </div>
     </div>
-    <div class="box content topic is-hidden">
+    <div class="content topic is-hidden">
       <p>
-        话题：<a class="topic-title" target="_blank" title="前往豆瓣查看"></a>
+      <span class="icon">
+        <i class="fas fa-hashtag"></i>
+      </span>
+        <a class="topic-title" target="_blank" title="前往豆瓣查看"></a>
         <small class="topic-subtitle"></small>
       </p>
     </div>
@@ -221,6 +225,35 @@ const TEMPLATE_STATUS = `\
 </article>`;
 
 
+const TEMPLATE_RESHARED_STATUS = `\
+<article class="media status box">
+  <figure class="media-left">
+    <p class="image is-48x48 avatar"><img></p>
+  </figure>
+  <div class="media-content">
+    <div class="content">
+      <p class="is-size-7">
+        <strong class="author name"></strong> <small class="author uid"></small> <span class="activity"></span>
+        <br><small class="created"></small>
+      </p>
+      <p class="text is-size-7"></p>
+    </div>
+    <div class="columns is-1 is-multiline images is-hidden"></div>
+    <div class="media box card is-hidden">
+      <figure class="media-left">
+        <p class="image"><img></p>
+      </figure>
+      <div class="media-content">
+        <div class="content">
+          <p class="title is-size-6"><a></a></p>
+          <p class="subtitle is-size-7"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</article>`;
+
+
 /**
  * Class Status
  */
@@ -243,25 +276,40 @@ class Status extends Panel {
             $status.find('.author.uid').text('@' + status.author.uid);
             $status.find('.activity').text(status.activity + "：");
             $status.find('.created').text(status.create_time);
-            $status.find('.text').text(status.text);
+            if (status.parent_status) {
+                let parentStatus = status.parent_status;
+                let $statusText = $status.find('.text');
+                $statusText.append($('<span>').text(status.text))
+                    .append('<span class="icon"><i class="fas fa-retweet"></i></span>');
+                if (parentStatus.deleted) {
+                    $statusText.append(parentStatus.msg);
+                } else {
+                    $statusText.append($(`<a>`).text(parentStatus.author.name).attr('href', parentStatus.author.url))
+                        .append(': ')
+                        .append($('<span>').text(parentStatus.text));
+                }
+            } else {
+                $status.find('.text').text(status.text);
+            }
             $status.find('.status-url').attr('href', status.sharing_url);
-            let $images = $status.find('.images');
-            status.images.forEach(image => {
-                $images.append(`\
+            if (status.images && status.images.length > 0) {
+                let $images = $status.find('.images').removeClass('is-hidden');
+                status.images.forEach(image => {
+                    $images.append(`\
 <div class="column is-one-third">
   <figure class="image preview is-128x128">
     <img src="${image.normal.url}" data-src="${image.large.url}">
   </figure>
 </div>`
-                );
-            });
+                    );
+                });
+            }
             $status.find('.likes').text(status.like_count);
             $status.find('.reshares').text(status.reshares_count);
             $status.find('.comments').text(status.comments_count);
             if (status.card) {
-                let $card = $status.find('.card');
+                let $card = $status.find('.card').removeClass('is-hidden');
                 let card = status.card;
-                $card.removeClass('is-hidden');
                 if (card.card_style == 'obsolete') {
                     $card.find('.subtitle').text(card.obsolete_msg);
                 } else {
@@ -280,6 +328,50 @@ class Status extends Panel {
                 $topic.find('.topic-title').text(topic.title).attr('href', topic.url);
                 $topic.find('.topic-subtitle').text(topic.card_subtitle);
                 $topic.removeClass('is-hidden');
+            }
+            if (status.reshared_status) {
+                let $resharedStatus;
+                let resharedStatus = status.reshared_status;
+                let $container = $status.find('.reshared-status').removeClass('is-hidden');
+                if (resharedStatus.deleted) {
+                    $resharedStatus = $(`<article class="box">${resharedStatus.msg}</article>`);
+                } else {
+                    $resharedStatus = $(TEMPLATE_RESHARED_STATUS);
+                    $resharedStatus.find('.avatar>img').attr('src', resharedStatus.author.avatar);
+                    $resharedStatus.find('.author.name').text(resharedStatus.author.name);
+                    $resharedStatus.find('.author.uid').text('@' + resharedStatus.author.uid);
+                    $resharedStatus.find('.activity').text(resharedStatus.activity + "：");
+                    $resharedStatus.find('.created').text(resharedStatus.create_time);
+                    $resharedStatus.find('.text').text(resharedStatus.text);
+                    if (resharedStatus.images && resharedStatus.images.length > 0) {
+                        let $images = $resharedStatus.find('.images').removeClass('is-hidden');
+                        resharedStatus.images.forEach(image => {
+                            $images.append(`\
+<div class="column is-one-third">
+    <figure class="image preview is-128x128">
+    <img src="${image.normal.url}" data-src="${image.large.url}">
+    </figure>
+</div>`
+                            );
+                        });
+                    }
+                    if (resharedStatus.card) {
+                        let $card = $resharedStatus.find('.card').removeClass('is-hidden');
+                        let card = resharedStatus.card;
+                        if (card.card_style == 'obsolete') {
+                            $card.find('.subtitle').text(card.obsolete_msg);
+                        } else {
+                            if (card.image) {
+                                $card.find('.image>img').attr('src', card.image.normal.url);
+                            }
+                            let $title = $card.find('.title>a');
+                            $title.text(card.title);
+                            $title.attr('href', card.url);
+                            $card.find('.subtitle').text(card.subtitle);
+                        }
+                    }
+                }
+                $container.append($resharedStatus);
             }
             $status.appendTo(this.container);
         }
@@ -309,7 +401,9 @@ const TEMPLATE_INTEREST = `\
     <div class="box content my-rating">
       <p>
         <small class="create-time"></small>
-        <small>标签：<span class="my-tags"></span></small><br>
+        <small>我的评分：<span class="my-rating-value is-size-5 has-text-danger"></span></small>
+        <small>标签：<span class="my-tags"></span></small>
+        <br>
         <span class="my-comment"></span>
       </p>
     </div>
@@ -342,19 +436,21 @@ class Interest extends SegmentsPanel {
             storage.local.close();
             return 0;
         }
-        let version = versionInfo.version;
+        let currentVersion = versionInfo.version;
         let collection = await storage.local.interest
-            .where({ version: version, type: this.type, status: this.status })
+            //.where({ version: currentVersion, type: this.type, status: this.status })
+            .where({ type: this.type, status: this.status })
             .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
             .reverse()
             .toArray();
         if (!total) {
             total = await storage.local.interest
-                .where({ version: version, type: this.type, status: this.status })
+                //.where({ version: currentVersion, type: this.type, status: this.status })
+                .where({ type: this.type, status: this.status })
                 .count();
         }
         storage.local.close();
-        for (let {interest} of collection) {
+        for (let {interest, version} of collection) {
             let $interest = $(TEMPLATE_INTEREST);
             let subject = interest.subject;
             $interest.find('.subject-cover img').attr('src', subject.pic.normal);
@@ -370,6 +466,8 @@ class Interest extends SegmentsPanel {
             $interest.find('.create-time').text(interest.create_time);
             $interest.find('.my-comment').text(interest.comment);
             $interest.find('.my-tags').text(interest.tags);
+            interest.rating && $interest.find('.my-rating-value').text(interest.rating.value);
+            version < currentVersion && $interest.addClass('is-obsolete');
             $interest.appendTo(this.container);
         }
         return total;
@@ -418,10 +516,7 @@ class Review extends SegmentsPanel {
     async showReview(reviewId, version) {
         let storage = this.storage;
         storage.local.open();
-        let { review } = await storage.local.review.get({
-            id: reviewId,
-            version: version,
-        });
+        let { review } = await storage.local.review.get({ id: reviewId });
         storage.local.close();
         let container = MinorModal.instance.modal.querySelector('.box');
         container.innerHTML = '';
@@ -451,26 +546,28 @@ class Review extends SegmentsPanel {
             storage.local.close();
             return 0;
         }
-        let version = versionInfo.version;
+        let currentVersion = versionInfo.version;
         let collection = await storage.local.review
-            .where({ version: version, type: this.type })
+            //.where({ version: currentVersion, type: this.type })
+            .where({ type: this.type })
             .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
             .reverse()
             .toArray();
         if (!total) {
             total = await storage.local.review
-                .where({ version: version, type: this.type })
+                //.where({ version: currentVersion, type: this.type })
+                .where({ type: this.type })
                 .count();
         }
         storage.local.close();
-        for (let {id, review} of collection) {
+        for (let {id, version, review} of collection) {
             let $review = $(TEMPLATE_REVIEW);
             $review.find('.subject-cover img').attr('src', review.subject.pic.normal);
             $review.find('.subject-url').attr('href', review.subject.url);
             $review.find('.title').text(review.subject.title);
             $review.find('.review-title').text(review.title).click(async event => {
                 event.preventDefault();
-                await this.showReview(id, version);
+                await this.showReview(id, currentVersion);
                 return false;
             });
             $review.find('.review-url').attr('href', review.url);
@@ -492,6 +589,7 @@ class Review extends SegmentsPanel {
             $review.find('.comments').text(review.comments_count + ' 回应');
             $review.find('.reads').text(review.read_count + ' 阅读');
             $review.find('.abstract').text(review.abstract);
+            version < currentVersion && $review.addClass('is-obsolete');
             $review.appendTo(this.container);
         }
         return total;
@@ -535,10 +633,7 @@ class Note extends Panel {
     async showNote(noteId, version) {
         let storage = this.storage;
         storage.local.open();
-        let { note } = await storage.local.note.get({
-            id: noteId,
-            version: version,
-        });
+        let { note } = await storage.local.note.get({ id: noteId });
         storage.local.close();
         let container = MinorModal.instance.modal.querySelector('.box');
         container.innerHTML = '';
@@ -559,19 +654,19 @@ class Note extends Panel {
             storage.local.close();
             return 0;
         }
-        let version = versionInfo.version;
+        let currentVersion = versionInfo.version;
         let collection = await storage.local.note
-            .where({ version: version })
+            //.where({ version: currentVersion })
             .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
             .reverse()
             .toArray();
         if (!total) {
             total = await storage.local.note
-                .where({ version: version })
+                //.where({ version: currentVersion })
                 .count();
         }
         storage.local.close();
-        for (let {id, note} of collection) {
+        for (let {id, version, note} of collection) {
             let $note = $(TEMPLATE_NOTE);
             $note.find('.title').text(note.title).attr('href', note.url).click(async event => {
                 event.preventDefault();
@@ -585,6 +680,7 @@ class Note extends Panel {
             $note.find('.comments').text(note.comments_count + ' 回应');
             $note.find('.reads').text(note.read_count + ' 阅读');
             $note.find('.abstract').text(note.abstract);
+            version < currentVersion && $note.addClass('is-obsolete');
             $note.appendTo(this.container);
         }
         return total;
@@ -607,7 +703,7 @@ const TEMPLATE_ALBUM = `\
 </div>`;
 const TEMPLATE_PHOTO = `\
 <div class="column photo is-one-quarter">
-  <figure class="image is-fullwidth is-square" style="margin-bottom: 0.5rem;">
+  <figure class="image is-fullwidth" style="margin-bottom: 0.5rem; max-height: 170px; overflow: hidden;">
     <a class="album-url"><img></a>
   </figure>
   <p class="subtitle is-size-7 description"></p>
@@ -619,7 +715,7 @@ const TEMPLATE_PHOTO = `\
 class PhotoAlbum extends Panel {
     async showAlbum(albumId) {
         let container = MinorModal.instance.modal.querySelector('.box');
-        let panel = new Photo(container, 1, PAGE_SIZE);
+        let panel = new Photo(container, 1, 40);
         MinorModal.show();
         panel.album = albumId;
         panel.total = await panel.load();
@@ -629,6 +725,14 @@ class PhotoAlbum extends Panel {
     async load(total) {
         let storage = this.storage;
         storage.local.open();
+        let versionInfo = await storage.local.table('version').get({
+            table: 'photo',
+        });
+        if (!versionInfo) {
+            storage.local.close();
+            return 0;
+        }
+        let currentVersion = versionInfo.version;
         let collection = await storage.local.album
             .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
             .reverse()
@@ -638,7 +742,7 @@ class PhotoAlbum extends Panel {
         }
         storage.local.close();
         let $albums = $(TEMPLATE_COLUMNS);
-        for (let {id, album} of collection) {
+        for (let {id, album, version } of collection) {
             let $album = $(TEMPLATE_ALBUM);
             $album.find('.image img').attr('src', album.cover_url);
             $album.find('.title').text(album.title);
@@ -650,6 +754,7 @@ class PhotoAlbum extends Panel {
                 await this.showAlbum(id);
                 return false;
             });
+            version < currentVersion && $album.addClass('is-obsolete');
             $album.appendTo($albums);
         }
         $albums.appendTo(this.container);
@@ -666,6 +771,14 @@ class Photo extends Panel {
         let albumId = this.album;
         let storage = this.storage;
         storage.local.open();
+        let versionInfo = await storage.local.table('version').get({
+            table: 'photo',
+        });
+        if (!versionInfo) {
+            storage.local.close();
+            return 0;
+        }
+        let currentVersion = versionInfo.version;
         let collection = await storage.local.photo
             .where({album: albumId})
             .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
@@ -678,12 +791,13 @@ class Photo extends Panel {
         }
         storage.local.close();
         let $photos = $(TEMPLATE_COLUMNS);
-        for (let photo of collection) {
+        for (let { photo, version } of collection) {
             let $photo = $(TEMPLATE_PHOTO);
             $photo.find('.image img').attr('src', photo.cover).click(() => {
                 PictureModal.show(photo.cover.replace('/m/','/l/'));
             });
             $photo.find('.description').text(photo.description);
+            version < currentVersion && $photo.addClass('is-obsolete');
             $photo.appendTo($photos);
             
         }
@@ -1090,6 +1204,9 @@ const TEMPLATE_DOULIST_ITEM = `\
         <small>来源：<span class="source"></span></small>
       </p>
       <p class="abstract is-size-7"></p>
+      <p class="status-text is-size-7"></p>
+      <div class="status-images columns is-multiline is-hidden"></div>
+      <blockquote class="comment is-hidden"></blockquote>
     </div>
   </div>
 </article>`;
@@ -1114,19 +1231,37 @@ class DoulistItem extends Panel {
                 .count();
         }
         storage.local.close();
-        for (let {abstract, item, source} of collection) {
+        for (let {item} of collection) {
             let $item = $(TEMPLATE_DOULIST_ITEM);
             item.picture && $item.find('.picture>img').attr('src', item.picture)
                 .parents('.media-left').removeClass('is-hidden');
             $item.find('.title').text(item.title).attr('href', item.url);
-            $item.find('.abstract').text(abstract);
-            $item.find('.source').text(source);
+            $item.find('.abstract').text(item.abstract);
+            $item.find('.source').text(item.source);
+            item.comment && $item.find('.comment').text(item.comment).removeClass('is-hidden');
+            if (item.extra.status) {
+                $item.find('.status-text').text(item.extra.status.text);
+                let $images = $item.find('.status-images').removeClass('is-hidden');
+                for (let src of item.extra.status.images) {
+                    $images.append(`\
+<div class="column is-one-quarter">
+  <figure class="image preview is-128x128">
+    <img src="${src}" data-src="${src}" style="overflow: hidden;">
+  </figure>
+</div>`
+                    )
+                }
+            }
             $item.appendTo(this.container);
         }
         return total;
     }
 }
 
+
+/**
+ * Class ExporModal
+ */
 class ExportModal {
     constructor(selector) {
         this.element = document.querySelector(selector);
@@ -1139,6 +1274,33 @@ class ExportModal {
             item.addEventListener('click', () => modal.close());
         });
         $('.button[name="export"]').click(() => modal.open());
+        modal.element.querySelector('.select-all').addEventListener('change', event => {
+            modal.element.querySelectorAll('input[name="item"]').forEach(item => {
+                item.checked = event.target.checked;
+            });
+        });
+        modal.element.querySelector('.button[name="export"]').addEventListener('click', async () => {
+            modal.close();
+            let checkedItems = modal.element.querySelectorAll('input[name="item"]:checked');
+            if (!checkedItems.length) return false;
+            let items = new Array(checkedItems.length);
+            for (let i = 0; i < checkedItems.length; i ++) {
+                items[i] = checkedItems[i].value;
+            }
+            let $loading = $(`\
+<div class="modal is-active">
+  <div class="modal-background"></div>
+  <div class="modal-content" style="width: 6rem;">
+    <a class="button is-loading is-fullwidth is-large">Loading</a>
+  </div>
+</div>`
+            );
+            $loading.appendTo(document.body);
+            let exporter = new Exporter();
+            await exporter.export(items);
+            exporter.save();
+            $loading.remove();
+        });
         return modal;
     }
 
@@ -1148,6 +1310,334 @@ class ExportModal {
 
     close() {
         this.element.classList.remove('is-active');
+    }
+}
+
+
+/**
+ * Class Exporter
+ */
+class Exporter {
+    constructor() {
+        this.userId = parseInt(location.search.substr(1));
+        this.workbook = XLSX.utils.book_new();
+    }
+
+    async exportInterest(storage) {
+        let sheetNames = {
+            'movie/done': '看过',
+            'movie/doing': '在看',
+            'movie/mark': '想看',
+            'music/done': '听过',
+            'music/doing': '在听',
+            'music/mark': '想听',
+            'book/done': '读过',
+            'book/doing': '在读',
+            'book/mark': '想读',
+            'game/done': '玩过',
+            'game/doing': '在玩',
+            'game/mark': '想玩',
+        };
+        for (let type of ['movie', 'music', 'book', 'game']) {
+            for (let status of ['done', 'doing', 'mark']) {
+                let collection = storage.local.interest
+                    .where({ type: type, status: status })
+                    .reverse();
+                let data = [['标题', '简介', '豆瓣评分', '链接', '创建时间', '我的评分', '标签', '评论']];
+                await collection.each(row => {
+                    let {
+                        subject,
+                        tags,
+                        rating,
+                        comment,
+                        create_time
+                    } = row.interest;
+                    data.push([
+                        subject.title,
+                        subject.card_subtitle,
+                        subject.rating.value.toFixed(1),
+                        subject.url,
+                        create_time,
+                        rating ? rating.value : '',
+                        tags.toString(),
+                        comment,
+                    ]);
+                });
+                let worksheet = XLSX.utils.aoa_to_sheet(data);
+                XLSX.utils.book_append_sheet(this.workbook, worksheet, sheetNames[`${type}/${status}`]);
+            }
+        }
+    }
+
+    async exportReview(storage) {
+        let sheetNames = {'movie': '影评', 'music': '乐评', 'book': '书评'};
+        for (let type in sheetNames) {
+            let collection = storage.local.review
+                .where({ type: type })
+                .reverse();
+            let data = [['标题', '评论', '链接', '创建时间', '我的评分', '内容']];
+            await collection.each(row => {
+                let {
+                    subject,
+                    url,
+                    rating,
+                    fulltext,
+                    title,
+                    create_time
+                } = row.review;
+                data.push([
+                    title,
+                    `《${subject.title}》`,
+                    url,
+                    create_time,
+                    rating ? rating.value : '',
+                    fulltext,
+                ]);
+            });
+            let worksheet = XLSX.utils.aoa_to_sheet(data);
+            XLSX.utils.book_append_sheet(this.workbook, worksheet, sheetNames[type]);
+        }
+    }
+
+    async exportStatus(storage) {
+        let formatStatus = (status) => {
+            if (status.deleted) {
+                return status.msg;
+            }
+            let text = `${status.author.name}(@${status.author.uid})`;
+            if (status.activity) {
+                text += ` ${status.activity}`;
+            }
+            text += `: ${status.text}`;
+            if (status.card) {
+                text += `[推荐]:《${status.card.title}》(${status.card.url})`;
+            }
+            if (status.images && status.images.length > 0) {
+                let images = [];
+                status.images.forEach(image => {
+                    images.push(image.large.url);
+                });
+                text += ` ${images}`;
+            }
+            if (status.parent_status) {
+                text += `//${formatStatus(status.parent_status)}...`;
+            }
+            if (status.reshared_status) {
+                text += `//${formatStatus(status.reshared_status)}`;
+            }
+            return text;
+        };
+
+        let collection = await storage.local.status
+            .orderBy('id')
+            .reverse();
+        let data = [['创建时间', '链接', '内容', '话题']];
+        await collection.each(row => {
+            let {
+                sharing_url,
+                create_time,
+                topic,
+            } = row.status;
+            data.push([
+                create_time,
+                sharing_url,
+                formatStatus(row.status),
+                topic ? [topic.title, topic.url].toString() : '',
+            ]);
+        });
+        let worksheet = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(this.workbook, worksheet, '广播');
+    }
+
+    async exportFollowing(storage) {
+        let collection = storage.local.following;
+        let data = [['用户名', '用户ID', '链接', '所在地', '备注']];
+        await collection.each(row => {
+            let {
+                name,
+                uid,
+                url,
+                loc,
+                remark
+            } = row.user;
+            data.push([
+                name,
+                uid,
+                url,
+                loc ? loc.name : '',
+                remark,
+            ]);
+        });
+        let worksheet = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(this.workbook, worksheet, '我关注的');
+    }
+
+    async exportFollower(storage) {
+        let collection = storage.local.follower;
+        let data = [['用户名', '用户ID', '链接', '所在地']];
+        await collection.each(row => {
+            let {
+                name,
+                uid,
+                url,
+                loc
+            } = row.user;
+            data.push([
+                name,
+                uid,
+                url,
+                loc ? loc.name : '',
+            ]);
+        });
+        let worksheet = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(this.workbook, worksheet, '关注我的');
+    }
+
+    async exportBlacklist(storage) {
+        let collection = storage.local.blacklist;
+        let data = [['用户名', '用户ID', '链接']];
+        await collection.each(row => {
+            let {
+                name,
+                uid,
+                url
+            } = row.user;
+            data.push([
+                name,
+                uid,
+                url
+            ]);
+        });
+        let worksheet = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(this.workbook, worksheet, '黑名单');
+    }
+
+    async exportNote(storage) {
+        let collection = storage.local.note.reverse();
+        let data = [['标题', '链接', '创建时间', '修改时间', '内容']];
+        await collection.each(row => {
+            let {
+                title,
+                url,
+                fulltext,
+                create_time,
+                update_time
+            } = row.note;
+            data.push([
+                title,
+                url,
+                create_time,
+                update_time,
+                fulltext,
+            ]);
+        });
+        let worksheet = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(this.workbook, worksheet, '日记');
+    }
+
+    async exportPhoto(storage) {
+        let data = [['相册名称', '相册链接', '相册描述', '相册创建时间', '照片描述', '照片链接']];
+        let albums = await storage.local.album.toArray();
+        for (let {id, album} of albums) {
+            data.push([album.title, album.url, album.description, album.create_time]);
+            let photos = storage.local.photo.where({album: id});
+            await photos.each(photo => {
+                let {url, description} = photo.photo;
+                data.push([null, null, null, null, description, url]);
+            });
+        }
+        let worksheet = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(this.workbook, worksheet, '相册');
+    }
+
+    async exportDoumail(storage) {
+        let data = [['用户', '链接', '发件人', '发送时间', '正文']];
+        let contacts = await storage.local.doumailContact
+            .orderBy('rank')
+            .reverse()
+            .toArray();
+        for (let {id, contact, url} of contacts) {
+            data.push([
+                contact.name,
+                url,
+            ]);
+            let doumails = storage.local.doumail.where({contact: id});
+            await doumails.each(doumail => {
+                let {content, sender, datetime} = doumail;
+                data.push([null, null, sender.name, datetime, content]);
+            });
+        }
+        let worksheet = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(this.workbook, worksheet, '豆邮');
+    }
+
+    async exportDoulist(storage) {
+        let sheetNames = {'owned': '创建的豆列', 'following': '收藏的豆列'};
+        for (let type in sheetNames) {
+            let data = [['豆列名称', '豆列链接', '豆列简介', '豆列创建时间', '豆列更新时间', '内容名称', '内容链接', '来源', '评语']];
+            let doulists = await storage.local.doulist.where({type: type}).toArray();
+            for (let {id, doulist} of doulists) {
+                data.push([
+                    doulist.title,
+                    doulist.url,
+                    doulist.desc,
+                    doulist.create_time,
+                    doulist.update_time,
+                ]);
+                let items = storage.local.doulistItem.where({doulist: id});
+                await items.each(item => {
+                    let {url, title, source, comment} = item.item;
+                    data.push([null, null, null, null, null, title, url, source, comment]);
+                });
+            }
+            let worksheet = XLSX.utils.aoa_to_sheet(data);
+            XLSX.utils.book_append_sheet(this.workbook, worksheet, sheetNames[type]);
+        }
+    }
+
+    async export(items) {
+        let storage = new Storage(this.userId);
+        storage.local.open();
+        for (let item of items) {
+            switch (item) {
+                case 'Interest':
+                    await this.exportInterest(storage);
+                    break;
+                case 'Review':
+                    await this.exportReview(storage);
+                    break;
+                case 'Status':
+                    await this.exportStatus(storage);
+                    break;
+                case 'Following':
+                    await this.exportFollowing(storage);
+                    break;
+                case 'Follower':
+                    await this.exportFollower(storage);
+                    break;
+                case 'Blacklist':
+                    await this.exportBlacklist(storage);
+                    break;
+                case 'Note':
+                    await this.exportNote(storage);
+                    break;
+                case 'Photo':
+                    await this.exportPhoto(storage);
+                    break;
+                case 'Doumail':
+                    await this.exportDoumail(storage);
+                    break;
+                case 'Doulist':
+                    await this.exportDoulist(storage);
+                    break;
+            }
+        }
+        storage.local.close();
+    }
+
+    save() {
+        let filename = `豆伴(${this.userId}).xlsx`;
+        XLSX.writeFile(this.workbook, filename);
     }
 }
 
