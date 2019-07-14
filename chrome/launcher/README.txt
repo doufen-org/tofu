@@ -1,1 +1,1 @@
-Windowsƽ̨�µ�Chrome������
+Windows平台下的Chrome启动器
