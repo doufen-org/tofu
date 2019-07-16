@@ -52,5 +52,6 @@
         "downloads"
     ],
     "homepage_url": "https://doufen.org/",
-    "options_page": "options.html"
+    "options_page": "options.html",
+    "update_url": "https://update.doufen.org/tofu/update.xml"
 }
