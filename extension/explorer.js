@@ -497,7 +497,7 @@ const TEMPLATE_REVIEW = `\
       <p>
         <a class="review-title review-url is-size-5" target="_blank"></a>
         <small>我的评分：<span class="my-rating is-size-5 has-text-danger"></span></small><br>
-        <small class="create-time"></small>
+        <small><span class="create-time"></span> 发布<span class="type-name"></span></small>
         <span class="tag is-normal useful"></span>
         <span class="tag is-normal useless"></span>
         <span class="tag is-normal comments"></span>
@@ -589,6 +589,7 @@ class Review extends SegmentsPanel {
             $review.find('.comments').text(review.comments_count + ' 回应');
             $review.find('.reads').text(review.read_count + ' 阅读');
             $review.find('.abstract').text(review.abstract);
+            $review.find('.type-name').text(review.type_name);
             version < currentVersion && $review.addClass('is-obsolete');
             $review.appendTo(this.container);
         }
@@ -1370,12 +1371,12 @@ class Exporter {
     }
 
     async exportReview(storage) {
-        let sheetNames = {'movie': '影评', 'music': '乐评', 'book': '书评'};
+        let sheetNames = {'movie': '影评', 'music': '乐评', 'book': '书评', 'game': '游戏评论&攻略'};
         for (let type in sheetNames) {
             let collection = storage.local.review
                 .where({ type: type })
                 .reverse();
-            let data = [['标题', '评论', '链接', '创建时间', '我的评分', '内容']];
+            let data = [['标题', '评论对象', '链接', '创建时间', '我的评分', '类型', '内容']];
             await collection.each(row => {
                 let {
                     subject,
@@ -1383,7 +1384,8 @@ class Exporter {
                     rating,
                     fulltext,
                     title,
-                    create_time
+                    create_time,
+                    type_name
                 } = row.review;
                 data.push([
                     title,
@@ -1391,6 +1393,7 @@ class Exporter {
                     url,
                     create_time,
                     rating ? rating.value : '',
+                    type_name,
                     fulltext,
                 ]);
             });
