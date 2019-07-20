@@ -37,7 +37,7 @@ export default class Status extends Task {
             .replace('{ck}', this.session.cookies.ck)
             .replace('{uid}', this.session.userId);
 
-        let count;
+        let count, retried = false;
         do {
             let response = await this.fetch(baseURL.replace('{maxId}', lastStatusId), {headers: {'X-Override-Referer': 'https://m.douban.com/mine/statuses'}});
             if (response.status != 200) {
@@ -46,7 +46,6 @@ export default class Status extends Task {
             let json = await response.json();
             count = json.items.length;
             for (let item of json.items) {
-                console.log(item);
                 let status = item.status;
                 item.id = parseInt(status.id);
                 item.created = Date.now();
@@ -57,12 +56,18 @@ export default class Status extends Task {
                 try {
                     await this.storage.status.add(item);
                 } catch (e) {
-                    if (e.name == 'ConstraintError') {
-                        this.logger.debug(e.message);
-                        this.complete();
-                        return;
+                    if (retried) {
+                        if (e.name == 'ConstraintError') {
+                            this.logger.debug(e.message);
+                            this.complete();
+                            return;
+                        }
+                        throw e;
+                    } else {
+                        retried = true;
+                        count = 0;
+                        break;
                     }
-                    throw e;
                 }
                 await this.storage.table('version').update('status', { lastId: item.id });
                 this.step();
