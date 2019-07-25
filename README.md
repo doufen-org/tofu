@@ -8,7 +8,7 @@
 ### 1. Chrome 网上应用商店
 
 如果你所在的地区可以访问 [Chrome 网上应用商店](https://chrome.google.com/webstore/category/extensions)，请直接前往：
-https://chrome.google.com/webstore/detail/nnhfflbjgjjhdmfkachffninaaagbeea
+https://chrome.google.com/webstore/detail/ghppfgfeoafdcaebjoglabppkfmbcjdd
 进行在线安装。
 
 如果无法打开上面的链接，请选择其他安装方式。
