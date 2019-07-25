@@ -1,5 +1,5 @@
 # 豆伴：豆瓣账号备份工具
-一款 Chrome 扩展程序，用于备份[豆瓣](https://www.douban.com)账号数据。
+一款 Chrome 扩展程序，用于备份豆瓣账号数据。
 
 ## 安装
 
@@ -8,10 +8,8 @@
 ### 1. Chrome 网上应用商店
 
 如果你所在的地区可以访问 [Chrome 网上应用商店](https://chrome.google.com/webstore/category/extensions)，请直接前往：
-https://chrome.google.com/webstore/detail/nnhfflbjgjjhdmfkachffninaaagbeea
+https://chrome.google.com/webstore/detail/ghppfgfeoafdcaebjoglabppkfmbcjdd
 进行在线安装。
-
-> 由于隐私权政策条款的问题，「豆伴」目前暂时被 Google 下架。请等待审查后重新上线。
 
 如果无法打开上面的链接，请选择其他安装方式。
 
