@@ -5,11 +5,34 @@
 #define USER_DATA_DIR "userdata"
 #define CHROME_PATH "chrome\\chrome.exe"
 #define CHROME_CLI ".\\"CHROME_PATH" --user-data-dir="USER_DATA_DIR
-#define EXTENSION_ID "nnhfflbjgjjhdmfkachffninaaagbeea"
-#define EXTENSION_URL EXTENSION_ID";https://update.doufen.org/tofu.xml"
+#define EXTENSION_DEFAULT_ID "ghppfgfeoafdcaebjoglabppkfmbcjdd"
+#define EXTENSION_URL "%s;https://update.doufen.org/"
 #define EXTENSION_SOURCE "https://update.doufen.org/*"
-#define EXTENSION_PATH USER_DATA_DIR"\\Default\\Extensions\\"EXTENSION_ID
+#define EXTENSION_PATH USER_DATA_DIR"\\Default\\Extensions\\%s"
+#define CONFIGURE_FILENAME "config.ini"
 #define SIZE_MSG 1024
+#define SIZE_EXTENSION_ID 34
+
+/*
+URL Paramters:
+os=win&
+arch=x64&
+os_arch=x86_64&
+nacl_arch=x86-64&
+prod=chromiumcrx&
+prodchannel=&
+prodversion=[chrome version]&
+lang=zh-CN&
+acceptformat=crx2,crx3&
+x=id%3D[extension id]%26v%3D[version]%26installsource%3Dnotfromwebstore%26installedby%3Dpolicy%26uc
+
+x:
+id=[extension id]&
+v=[version]&
+installsource=notfromwebstore&
+installedby=policy&
+uc
+ */
 
 
 BOOL WriteRegistryPolicies();
@@ -18,6 +41,9 @@ DWORD GetLastErrorMessage(LPSTR, DWORD);
 BOOL IsFirstRun();
 BOOL AllowAccessRegistrySoftwarePolicies();
 BOOL RunAsAdministrator();
+BOOL LoadSettings(LPCSTR);
+
+TCHAR g_szExtensionID[SIZE_EXTENSION_ID];
 
 
 int WINAPI WinMain(HINSTANCE hThisInstance,
@@ -26,8 +52,10 @@ int WINAPI WinMain(HINSTANCE hThisInstance,
                    int nCmdShow)
 {
     HWND hWindow = GetForegroundWindow();
-	TCHAR lpszError[SIZE_MSG],
-		  lpszMessage[SIZE_MSG + 100];
+	TCHAR szError[SIZE_MSG],
+		  szMessage[SIZE_MSG + 100];
+
+	LoadSettings(TEXT(CONFIGURE_FILENAME));
     BOOL isFirstRun = IsFirstRun();
 
     if (isFirstRun) {
@@ -38,26 +66,26 @@ int WINAPI WinMain(HINSTANCE hThisInstance,
                                     MB_YESNO | MB_ICONQUESTION) &&
                 !RunAsAdministrator())
             {
-                GetLastErrorMessage(lpszError, SIZE_MSG);
-                wsprintf(lpszMessage, TEXT("以管理员身份运行程序失败：%s"), lpszError);
-                MessageBox(hWindow, lpszMessage, TEXT("错误"), MB_OK | MB_ICONERROR);
+                GetLastErrorMessage(szError, SIZE_MSG);
+                wsprintf(szMessage, TEXT("以管理员身份运行程序失败：%s"), szError);
+                MessageBox(hWindow, szMessage, TEXT("错误"), MB_OK | MB_ICONERROR);
             }
             return 0;
         }
 
         if (!WriteRegistryPolicies()) {
-            GetLastErrorMessage(lpszError, SIZE_MSG);
-            wsprintf(lpszMessage, TEXT("写入注册表失败：%s"), lpszError);
-            MessageBox(hWindow, lpszMessage, TEXT("错误"), MB_OK | MB_ICONERROR);
+            GetLastErrorMessage(szError, SIZE_MSG);
+            wsprintf(szMessage, TEXT("写入注册表失败：%s"), szError);
+            MessageBox(hWindow, szMessage, TEXT("错误"), MB_OK | MB_ICONERROR);
             return 0;
         }
     }
 
     if (!StartupChromium())
     {
-        GetLastErrorMessage(lpszError, SIZE_MSG);
-        wsprintf(lpszMessage, TEXT("运行“%s”失败：%s"), TEXT(CHROME_PATH), lpszError);
-        MessageBox(hWindow, lpszMessage, TEXT("错误"), MB_OK | MB_ICONERROR);
+        GetLastErrorMessage(szError, SIZE_MSG);
+        wsprintf(szMessage, TEXT("运行“%s”失败：%s"), TEXT(CHROME_PATH), szError);
+        MessageBox(hWindow, szMessage, TEXT("错误"), MB_OK | MB_ICONERROR);
         return 0;
     }
 
@@ -85,6 +113,8 @@ BOOL WriteRegistryPolicies()
          hKeyExtensionInstallForcelist,
          hKeyExtensionInstallSources;
     DWORD dwOne = 1;
+	TCHAR szExtensionUrl[SIZE_EXTENSION_ID + sizeof(EXTENSION_URL)];
+	wsprintf(szExtensionUrl, TEXT(EXTENSION_URL), g_szExtensionID);
 
     if (ERROR_SUCCESS != RegCreateKeyEx(HKEY_CURRENT_USER,
                                         TEXT("SOFTWARE\\Policies\\Chromium"),
@@ -123,8 +153,8 @@ BOOL WriteRegistryPolicies()
                                        TEXT("1"),
                                        0,
                                        REG_SZ,
-                                       (LPBYTE)TEXT(EXTENSION_URL),
-                                       sizeof(TEXT(EXTENSION_URL))) ||
+                                       (LPBYTE)szExtensionUrl,
+                                       sizeof(szExtensionUrl)) ||
         ERROR_SUCCESS != RegSetValueEx(hKeyExtensionInstallSources,
                                        TEXT("1"),
                                        0,
@@ -160,7 +190,10 @@ BOOL StartupChromium()
 
 BOOL IsFirstRun()
 {
-    DWORD dwFileAttributes = GetFileAttributes(TEXT(EXTENSION_PATH));
+	TCHAR szExtensionPath[sizeof(EXTENSION_PATH) + SIZE_EXTENSION_ID];
+	wsprintf(szExtensionPath, EXTENSION_PATH, g_szExtensionID);
+
+	DWORD dwFileAttributes = GetFileAttributes(szExtensionPath);
     if (INVALID_FILE_ATTRIBUTES == dwFileAttributes ||
         !(FILE_ATTRIBUTE_DIRECTORY & dwFileAttributes)) {
         return TRUE;
@@ -196,4 +229,17 @@ BOOL RunAsAdministrator()
     sei.nShow = SW_SHOWNORMAL;
 
     return ShellExecuteEx(&sei);
+}
+
+
+BOOL LoadSettings(LPCSTR lpszIniFile)
+{
+	return (BOOL)GetPrivateProfileString(
+		NULL,
+		TEXT("id"),
+		TEXT(EXTENSION_DEFAULT_ID),
+		g_szExtensionID,
+		SIZE_EXTENSION_ID - 1,
+		lpszIniFile
+	);
 }

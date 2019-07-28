@@ -82,3 +82,10 @@ typings/
 
 # DynamoDB Local files
 .dynamodb/
+
+# Visual Studio files
+.vs
+*.sln
+*.vcxproj
+*.vcxproj.*
+Release
