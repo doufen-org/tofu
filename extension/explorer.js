@@ -1338,9 +1338,14 @@ class Exporter {
             'game/done': '玩过',
             'game/doing': '在玩',
             'game/mark': '想玩',
+            'drama/done': '看过的舞台剧',
+            'drama/mark': '想看的舞台剧',
         };
-        for (let type of ['movie', 'music', 'book', 'game']) {
+        for (let type of ['movie', 'music', 'book', 'game', 'drama']) {
             for (let status of ['done', 'doing', 'mark']) {
+                let sheetName = sheetNames[`${type}/${status}`];
+                if (!sheetName) continue;
+
                 let collection = storage.local.interest
                     .where({ type: type, status: status })
                     .reverse();
@@ -1365,13 +1370,13 @@ class Exporter {
                     ]);
                 });
                 let worksheet = XLSX.utils.aoa_to_sheet(data);
-                XLSX.utils.book_append_sheet(this.workbook, worksheet, sheetNames[`${type}/${status}`]);
+                XLSX.utils.book_append_sheet(this.workbook, worksheet, sheetName);
             }
         }
     }
 
     async exportReview(storage) {
-        let sheetNames = {'movie': '影评', 'music': '乐评', 'book': '书评', 'game': '游戏评论&攻略'};
+        let sheetNames = {'movie': '影评', 'music': '乐评', 'book': '书评', 'drama': '剧评', 'game': '游戏评论&攻略'};
         for (let type in sheetNames) {
             let collection = storage.local.review
                 .where({ type: type })

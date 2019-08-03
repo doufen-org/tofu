@@ -45,7 +45,7 @@ export default class Interest extends Task {
             .replace('{ck}', this.session.cookies.ck)
             .replace('{uid}', this.session.userId);
 
-        for (let type of ['game', 'music', 'book', 'movie']) {
+        for (let type of ['game', 'music', 'book', 'movie', 'drama']) {
             let urlWithType = baseURL.replace('{type}', type);
 
             for (let status of ['mark', 'doing', 'done']) {
