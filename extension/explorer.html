@@ -52,10 +52,6 @@
             width: 8rem;
         }
 
-        .tabs.is-small .is-active {
-            font-size: 1rem;
-        }
-
         .doulist .cover {
             width: 100px;
         }
@@ -118,7 +114,7 @@
             <div class="tabs is-centered is-boxed">
                 <ul>
                     <li class="page-tab-link is-active" data-tab="status"><a href="#status">广播</a></li>
-                    <li class="page-tab-link" data-tab="interest"><a href="#interest">影/音/书/游</a></li>
+                    <li class="page-tab-link" data-tab="interest"><a href="#interest">影/音/书/游/剧</a></li>
                     <li class="page-tab-link" data-tab="review"><a href="#review">评论</a></li>
                     <li class="page-tab-link" data-tab="note"><a href="#note">日记</a></li>
                     <li class="page-tab-link" data-tab="photo"><a href="#photo">相册</a></li>
@@ -182,6 +178,15 @@
                     <li>
                         <a data-type="game" data-status="mark">想玩</a>
                     </li>
+                    <li>
+                        <a data-type="drama" data-status="done">
+                            <span class="icon is-small"><i class="fas fa-theater-masks"></i></i></span>
+                            <span>看过</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a data-type="drama" data-status="mark">想看</a>
+                    </li>
                 </ul>
             </div>
             <div class="sub-container"></div>
@@ -206,6 +211,12 @@
                         <a data-type="book">
                             <span class="icon is-small"><i class="fas fa-book"></i></span>
                             <span>书评</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a data-type="drama">
+                            <span class="icon is-small"><i class="fas fa-theater-masks"></i></span>
+                            <span>剧评</span>
                         </a>
                     </li>
                     <li>
@@ -300,7 +311,7 @@
                         <div class="field">
                             <div class="control">
                                 <label class="checkbox">
-                                    <input type="checkbox" name="item" value="Interest"> 影/音/书/游
+                                    <input type="checkbox" name="item" value="Interest"> 影/音/书/游/剧
                                 </label>
                             </div>
                         </div>

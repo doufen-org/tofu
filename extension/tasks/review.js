@@ -25,7 +25,7 @@ export default class Review extends Task {
             .replace('{ck}', this.session.cookies.ck)
             .replace('{uid}', this.session.userId);
 
-        for (let type of ['music', 'book', 'movie', 'game']) {
+        for (let type of ['music', 'book', 'movie', 'drama', 'game']) {
             let fullURL = baseURL.replace('{type}', type);
             let pageCount = 1;
             for (let i = 0; i < pageCount; i ++) {
