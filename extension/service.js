@@ -3,6 +3,9 @@ import Settings from './settings.js';
 import Storage from './storage.js';
 
 
+const URL_USER_INFO = 'https://m.douban.com/rexxar/api/v2/user/{uid}?ck={ck}&for_mobile=1';
+
+
 /**
  * Service settings
  */
@@ -86,6 +89,16 @@ export class Task {
 
 
 /**
+ * Class UserTask
+ */
+export class UserTask extends Task {
+    constructor(userId) {
+        this.userId = userId;
+    }
+}
+
+
+/**
  * Parse HTML
  * @param {string} html 
  * @param {string} url 
@@ -121,7 +134,6 @@ class Job extends EventTarget {
      */
     async signin(fetch) {
         const URL_MINE = 'https://m.douban.com/mine/';
-        const URL_USER_INFO = 'https://m.douban.com/rexxar/api/v2/user/{uid}?ck={ck}&for_mobile=1';
 
         let response = await fetch(URL_MINE);
         if (response.redirected) {

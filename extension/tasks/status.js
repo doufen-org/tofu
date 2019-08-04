@@ -1,12 +1,12 @@
 'use strict';
-import {TaskError, Task} from '../service.js';
+import {TaskError, UserTask} from '../service.js';
 
 
 const URL_TIMELINE = 'https://m.douban.com/rexxar/api/v2/status/user_timeline/{uid}?max_id={maxId}&ck={ck}&for_mobile=1';
 const URL_STATUS = 'https://m.douban.com/rexxar/api/v2/status/{id}?ck={ck}&for_mobile=1';
 
 
-export default class Status extends Task {
+export default class Status extends UserTask {
     async fetchStatusFulltext(id) {
         let url = URL_STATUS
             .replace('{ck}', this.session.cookies.ck)
