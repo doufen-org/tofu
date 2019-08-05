@@ -6,13 +6,14 @@ const API_PAGE_SIZE = 50;
 const WEB_PAGE_SIZE = 20;
 const URL_FOLLOWING_API = 'https://m.douban.com/rexxar/api/v2/user/{uid}/following?start={start}&count=50&ck={ck}&for_mobile=1';
 const URL_FOLLOWING_WEBPAGE = 'https://www.douban.com/contacts/list?start={start}';
+const URL_FOLLOWING_OTHER_WEBPAGE = 'https://www.douban.com/people/{uid}/contacts';
 
 
 export default class Following extends Task {
     async crawlByApi() {
         let baseURL = URL_FOLLOWING_API
             .replace('{ck}', this.session.cookies.ck)
-            .replace('{uid}', this.session.userId);
+            .replace('{uid}', this.targetUser.id);
 
         let pageCount = 1;
         for (let i = 0; i < pageCount; i ++) {
@@ -75,10 +76,45 @@ export default class Following extends Task {
         }
     }
 
+    async crawlByOtherWebpage() {
+        let response = await this.fetch(URL_FOLLOWING_OTHER_WEBPAGE.replace('{uid}', this.targetUser.uid));
+        if (response.status != 200) {
+            throw new TaskError('豆瓣服务器返回错误');
+        }
+        let html =  this.parseHTML(await response.text());
+        for (let archor of html.querySelectorAll('dl.obu a.nbg')) {
+            let avatar = archor.querySelector('img');
+            let row = {
+                version: this.jobId,
+                user: {
+                    avatar: avatar.src,
+                    id: '',
+                    loc: null,
+                    name: avatar.alt,
+                    uid: userLink.match(/https:\/\/www\.douban\.com\/people\/(.+)\//)[1],
+                    uri: 'douban://douban.com/user/' + idText,
+                    url: userLink,
+                    signature: null,
+                    remark: null,
+                    followers_count: null,
+                }
+            };
+            await this.storage.following.put(row);
+        }
+    }
+
     async run() {
-        this.total = this.session.userInfo.following_count;
+        this.total = this.targetUser.following_count;
         await this.storage.table('version').put({table: 'following', version: this.jobId, updated: Date.now()});
-        this.session.userInfo.following_count > 5000 ? await this.crawlByWebpage() : await this.crawlByApi();
+        if (this.targetUser.following_count > 5000) {
+            if (this.isOtherUser) {
+                await this.crawlByOtherWebpage();
+            } else {
+                await this.crawlByWebpage();
+            }
+        } else {
+            await this.crawlByApi();
+        }
         this.complete();
     }
 

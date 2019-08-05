@@ -148,21 +148,12 @@ class TaskModal {
         })).service;
         let checkedTasks = this.element.querySelectorAll('input[name="task"]:checked');
         let tasks = new Array(checkedTasks.length);
-        if (userId) {
-            for (let i = 0; i < checkedTasks.length; i ++) {
-                tasks[i] = {
-                    name: checkedTasks[i].value,
-                    args: [userId]
-                };
-            }
-        } else {
-            for (let i = 0; i < checkedTasks.length; i ++) {
-                tasks[i] = {
-                    name: checkedTasks[i].value,
-                };
-            }
+        for (let i = 0; i < checkedTasks.length; i ++) {
+            tasks[i] = {
+                name: checkedTasks[i].value,
+            };
         }
-        let job = await service.createJob.apply(service, tasks);
+        let job = await service.createJob(userId, tasks);
         return job;
     }
 
