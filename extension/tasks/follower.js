@@ -4,15 +4,17 @@ import {TaskError, Task} from '../service.js';
 
 const API_PAGE_SIZE = 50;
 const WEB_PAGE_SIZE = 20;
+const OTHER_USER_PAGE_SIZE = 70;
 const URL_FOLLOWERS = 'https://m.douban.com/rexxar/api/v2/user/{uid}/followers?start={start}&count=50&ck={ck}&for_mobile=1';
 const URL_FOLLOWERS_WEBPAGE = 'https://www.douban.com/contacts/rlist?start={start}';
+const URL_FOLLOWERS_OTHER_USER = 'https://www.douban.com/people/{uid}/rev_contacts?start={start}';
 
 
 export default class Follower extends Task {
     async crawlByApi() {
         let baseURL = URL_FOLLOWERS
             .replace('{ck}', this.session.cookies.ck)
-            .replace('{uid}', this.session.userId);
+            .replace('{uid}', this.targetUser.id);
 
         let pageCount = 1;
         for (let i = 0; i < pageCount; i ++) {
@@ -77,10 +79,55 @@ export default class Follower extends Task {
         }
     }
 
+    async crawlOtherUserByWebpage() {
+        let totalPage = 1;
+        for (let i = 0; i < totalPage; i ++) {
+            let response = await this.fetch(
+                URL_FOLLOWERS_OTHER_USER
+                    .replace('{uid}', this.targetUser.id)
+                    .replace('{start}', i * OTHER_USER_PAGE_SIZE)
+            );
+            if (response.status != 200) {
+                throw new TaskError('豆瓣服务器返回错误');
+            }
+            let html =  this.parseHTML(await response.text());
+            try {
+                totalPage = parseInt(html.querySelector('.paginator .thispage').dataset.totalPage);
+            } catch (e) {}
+            for (let anchor of html.querySelectorAll('.obu .nbg')) {
+                let avatar = anchor.querySelector('img');
+                let userLink = anchor.href;
+                let matches = avatar.src.match(/\/icon\/u(\d+)-\d+.jpg$/);
+                let idText = matches ? matches[1] : null;
+                let uid = userLink.match(/https:\/\/www\.douban\.com\/people\/(.+)\//)[1];
+
+                let row = {
+                    version: this.jobId,
+                    user: {
+                        avatar: avatar.src,
+                        id: idText,
+                        name: avatar.alt,
+                        uid: uid,
+                        uri: 'douban://douban.com/user/' + (idText || uid),
+                        url: userLink,
+                    }
+                };
+                await this.storage.follower.put(row);
+                this.step();
+            }
+        }
+    }
+
     async run() {
-        this.total = this.session.userInfo.followers_count;
+        this.total = this.targetUser.followers_count;
         await this.storage.table('version').put({table: 'follower', version: this.jobId, updated: Date.now()});
-        this.session.userInfo.followers_count > 5000 ? await this.crawlByWebpage() : await this.crawlByApi();
+        if (this.total > 5000) {
+            this.isOtherUser ?
+                await this.crawlOtherUserByWebpage() :
+                await this.crawlByWebpage();
+        } else {
+            await this.crawlByApi();
+        }
         this.complete();
     }
 

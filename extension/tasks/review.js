@@ -18,12 +18,12 @@ export default class Review extends Task {
 
     async run() {
         let version = this.jobId;
-        this.total = this.session.userInfo.reviews_count;
+        this.total = this.targetUser.reviews_count;
         await this.storage.table('version').put({table: 'review', version: version, updated: Date.now()});
 
         let baseURL = URL_REVIEWS
             .replace('{ck}', this.session.cookies.ck)
-            .replace('{uid}', this.session.userId);
+            .replace('{uid}', this.targetUser.id);
 
         for (let type of ['music', 'book', 'movie', 'drama', 'game']) {
             let fullURL = baseURL.replace('{type}', type);

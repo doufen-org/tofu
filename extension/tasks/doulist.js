@@ -21,12 +21,12 @@ export default class Doulist extends Task {
 
     async run() {
         let version = this.jobId;
-        this.total = this.session.userInfo.following_doulist_count + this.session.userInfo.owned_doulist_count;
+        this.total = this.targetUser.following_doulist_count + this.targetUser.owned_doulist_count;
         await this.storage.table('version').put({table: 'doulist', version: version, updated: Date.now()});
 
         let baseURL = URL_DOULIST
             .replace('{ck}', this.session.cookies.ck)
-            .replace('{uid}', this.session.userId);
+            .replace('{uid}', this.targetUser.id);
 
         for (let type of ['owned', 'following']) {
             let urlWithType = baseURL.replace('{type}', type);

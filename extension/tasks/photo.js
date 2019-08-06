@@ -14,11 +14,11 @@ export default class Photo extends Task {
 
     async run() {
         let version = this.jobId;
-        this.total = this.session.userInfo.photo_albums_count;
+        this.total = this.targetUser.photo_albums_count;
         await this.storage.table('version').put({table: 'photo', version: version, updated: Date.now()});
 
         let baseURL = URL_PHOTOS
-            .replace('{uid}', this.session.userId)
+            .replace('{uid}', this.targetUser.id)
             .replace('{ck}', this.session.cookies.ck);
 
         let pageCount = 1;
