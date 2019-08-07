@@ -11,7 +11,7 @@ export default class Interest extends Task {
     async getTotal() {
         let totalURL = URL_TOTAL
             .replace('{ck}', this.session.cookies.ck)
-            .replace('{uid}', this.session.userId);
+            .replace('{uid}', this.targetUser.id);
         let response = await this.fetch(totalURL, {headers: {'X-Override-Referer': 'https://m.douban.com/mine/'}});
         if (response.status != 200) {
             throw new TaskError('豆瓣服务器返回错误');
@@ -39,11 +39,14 @@ export default class Interest extends Task {
     async run() {
         let version = this.jobId;
         this.total = await this.getTotal();
+        if (this.total == 0) {
+            return;
+        }
         await this.storage.table('version').put({table: 'interest', version: version, updated: Date.now()});
 
         let baseURL = URL_INTERESTS
             .replace('{ck}', this.session.cookies.ck)
-            .replace('{uid}', this.session.userId);
+            .replace('{uid}', this.targetUser.id);
 
         for (let type of ['game', 'music', 'book', 'movie', 'drama']) {
             let urlWithType = baseURL.replace('{type}', type);

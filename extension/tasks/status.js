@@ -20,7 +20,10 @@ export default class Status extends Task {
 
     async run() {
         let version = this.jobId;
-        this.total = this.session.userInfo.statuses_count;
+        this.total = this.targetUser.statuses_count;
+        if (this.total == 0) {
+            return;
+        }
         let lastStatusId = '';
         await this.storage.transaction('rw', this.storage.table('version'), async () => {
             let verTable = this.storage.table('version');
@@ -35,7 +38,7 @@ export default class Status extends Task {
 
         let baseURL = URL_TIMELINE
             .replace('{ck}', this.session.cookies.ck)
-            .replace('{uid}', this.session.userId);
+            .replace('{uid}', this.targetUser.id);
 
         let count, retried = false;
         do {

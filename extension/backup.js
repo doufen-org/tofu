@@ -87,6 +87,7 @@ class AccountList {
 class TaskModal {
     constructor(selector) {
         this.element = document.querySelector(selector);
+        this.userHomepageInput = this.element.querySelector('input[name="user-homepage"]');
     }
 
     static init() {
@@ -95,35 +96,70 @@ class TaskModal {
         if (location.hash == '#new-task') {
             modal.open();
         }
+
         modal.element.querySelectorAll('.cancel').forEach(item => {
             item.addEventListener('click', () => modal.close());
         });
+
         modal.element.querySelector('.select-all').addEventListener('change', event => {
             modal.element.querySelectorAll('input[name="task"]').forEach(item => {
-                item.checked = event.target.checked;
+                if (!item.hasAttribute('disabled')) {
+                    item.checked = event.target.checked;
+                }
             });
         });
+
+        modal.element.querySelector('.other-user').addEventListener('click', event => {
+            let doumailCheckbox = modal.element.querySelector('input[value="Doumail"]');
+            let blacklistCheckbox = modal.element.querySelector('input[value="Blacklist"]');
+            if (event.target.checked) {
+                modal.userHomepageInput.removeAttribute('disabled');
+                doumailCheckbox.checked = false;
+                blacklistCheckbox.checked = false;
+                doumailCheckbox.setAttribute('disabled', '');
+                blacklistCheckbox.setAttribute('disabled', '');
+            } else {
+                modal.userHomepageInput.setAttribute('disabled', '');
+                doumailCheckbox.removeAttribute('disabled');
+                blacklistCheckbox.removeAttribute('disabled');
+            }
+        });
+
         modal.element.querySelector('.button.new').addEventListener('click', async () => {
-            await modal.createJob();
-            modal.close();
-            window.open(chrome.extension.getURL('options.html#service'));
+            let otherUserId = null;
+            if (modal.useOtherUser) {
+                otherUserId = modal.otherUserId;
+                if (!otherUserId) {
+                    alert('请输入正确的用户主页地址。');
+                    return false;
+                }
+            }
+            let job = await modal.createJob(otherUserId);
+            if (job) {
+                modal.close();
+                window.open(chrome.extension.getURL('options.html#service'));
+            }
         });
 
         return modal;
     }
 
-    async createJob() {
+    async createJob(userId = null) {
         let service = (await new Promise(resolve => {
             chrome.runtime.getBackgroundPage(resolve);
         })).service;
         let checkedTasks = this.element.querySelectorAll('input[name="task"]:checked');
+        if (checkedTasks.length == 0) {
+            alert('请勾选要备份的项目。');
+            return null;
+        }
         let tasks = new Array(checkedTasks.length);
         for (let i = 0; i < checkedTasks.length; i ++) {
             tasks[i] = {
                 name: checkedTasks[i].value,
             };
         }
-        let job = await service.createJob.apply(service, tasks);
+        let job = await service.createJob(userId, tasks);
         return job;
     }
 
@@ -133,6 +169,18 @@ class TaskModal {
 
     close() {
         this.element.classList.remove('is-active');
+    }
+
+    get otherUserId() {
+        let matches = this.userHomepageInput.value.match(/^https:\/\/www\.douban\.com\/people\/([^\/]+)\/?$/);
+        if (matches) {
+            return matches[1];
+        }
+        return null;
+    }
+
+    get useOtherUser() {
+        return this.element.querySelector('.other-user').checked;
     }
 }
 

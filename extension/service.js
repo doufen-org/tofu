@@ -34,14 +34,18 @@ export class Task {
      * @param {number} jobId
      * @param {Object} session
      * @param {Dexie} localStorage
+     * @param {Object} targetUser
+     * @param {boolean} isOtherUser
      */
-    init(fetch, logger, parseHTML, jobId, session, localStorage) {
+    init(fetch, logger, parseHTML, jobId, session, localStorage, targetUser, isOtherUser) {
         this.fetch = fetch;
         this.logger = logger;
         this.parseHTML = parseHTML;
         this.jobId = jobId;
         this.session = session;
         this.storage = localStorage;
+        this.targetUser = targetUser;
+        this.isOtherUser = isOtherUser;
         this.total = 1;
         this.completion = 0;
     }
@@ -104,9 +108,15 @@ function parseHTML(html, url) {
  * Class Job
  */
 class Job extends EventTarget {
-    constructor(service) {
+    /**
+     * Constructor
+     * @param {Service} service 
+     * @param {string|null} userId 
+     */
+    constructor(service, userId) {
         super();
         this._service = service;
+        this._userId = userId;
         this._tasks = [];
         this._isRunning = false;
         this._currentTask = null;
@@ -115,13 +125,29 @@ class Job extends EventTarget {
     }
 
     /**
-     * Signin account
+     * Get user info
+     * @param {callback} fetch 
+     * @param {Object} cookies 
+     * @param {string} userId 
+     */
+    async getUserInfo(fetch, cookies, userId) {
+        const URL_USER_INFO = 'https://m.douban.com/rexxar/api/v2/user/{uid}?ck={ck}&for_mobile=1';
+
+        let userInfoURL = URL_USER_INFO
+            .replace('{uid}', userId)
+            .replace('{ck}', cookies.ck);
+        return await (
+            await fetch(userInfoURL, {headers: {'X-Override-Referer': 'https://m.douban.com/'}})
+        ).json();
+    }
+
+    /**
+     * Checkin account
      * @param {callback} fetch 
      * @returns {object}
      */
-    async signin(fetch) {
+    async checkin(fetch) {
         const URL_MINE = 'https://m.douban.com/mine/';
-        const URL_USER_INFO = 'https://m.douban.com/rexxar/api/v2/user/{uid}?ck={ck}&for_mobile=1';
 
         let response = await fetch(URL_MINE);
         if (response.redirected) {
@@ -131,7 +157,7 @@ class Job extends EventTarget {
         let bodyElement = parseHTML(await response.text(), URL_MINE);
         let inputElement = bodyElement.querySelector('#user');
         let username = inputElement.getAttribute('data-name');
-        let userid = inputElement.getAttribute('value');
+        let uid = inputElement.getAttribute('value');
         let homepageLink = bodyElement.querySelector('.profile .detail .basic-info>a');
         let homepageURL = homepageLink.getAttribute('href');
         let userSymbol = homepageURL.match(/\/people\/(.+)/).pop();
@@ -151,20 +177,16 @@ class Job extends EventTarget {
             }
         }
 
-        let userInfoURL = URL_USER_INFO
-            .replace('{uid}', userid)
-            .replace('{ck}', cookiesNeeded.ck);
-        let userInfo = await (
-            await fetch(userInfoURL, {headers: {'X-Override-Referer': URL_MINE}})
-        ).json();
+        let userInfo = await this.getUserInfo(fetch, cookiesNeeded, uid);
 
         return this._session = {
-            userId: parseInt(userid),
+            userId: parseInt(uid),
             username: username,
             userSymbol: userSymbol,
             cookies: cookiesNeeded,
             userInfo: userInfo,
             updated: Date.now(),
+            isOther: false
         }
     }
 
@@ -183,15 +205,36 @@ class Job extends EventTarget {
      */
     async run(fetch, logger) {
         this._isRunning = true;
-        let session = await this.signin(fetch);
+        let session = await this.checkin(fetch);
 
-        let storage = new Storage(session.userId);
+        let userId, account, targetUser, isOtherUser = false;
+        if (this._userId) {
+            let userInfo = await this.getUserInfo(fetch, session.cookies, this._userId);
+            this._userId = userId = parseInt(userInfo.id);
+            account = {
+                userId: userId,
+                username: userInfo.name,
+                userSymbol: userInfo.uid,
+                cookies: null,
+                userInfo: userInfo,
+                updated: Date.now(),
+                isOther: true
+            };
+            targetUser = userInfo;
+            isOtherUser = true;
+        } else {
+            userId = session.userId;
+            account = session;
+            targetUser = session.userInfo;
+        }
+
+        let storage = new Storage(userId);
         await storage.global.open();
         logger.debug('Open global database');
-        await storage.global.account.put(session);
+        await storage.global.account.put(account);
         logger.debug('Create the account');
         let jobId = await storage.global.job.add({
-            userId: session.userId,
+            userId: userId,
             created: Date.now(),
             progress: {},
             tasks: JSON.parse(JSON.stringify(this._tasks)),
@@ -205,7 +248,16 @@ class Job extends EventTarget {
         this._id = jobId;
         for (let task of this._tasks) {
             this._currentTask = task;
-            task.init(fetch, logger, parseHTML, jobId, session, storage.local);
+            task.init(
+                fetch,
+                logger,
+                parseHTML,
+                jobId,
+                session,
+                storage.local,
+                targetUser,
+                isOtherUser
+            );
             try {
                 await task.run();
             } catch (e) {
@@ -623,11 +675,12 @@ export default class Service extends EventTarget {
 
     /**
      * Create a job
-     * @param  {...Object} tasks 
+     * @param  {string} userId 
+     * @param  {Array} tasks 
      */
-    async createJob(...tasks) {
+    async createJob(userId, tasks) {
         this.logger.debug('Creating a job...');
-        let job = new Job(this);
+        let job = new Job(this, userId);
         for (let {name, args} of tasks) {
             try {
                 let module = await import(`./tasks/${name}.js`);

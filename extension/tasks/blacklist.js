@@ -9,6 +9,9 @@ const URL_USER_INFO = 'https://m.douban.com/rexxar/api/v2/user/{uid}?ck={ck}&for
 export default class Following extends Task {
 
     async run() {
+        if (this.isOtherUser) {
+            throw TaskError('不能备份其他用户的黑名单');
+        }
         await this.storage.table('version').put({table: 'blacklist', version: this.jobId, updated: Date.now()});
         let response = await this.fetch(URL_BLACKLIST);
         if (response.status != 200) {
