@@ -39,6 +39,9 @@ export default class Interest extends Task {
     async run() {
         let version = this.jobId;
         this.total = await this.getTotal();
+        if (this.total == 0) {
+            return;
+        }
         await this.storage.table('version').put({table: 'interest', version: version, updated: Date.now()});
 
         let baseURL = URL_INTERESTS

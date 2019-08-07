@@ -22,6 +22,9 @@ export default class Doulist extends Task {
     async run() {
         let version = this.jobId;
         this.total = this.targetUser.following_doulist_count + this.targetUser.owned_doulist_count;
+        if (this.total == 0) {
+            return;
+        }
         await this.storage.table('version').put({table: 'doulist', version: version, updated: Date.now()});
 
         let baseURL = URL_DOULIST

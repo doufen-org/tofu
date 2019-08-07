@@ -19,6 +19,9 @@ export default class Note extends Task {
     async run() {
         let version = this.jobId;
         this.total = this.targetUser.notes_count;
+        if (this.total == 0) {
+            return;
+        }
         await this.storage.table('version').put({table: 'note', version: version, updated: Date.now()});
 
         let baseURL = URL_NOTES

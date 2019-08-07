@@ -21,6 +21,9 @@ export default class Status extends Task {
     async run() {
         let version = this.jobId;
         this.total = this.targetUser.statuses_count;
+        if (this.total == 0) {
+            return;
+        }
         let lastStatusId = '';
         await this.storage.transaction('rw', this.storage.table('version'), async () => {
             let verTable = this.storage.table('version');

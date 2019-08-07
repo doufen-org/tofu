@@ -9,6 +9,9 @@ const URL_DOUMAIL_LOAD_MORE = 'https://www.douban.com/j/doumail/loadmore';
 
 export default class Photo extends Task {
     async run() {
+        if (this.isOtherUser) {
+            throw TaskError('不能备份其他用户的豆邮');
+        }
         let pageCount = 1;
         for (let i = 0; i < pageCount; i ++) {
             let response = await this.fetch(URL_DOUMAIL.replace('{start}', i * PAGE_SIZE));

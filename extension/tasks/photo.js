@@ -15,6 +15,9 @@ export default class Photo extends Task {
     async run() {
         let version = this.jobId;
         this.total = this.targetUser.photo_albums_count;
+        if (this.total == 0) {
+            return;
+        }
         await this.storage.table('version').put({table: 'photo', version: version, updated: Date.now()});
 
         let baseURL = URL_PHOTOS

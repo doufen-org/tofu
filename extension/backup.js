@@ -134,9 +134,11 @@ class TaskModal {
                     return false;
                 }
             }
-            await modal.createJob(otherUserId);
-            modal.close();
-            window.open(chrome.extension.getURL('options.html#service'));
+            let job = await modal.createJob(otherUserId);
+            if (job) {
+                modal.close();
+                window.open(chrome.extension.getURL('options.html#service'));
+            }
         });
 
         return modal;
@@ -147,6 +149,10 @@ class TaskModal {
             chrome.runtime.getBackgroundPage(resolve);
         })).service;
         let checkedTasks = this.element.querySelectorAll('input[name="task"]:checked');
+        if (checkedTasks.length == 0) {
+            alert('请勾选要备份的项目。');
+            return null;
+        }
         let tasks = new Array(checkedTasks.length);
         for (let i = 0; i < checkedTasks.length; i ++) {
             tasks[i] = {

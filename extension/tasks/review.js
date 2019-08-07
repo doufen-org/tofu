@@ -19,6 +19,9 @@ export default class Review extends Task {
     async run() {
         let version = this.jobId;
         this.total = this.targetUser.reviews_count;
+        if (this.total == 0) {
+            return;
+        }
         await this.storage.table('version').put({table: 'review', version: version, updated: Date.now()});
 
         let baseURL = URL_REVIEWS
