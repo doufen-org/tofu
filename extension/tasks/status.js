@@ -53,7 +53,7 @@ export default class Status extends Task {
                 item.id = parseInt(status.id);
                 item.created = Date.now();
                 lastStatusId = status.id;
-                if (status.text.length == 140 && status.text.substr(-3, 3) == '...') {
+                if (status.text.length >= 140 && status.text.substr(-3, 3) == '...') {
                     item.status = await this.fetchStatusFulltext(lastStatusId);
                 }
                 try {
