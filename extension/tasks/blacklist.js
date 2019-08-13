@@ -31,10 +31,11 @@ export default class Following extends Task {
                     .replace('{uid}', uid);
                 let response = await this.fetch(url, {headers: {'X-Override-Referer': 'https://m.douban.com/'}});
                 if (response.status != 200) {
-                    return;
+                    idText = null;
+                } else {
+                    let json = await response.json();
+                    idText = json.id;
                 }
-                let json = await response.json();
-                idText = json.id;
             }
             let row = {
                 version: this.jobId,

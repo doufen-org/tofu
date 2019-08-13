@@ -2,8 +2,8 @@
     "name": "豆伴：豆瓣账号备份工具",
     "short_name": "豆伴",
     "author": "豆坟",
-    "version": "0.4.1",
-    "version_name": "0.4.1 beta",
+    "version": "0.4.2",
+    "version_name": "0.4.2 beta",
     "description": "能将指定的豆瓣用户数据备份到本地，并支持导出 Excel 文档。",
     "manifest_version": 2,
     "icons": {
