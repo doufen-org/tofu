@@ -31,7 +31,7 @@ const SCHEMA_LOCAL = [
         version: 'table, version',
     },
     {
-        files: '++id, url',
+        files: '++id, &url',
     },
 ];
 
