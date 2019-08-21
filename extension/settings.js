@@ -1,26 +1,7 @@
 /**
  * Class Settings
  */
-export default class Settings extends EventTarget {
-    clear() {
-        for (let name in this) {
-            delete this[name];
-        }
-        return this;
-    }
-
-    assign(settings) {
-        Object.assign(this, settings);
-        return this;
-    }
-
-    static get instance() {
-        if (!Settings._instance) {
-            Settings._instance = new Settings();
-        }
-        return Settings._instance;
-    }
-
+export default class Settings {
     static apply(target, settings) {
         for (let key in settings) {
             try {
@@ -37,31 +18,16 @@ export default class Settings extends EventTarget {
         }
     }
 
-    static async load(...args) {
-        args.unshift(new Object());
-        let defaults = Object.assign.apply(null, args);
+    static async load(defaults) {
         let settings = await new Promise(resolve => {
             chrome.storage.sync.get(Object.keys(defaults), resolve);
         });
-        let instance = Settings.instance.clear().assign(defaults).assign(settings);
-        instance.dispatchEvent(new Event('load'));
-        return instance;
+        return Object.assign({}, defaults, settings);
     }
 
     static async save(settings) {
-        await new Promise(resolve => {
+        return await new Promise(resolve => {
             chrome.storage.sync.set(settings, resolve);
         });
-        let instance = Settings.instance.assign(settings);
-        instance.dispatchEvent(new Event('load'));
-        return instance;
-    }
-
-    static attachLoadEvent(listener) {
-        return Settings.instance.addEventListener('load', listener);
-    }
-
-    static detachLoadEvent(listener) {
-        return Settings.instance.removeEventListener('load', listener);
     }
 }

@@ -489,6 +489,9 @@ class StateChangeEvent extends Event {
  * Class Service
  */
 export default class Service extends EventTarget {
+    /**
+     * Constructor
+     */
     constructor() {
         super();
         Object.assign(this, {
@@ -503,6 +506,16 @@ export default class Service extends EventTarget {
         this._status = this.STATE_STOPPED;
         this.lastRequest = 0;
         chrome.runtime.onConnect.addListener(port => this.onConnect(port));
+    }
+
+    /**
+     * Load settings
+     */
+    async loadSettings() {
+        let settings = await Settings.load(SERVICE_SETTINGS);
+        Settings.apply(this, settings);
+        this.logger.debug('Service settings loaded.');
+        return this;
     }
 
     /**
@@ -776,14 +789,8 @@ export default class Service extends EventTarget {
     static async startup() {
         const RUN_FOREVER = true;
 
-        let service = Service.instance;
+        let service = await Service.instance.loadSettings();
         let logger = service.logger;
-
-        Settings.attachLoadEvent(event => {
-            Settings.apply(service, event.target);
-            logger.debug('Service settings loaded.');
-        });
-        await Settings.load(SERVICE_SETTINGS);
 
         let browserMainVersion = (/Chrome\/([0-9]+)/.exec(navigator.userAgent)||[,0])[1];
         let extraOptions = (browserMainVersion >= 72) ? ['blocking', 'requestHeaders', 'extraHeaders'] : ['blocking', 'requestHeaders'];

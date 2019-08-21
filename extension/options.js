@@ -167,6 +167,10 @@ class GeneralPanel {
     async save(settings) {
         try {
             await Settings.save(settings);
+            let service = (await new Promise(resolve => {
+                chrome.runtime.getBackgroundPage(resolve);
+            })).service;
+            service.loadSettings();
             Notification.show('保存成功');
         } catch (e) {
             Notification.show('保存失败', {type: 'danger'});
