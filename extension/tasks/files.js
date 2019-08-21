@@ -82,7 +82,9 @@ export default class Files extends Task {
 
     async run() {
         await this.extractImages();
-        this.total = await this.storage.files.count();
+        this.total = await this.storage.files.filter(row => {
+            return !(row.save)
+        }).count();
         if (this.total == 0) {
             return;
         }

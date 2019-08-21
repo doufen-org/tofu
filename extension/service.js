@@ -9,6 +9,7 @@ import Storage from './storage.js';
 export const SERVICE_SETTINGS = {
     'service.debug': false,
     'service.requestInterval': 1000,
+    'service.cloudinary': '',
 };
 
 
@@ -778,9 +779,11 @@ export default class Service extends EventTarget {
         let service = Service.instance;
         let logger = service.logger;
 
-        let settings = await Settings.load(SERVICE_SETTINGS);
-        Settings.apply(service, settings);
-        logger.debug('Service settings loaded.');
+        Settings.attachLoadEvent(event => {
+            Settings.apply(service, event.target);
+            logger.debug('Service settings loaded.');
+        });
+        await Settings.load(SERVICE_SETTINGS);
 
         let browserMainVersion = (/Chrome\/([0-9]+)/.exec(navigator.userAgent)||[,0])[1];
         let extraOptions = (browserMainVersion >= 72) ? ['blocking', 'requestHeaders', 'extraHeaders'] : ['blocking', 'requestHeaders'];
