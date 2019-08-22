@@ -12,12 +12,12 @@ const PAGE_SIZE = 100;
 
 
 export default class Files extends Task {
-    async addFile(url, source, tags) {
+    async addFile(url, tags, meta) {
         try {
             await this.storage.files.add({
                 url: url,
-                source: source,
                 tags: tags,
+                meta: meta,
             });
         } catch (e) {
             if (e.name != 'ConstraintError') {
@@ -31,17 +31,26 @@ export default class Files extends Task {
             await this.storage.album.each(async item => {
                 await this.addFile(
                     item.album.cover_url,
-                    item.album.url,
-                    ['相册']
+                    ['相册'],
+                    {
+                        caption: item.album.title,
+                        alt: item.album.description,
+                        from: item.album.url,
+                    }
                 );
             });
         });
-        await this.storage.transaction('rw', this.storage.photo, this.storage.files, async () => {
+        await this.storage.transaction('rw', this.storage.album, this.storage.photo, this.storage.files, async () => {
             await this.storage.photo.each(async item => {
+                let {album} = await this.storage.album.get(item.album);
                 await this.addFile(
                     item.photo.cover.replace('/m/','/l/'),
-                    item.photo.url,
-                    ['照片']
+                    ['照片'],
+                    {
+                        caption: album.title,
+                        alt: item.photo.description,
+                        from: item.photo.url,
+                    }
                 );
             });
         });
@@ -50,15 +59,15 @@ export default class Files extends Task {
                 if (item.status.images) {
                     let statusUrl = item.status.sharing_url;
                     for (let image of item.status.images) {
-                        await this.addFile(image.large.url, statusUrl, ['广播']);
-                        await this.addFile(image.normal.url, statusUrl, ['广播']);
+                        await this.addFile(image.large.url, ['广播'], { from: statusUrl });
+                        await this.addFile(image.normal.url, ['广播'], { from: statusUrl });
                     }
                 }
                 if (item.status.reshared_status && item.status.reshared_status.images) {
                     let statusUrl = item.status.reshared_status.sharing_url;
                     for (let image of item.status.reshared_status.images) {
-                        await this.addFile(image.large.url, statusUrl, ['广播']);
-                        await this.addFile(image.normal.url, statusUrl, ['广播']);
+                        await this.addFile(image.large.url, ['广播'], { from: statusUrl });
+                        await this.addFile(image.normal.url, ['广播'], { from: statusUrl });
                     }
                 }
             });
@@ -69,8 +78,10 @@ export default class Files extends Task {
                 for (let image of images) {
                     await this.addFile(
                         image.src,
-                        item.note.url,
-                        ['日记']
+                        ['日记'],
+                        {
+                            from: item.note.url,
+                        }
                     );
                 }
             });
@@ -81,8 +92,10 @@ export default class Files extends Task {
                 for (let image of images) {
                     await this.addFile(
                         image.src,
-                        item.review.url,
-                        ['评论']
+                        ['评论'],
+                        {
+                            from: item.review.url,
+                        }
                     );
                 }
             });
@@ -119,6 +132,9 @@ export default class Files extends Task {
                 postData.append('file', row.url);
                 postData.append('upload_preset', 'douban');
                 postData.append('tags', row.tags);
+                postData.append('context', JSON.stringify(row.meta));
+                postData.append('folder', 'douban/asd');
+
                 let response = await this.fetch(uploadURL, {
                     method: 'POST',
                     body: postData,
