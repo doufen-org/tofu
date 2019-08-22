@@ -805,10 +805,10 @@ export default class Service extends EventTarget {
             return {requestHeaders: details.requestHeaders};
         }, {urls: ['http://*.douban.com/*', 'https://*.douban.com/*']}, extraOptions);
         let lastRequest = 0;
-        let fetchURL = (resource, init) => {
+        let fetchURL = (resource, init, continuous = false) => {
             let promise = service.continue();
             let requestInterval = lastRequest + service.requestInterval - Date.now();
-            if (requestInterval > 0) {
+            if (!continuous && requestInterval > 0) {
                 promise = promise.then(() => {
                     return new Promise(resolve => {
                         setTimeout(resolve, requestInterval);

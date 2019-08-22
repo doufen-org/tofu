@@ -1,5 +1,14 @@
 'use strict';
 import {TaskError, Task} from '../service.js';
+import Settings from '../settings.js';
+
+
+export const TASK_FILES_SETTINGS = {
+    '同步图片.cloudName': '',
+};
+
+const UPLOAD_URL = 'https://api.cloudinary.com/v1_1/{cloud}/image/upload';
+const PAGE_SIZE = 100;
 
 
 export default class Files extends Task {
@@ -81,14 +90,53 @@ export default class Files extends Task {
     }
 
     async run() {
+        let settings = await Settings.load(TASK_FILES_SETTINGS);
+        Settings.apply(this, settings);
+        if (!this.cloudName) {
+            this.logger.warning('Missing setting of cloudinary cloud name.');
+            return;
+        }
+
         await this.extractImages();
+
         this.total = await this.storage.files.filter(row => {
-            return !(row.save)
+            return !(row.save);
         }).count();
         if (this.total == 0) {
             return;
         }
-        
+
+        let uploadURL = UPLOAD_URL.replace('{cloud}', this.cloudName);
+
+        let pageCount = Math.ceil(this.total / PAGE_SIZE);
+        for (let i = 0; i < pageCount; i ++) {
+            let rows = await this.storage.files.filter(row => {
+                return !(row.save);
+            }).limit(PAGE_SIZE).toArray();
+
+            for (let row of rows) {
+                let postData = new URLSearchParams();
+                postData.append('file', row.url);
+                postData.append('upload_preset', 'douban');
+                postData.append('tags', row.tags);
+                let response = await this.fetch(uploadURL, {
+                    method: 'POST',
+                    body: postData,
+                }, true);
+                if (response.status >= 500) {
+                    throw new TaskError('Cloudinary 接口异常');
+                }
+                let savedData = await response.json();
+                if (response.status == 400 && !savedData['error']['message'].startsWith('Error in loading http')) {
+                    throw new TaskError('Cloudinary 接口返回错误');
+                }
+                await this.storage.files.update(row.id, {
+                    save: savedData,
+                })
+                this.step();
+            }
+        }
+
         this.complete();
     }
 

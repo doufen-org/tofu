@@ -18,7 +18,9 @@ export default class Settings {
         }
     }
 
-    static async load(defaults) {
+    static async load(...args) {
+        args.unshift(new Object());
+        let defaults = Object.assign.apply(null, args);
         let settings = await new Promise(resolve => {
             chrome.storage.sync.get(Object.keys(defaults), resolve);
         });
