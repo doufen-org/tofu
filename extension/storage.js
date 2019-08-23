@@ -30,6 +30,9 @@ const SCHEMA_LOCAL = [
         doumailContact: 'id, rank',
         version: 'table, version',
     },
+    {
+        files: '++id, &url',
+    },
 ];
 
 

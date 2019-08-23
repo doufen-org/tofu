@@ -2,10 +2,6 @@
  * Class Settings
  */
 export default class Settings {
-    constructor (settings, defaults) {
-        return Object.assign(defaults, settings);
-    }
-
     static apply(target, settings) {
         for (let key in settings) {
             try {
@@ -28,6 +24,12 @@ export default class Settings {
         let settings = await new Promise(resolve => {
             chrome.storage.sync.get(Object.keys(defaults), resolve);
         });
-        return new Settings(settings, defaults);
+        return Object.assign({}, defaults, settings);
+    }
+
+    static async save(settings) {
+        return await new Promise(resolve => {
+            chrome.storage.sync.set(settings, resolve);
+        });
     }
 }

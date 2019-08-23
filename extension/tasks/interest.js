@@ -98,7 +98,6 @@ export default class Interest extends Task {
                 }
             }
         }
-        delete this._name;
         this.complete();
     }
 

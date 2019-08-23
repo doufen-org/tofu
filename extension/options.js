@@ -1,5 +1,6 @@
 import Settings from './settings.js';
-import {SERVICE_SETTINGS, Task} from './service.js';
+import {SERVICE_SETTINGS} from './service.js';
+import {TASK_FILES_SETTINGS} from './tasks/files.js';
 import Notification from './ui/notification.js';
 import TabPanel from './ui/tab.js';
 
@@ -123,10 +124,21 @@ class GeneralPanel {
             }
         };
 
+        let TextInput = class extends Control {
+            set value(value) {
+                value && (this.element.value = value);
+            }
+
+            get value() {
+                return this.element.value || '';
+            }
+        };
+
         const CONTROL_METAS = [
             //{name: 'assistant.enable', type: BoolSwitch},
             {name: 'service.debug', type: BoolSwitch},
             {name: 'service.requestInterval', type: TimeInput},
+            {name: '同步图片.cloudName', type: TextInput},
         ];
 
         this.controls = new Object();
@@ -138,34 +150,37 @@ class GeneralPanel {
         this.saveButton = document.querySelector('.button[name="save"]');
         this.resetButton = document.querySelector('.button[name="reset"]');
 
-        this.saveButton.addEventListener('click', event => {
+        this.saveButton.addEventListener('click', async () => {
             for (let name in this.controls) {
                 this.settings[name] = this.controls[name].value;
             }
-            this.save(this.settings);
+            await this.save(this.settings);
         });
 
-        this.resetButton.addEventListener('click', event => {
+        this.resetButton.addEventListener('click', async () => {
             for (let name in this.controls) {
                 this.controls[name].value = this.defaults[name];
             }
-            this.save(this.defaults);
+            await this.save(this.defaults);
         });
     }
 
-    save(settings) {
+    async save(settings) {
         try {
-            chrome.storage.sync.set(settings, result => {
-                Notification.show('保存成功');
-            });
+            await Settings.save(settings);
+            let service = (await new Promise(resolve => {
+                chrome.runtime.getBackgroundPage(resolve);
+            })).service;
+            service.loadSettings();
+            Notification.show('保存成功');
         } catch (e) {
             Notification.show('保存失败', {type: 'danger'});
         }
     }
 
     static async render() {
-        let settings = await Settings.load(SERVICE_SETTINGS);
-        let defaults = SERVICE_SETTINGS;
+        let settings = await Settings.load(SERVICE_SETTINGS, TASK_FILES_SETTINGS);
+        let defaults = Object.assign({}, SERVICE_SETTINGS, TASK_FILES_SETTINGS);
         return new GeneralPanel('.page-tab-content[name="general"]', settings, defaults);
     }
 }

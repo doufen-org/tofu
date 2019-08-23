@@ -49,7 +49,7 @@ export default class Photo extends Task {
                 };
                 let readMore = true;
                 for (let start = 0; readMore; start += PAGE_SIZE) {
-                    let postData = new FormData();
+                    let postData = new URLSearchParams();
                     postData.append('start', start);
                     postData.append('target_id', userId);
                     postData.append('ck', this.session.cookies.ck);

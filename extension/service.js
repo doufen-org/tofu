@@ -9,6 +9,7 @@ import Storage from './storage.js';
 export const SERVICE_SETTINGS = {
     'service.debug': false,
     'service.requestInterval': 1000,
+    'service.cloudinary': '',
 };
 
 
@@ -488,6 +489,9 @@ class StateChangeEvent extends Event {
  * Class Service
  */
 export default class Service extends EventTarget {
+    /**
+     * Constructor
+     */
     constructor() {
         super();
         Object.assign(this, {
@@ -502,6 +506,16 @@ export default class Service extends EventTarget {
         this._status = this.STATE_STOPPED;
         this.lastRequest = 0;
         chrome.runtime.onConnect.addListener(port => this.onConnect(port));
+    }
+
+    /**
+     * Load settings
+     */
+    async loadSettings() {
+        let settings = await Settings.load(SERVICE_SETTINGS);
+        Settings.apply(this, settings);
+        this.logger.debug('Service settings loaded.');
+        return this;
     }
 
     /**
@@ -775,12 +789,8 @@ export default class Service extends EventTarget {
     static async startup() {
         const RUN_FOREVER = true;
 
-        let service = Service.instance;
+        let service = await Service.instance.loadSettings();
         let logger = service.logger;
-
-        let settings = await Settings.load(SERVICE_SETTINGS);
-        Settings.apply(service, settings);
-        logger.debug('Service settings loaded.');
 
         let browserMainVersion = (/Chrome\/([0-9]+)/.exec(navigator.userAgent)||[,0])[1];
         let extraOptions = (browserMainVersion >= 72) ? ['blocking', 'requestHeaders', 'extraHeaders'] : ['blocking', 'requestHeaders'];
@@ -795,10 +805,10 @@ export default class Service extends EventTarget {
             return {requestHeaders: details.requestHeaders};
         }, {urls: ['http://*.douban.com/*', 'https://*.douban.com/*']}, extraOptions);
         let lastRequest = 0;
-        let fetchURL = (resource, init) => {
+        let fetchURL = (resource, init, continuous = false) => {
             let promise = service.continue();
             let requestInterval = lastRequest + service.requestInterval - Date.now();
-            if (requestInterval > 0) {
+            if (!continuous && requestInterval > 0) {
                 promise = promise.then(() => {
                     return new Promise(resolve => {
                         setTimeout(resolve, requestInterval);
