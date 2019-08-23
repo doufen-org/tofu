@@ -11,13 +11,26 @@ const UPLOAD_URL = 'https://api.cloudinary.com/v1_1/{cloud}/image/upload';
 const PAGE_SIZE = 100;
 
 
+function encodeContext(context) {
+    let contextArray = [];
+    for (let key in context) {
+        let value = context[key];
+        key = key.replace('|', '\|').replace('=', '\=');
+        value = value.replace('|', '\|').replace('=', '\=');
+        contextArray.push(`${key}=${value}`);
+    }
+    return contextArray.join('|');
+}
+
+
 export default class Files extends Task {
-    async addFile(url, tags, meta) {
+    async addFile(url, tags, meta, path) {
         try {
             await this.storage.files.add({
                 url: url,
                 tags: tags,
                 meta: meta,
+                path: path,
             });
         } catch (e) {
             if (e.name != 'ConstraintError') {
@@ -36,40 +49,31 @@ export default class Files extends Task {
                         caption: item.album.title,
                         alt: item.album.description,
                         from: item.album.url,
-                    }
+                    },
+                    'thumbnail'
                 );
             });
         });
         await this.storage.transaction('rw', this.storage.album, this.storage.photo, this.storage.files, async () => {
             await this.storage.photo.each(async item => {
                 let {album} = await this.storage.album.get(item.album);
+                let meta = {
+                    caption: album.title,
+                    alt: item.photo.description,
+                    from: item.photo.url,
+                };
                 await this.addFile(
-                    item.photo.cover.replace('/m/','/l/'),
+                    item.photo.cover,
                     ['照片'],
-                    {
-                        caption: album.title,
-                        alt: item.photo.description,
-                        from: item.photo.url,
-                    }
+                    meta,
+                    'thumbnail'
                 );
-            });
-        });
-        await this.storage.transaction('rw', this.storage.status, this.storage.files, async () => {
-            await this.storage.status.each(async item => {
-                if (item.status.images) {
-                    let statusUrl = item.status.sharing_url;
-                    for (let image of item.status.images) {
-                        await this.addFile(image.large.url, ['广播'], { from: statusUrl });
-                        await this.addFile(image.normal.url, ['广播'], { from: statusUrl });
-                    }
-                }
-                if (item.status.reshared_status && item.status.reshared_status.images) {
-                    let statusUrl = item.status.reshared_status.sharing_url;
-                    for (let image of item.status.reshared_status.images) {
-                        await this.addFile(image.large.url, ['广播'], { from: statusUrl });
-                        await this.addFile(image.normal.url, ['广播'], { from: statusUrl });
-                    }
-                }
+                await this.addFile(
+                    item.photo.raw,
+                    ['照片'],
+                    meta,
+                    '相册/' + album.title
+                );
             });
         });
         await this.storage.transaction('rw', this.storage.note, this.storage.files, async () => {
@@ -80,8 +84,11 @@ export default class Files extends Task {
                         image.src,
                         ['日记'],
                         {
+                            caption: item.note.title,
+                            alt: item.note.abstract,
                             from: item.note.url,
-                        }
+                        },
+                        '日记/' + item.note.title
                     );
                 }
             });
@@ -94,9 +101,30 @@ export default class Files extends Task {
                         image.src,
                         ['评论'],
                         {
+                            caption: item.review.title,
+                            alt: item.review.abstract,
                             from: item.review.url,
-                        }
+                        },
+                        '评论/' + item.review.title
                     );
+                }
+            });
+        });
+        await this.storage.transaction('rw', this.storage.status, this.storage.files, async () => {
+            await this.storage.status.each(async item => {
+                if (item.status.images) {
+                    let statusUrl = item.status.sharing_url;
+                    for (let image of item.status.images) {
+                        await this.addFile(image.large.url, ['广播'], { from: statusUrl }, '广播');
+                        await this.addFile(image.normal.url, ['广播'], { from: statusUrl }, 'thumbnail');
+                    }
+                }
+                if (item.status.reshared_status && item.status.reshared_status.images) {
+                    let statusUrl = item.status.reshared_status.sharing_url;
+                    for (let image of item.status.reshared_status.images) {
+                        await this.addFile(image.large.url, ['广播'], { from: statusUrl }, '广播');
+                        await this.addFile(image.normal.url, ['广播'], { from: statusUrl }, 'thumbnail');
+                    }
                 }
             });
         });
@@ -132,8 +160,8 @@ export default class Files extends Task {
                 postData.append('file', row.url);
                 postData.append('upload_preset', 'douban');
                 postData.append('tags', row.tags);
-                postData.append('context', JSON.stringify(row.meta));
-                postData.append('folder', 'douban/asd');
+                postData.append('context', encodeContext(row.meta));
+                postData.append('folder', `${this.targetUser.uid}/${row.path}`);
 
                 let response = await this.fetch(uploadURL, {
                     method: 'POST',

@@ -795,7 +795,7 @@ class Photo extends Panel {
         for (let { photo, version } of collection) {
             let $photo = $(TEMPLATE_PHOTO);
             $photo.find('.image img').attr('src', photo.cover).click(() => {
-                PictureModal.show(photo.cover.replace('/m/','/l/'));
+                PictureModal.show(photo.raw);
             });
             $photo.find('.description').text(photo.description);
             version < currentVersion && $photo.addClass('is-obsolete');

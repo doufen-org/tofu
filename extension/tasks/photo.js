@@ -12,6 +12,19 @@ export default class Photo extends Task {
         return true;
     }
 
+    async fetchPhotoDetail(url) {
+        let response = await this.fetch(url);
+        if (response.status != 200) {
+            if (response.status < 500) {
+                return false;
+            }
+            throw new TaskError('豆瓣服务器返回错误');
+        }
+        let html = this.parseHTML(await response.text());
+        let photo = html.querySelector('.mainphoto>img');
+        return photo.src;
+    }
+
     async run() {
         let version = this.jobId;
         this.total = this.targetUser.photo_albums_count;
@@ -34,6 +47,7 @@ export default class Photo extends Task {
             pageCount = Math.ceil(json.total / PAGE_SIZE);
             for (let album of json.photo_albums) {
                 let albumId = parseInt(album.id);
+                let albumPrivacy = album.privacy;
                 if (isNaN(albumId)) continue;
                 let row = await this.storage.album.get(albumId);
                 if (row) {
@@ -73,10 +87,20 @@ export default class Photo extends Task {
                         if (row) {
                             let lastVersion = row.version;
                             row.version = version;
-                            if (row.photo.description != photoDescription) {
+                            if (row.photo.description != photoDescription ||
+                                row.photo.cover != photoImg.src) {
                                 !row.history && (row.history = {});
                                 row.history[lastVersion] = row.photo;
                                 row.photo.description = photoDescription;
+                                if (row.photo.cover != photoImg.src) {
+                                    if (albumPrivacy != 'public') {
+                                        let rawUrl = await this.fetchPhotoDetail(photoAnchor.href);
+                                        row.photo.raw = rawUrl || photoImg.src;
+                                    } else {
+                                        row.photo.raw = photoImg.src.replace('/m/', '/l/');
+                                    }
+                                    row.photo.cover = photoImg.src;
+                                }
                             }
                         } else {
                             row = {
@@ -88,6 +112,12 @@ export default class Photo extends Task {
                                     cover: photoImg.src,
                                     description: photoDescription,
                                 }
+                            }
+                            if (albumPrivacy != 'public') {
+                                let rawUrl = await this.fetchPhotoDetail(photoAnchor.href);
+                                row.photo.raw = rawUrl || photoImg.src;
+                            } else {
+                                row.photo.raw = photoImg.src.replace('/m/', '/l/');
                             }
                         }
                         await this.storage.photo.put(row);
