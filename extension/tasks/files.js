@@ -110,6 +110,23 @@ export default class Files extends Task {
                 }
             });
         });
+        await this.storage.transaction('rw', this.storage.annotation, this.storage.files, async () => {
+            await this.storage.annotation.each(async item => {
+                let images = this.parseHTML(item.annotation.fulltext).querySelectorAll('img');
+                for (let image of images) {
+                    await this.addFile(
+                        image.src,
+                        ['笔记'],
+                        {
+                            caption: item.annotation.title,
+                            alt: item.annotation.abstract,
+                            from: item.annotation.url,
+                        },
+                        '笔记/' + item.annotation.title
+                    );
+                }
+            });
+        });
         await this.storage.transaction('rw', this.storage.status, this.storage.files, async () => {
             await this.storage.status.each(async item => {
                 if (item.status.images) {
