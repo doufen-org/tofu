@@ -13,15 +13,11 @@ export default class Annotation extends Task {
             return;
         }
         let html = this.parseHTML(await response.text());
-        return html.querySelector('#link-report>.note').innerHTML;
+        return html.querySelector('#link-report').innerHTML;
     }
 
     async run() {
         let version = this.jobId;
-        this.total = this.targetUser.notes_count;
-        if (this.total == 0) {
-            return;
-        }
         await this.storage.table('version').put({table: 'annotation', version: version, updated: Date.now()});
 
         let baseURL = URL_ANNOTATIONS
@@ -35,34 +31,41 @@ export default class Annotation extends Task {
                 throw new TaskError('豆瓣服务器返回错误');
             }
             let json = await response.json();
+            this.total = parseInt(json.total);
             pageCount = Math.ceil(json.total / PAGE_SIZE);
             for (let collection of json.collections) {
-                let row = await this.storage.annotation.get(parseInt(collection.id));
-                if (row) {
-                    let lastVersion = row.version;
-                    row.version = version;
-                    if (note.update_time != row.note.update_time) {
-                        !row.history && (row.history = {});
-                        row.history[lastVersion] = row.note;
-                        note.fulltext = await this.fetchAnnotation(note.url);
-                        row.note = note;
+                let subject = collection.subject;
+                for (let annotation of collection.annotations) {
+                    let row = await this.storage.annotation.get(parseInt(annotation.id));
+                    let fulltext = await this.fetchAnnotation(annotation.url);
+                    if (row) {
+                        let lastVersion = row.version;
+                        row.version = version;
+                        if (fulltext != row.annotation.fulltext) {
+                            !row.history && (row.history = {});
+                            row.history[lastVersion] = row.annotation;
+                            annotation.fulltext = fulltext;
+                            row.annotation = annotation;
+                        }
+                    } else {
+                        annotation.fulltext = fulltext;
+                        annotation.subject = subject;
+                        row = {
+                            id: parseInt(annotation.id),
+                            version: version,
+                            subject: parseInt(subject.id),
+                            annotation: annotation,
+                        }
                     }
-                } else {
-                    note.fulltext = await this.fetchAnnotation(note.url);
-                    row = {
-                        id: parseInt(note.id),
-                        version: version,
-                        note: note,
-                    }
+                    await this.storage.annotation.put(row);
+                    this.step();
                 }
-                await this.storage.note.put(row);
-                this.step();
             }
         }
         this.complete();
     }
 
     get name() {
-        return '日记';
+        return '笔记';
     }
 }

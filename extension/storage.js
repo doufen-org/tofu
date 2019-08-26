@@ -33,6 +33,9 @@ const SCHEMA_LOCAL = [
     {
         files: '++id, &url',
     },
+    {
+        annotation: 'id, subject, [subject+version]',
+    },
 ];
 
 
