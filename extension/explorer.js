@@ -111,6 +111,7 @@ class Panel {
             status: Status,
             interest: Interest,
             review: Review,
+            annotation: Annotation,
             note: Note,
             photo: PhotoAlbum,
             follow: Follow,
@@ -683,6 +684,113 @@ class Note extends Panel {
             $note.find('.abstract').text(note.abstract);
             version < currentVersion && $note.addClass('is-obsolete');
             $note.appendTo(this.container);
+        }
+        return total;
+    }
+}
+
+const TEMPLATE_ANNOTATION = `\
+<article class="media subject">
+  <figure class="media-left">
+    <p class="image subject-cover">
+      <a class="subject-url" target="_blank" title="前往豆瓣查看"><img></a>
+    </p>
+  </figure>
+  <div class="media-content">
+    <div class="content">
+      <p>
+        <a class="subject-url title is-size-5" target="_blank" title="前往豆瓣查看"></a>
+        <span class="rating">
+          <label><span class="rating-count"></span>人评价</label>
+          <label>豆瓣评分：<span class="rating-value is-size-4 has-text-danger"></span></label>
+        </span>
+      </p>
+      <p class="subtitle is-size-6"></p>
+    </div>
+    <div class="box content annotation">
+      <p>
+        <a class="annotation-title annotation-url is-size-5" target="_blank"></a>
+        <small>我的评分：<span class="my-rating is-size-5 has-text-danger"></span></small><br>
+        <small><span class="create-time"></span> 发布<span class="type-name"></span></small>
+        <span class="tag is-normal comments"></span>
+        <span class="tag is-normal reads"></span><br>
+        <small>章节：<span class="chapter"></span></small><br>
+        <small>页码：<span class="page"></span></small>
+      </p>
+      <p class="abstract"></p>
+    </div>
+  </div>
+</article>`;
+
+/**
+ * Class Annotation
+ */
+class Annotation extends Panel {
+    async showAnnotation(annotationId, version) {
+        let storage = this.storage;
+        storage.local.open();
+        let { annotation } = await storage.local.annotation.get({ id: annotationId });
+        storage.local.close();
+        let container = MinorModal.instance.modal.querySelector('.box');
+        container.innerHTML = '';
+        let $article = $(TEMPLATE_ARTICLE);
+        $article.find('.title').text(annotation.title);
+        $article.find('.content').html(annotation.fulltext);
+        $article.appendTo(container);
+        MinorModal.show();
+    }
+
+    async load(total) {
+        let storage = this.storage;
+        storage.local.open();
+        let versionInfo = await storage.local.table('version').get({
+            table: 'annotation',
+        });
+        if (!versionInfo) {
+            storage.local.close();
+            return 0;
+        }
+        let currentVersion = versionInfo.version;
+        let collection = await storage.local.annotation
+            .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
+            .reverse()
+            .toArray();
+        if (!total) {
+            total = await storage.local.annotation
+                .count();
+        }
+        storage.local.close();
+        for (let {id, version, annotation} of collection) {
+            let $annotation = $(TEMPLATE_ANNOTATION);
+            $annotation.find('.subject-cover img').attr('src', annotation.subject.pic.normal);
+            $annotation.find('.subject-url').attr('href', annotation.subject.url);
+            $annotation.find('.title').text(annotation.subject.title);
+            $annotation.find('.annotation-title').text(annotation.title).click(async event => {
+                event.preventDefault();
+                await this.showAnnotation(id, currentVersion);
+                return false;
+            });
+            $annotation.find('.annotation-url').attr('href', annotation.url);
+            $annotation.find('.subtitle').text(annotation.subject.card_subtitle);
+            if (annotation.subject.null_rating_reason) {
+                $annotation.find('.rating').text(annotation.subject.null_rating_reason);
+            } else {
+                $annotation.find('.rating-value').text(annotation.subject.rating.value.toFixed(1));
+                $annotation.find('.rating-count').text(annotation.subject.rating.count);
+            }
+            $annotation.find('.create-time').text(annotation.create_time);
+            if (annotation.rating) {
+                $annotation.find('.my-rating').text(annotation.rating.value);
+            } else {
+                $annotation.find('.my-rating').parent().addClass('is-hidden');
+            }
+            $annotation.find('.chapter').text(annotation.chapter);
+            $annotation.find('.page').text(annotation.page);
+            $annotation.find('.comments').text(annotation.comments_count + ' 回应');
+            $annotation.find('.reads').text(annotation.read_count + ' 阅读');
+            $annotation.find('.abstract').text(annotation.abstract);
+            version < currentVersion && $annotation.addClass('is-obsolete');
+            $annotation.appendTo(this.container);
         }
         return total;
     }
@@ -1407,6 +1515,34 @@ class Exporter {
         }
     }
 
+    async exportAnnotation(storage) {
+        let collection = storage.local.annotation
+            .reverse();
+        let data = [['书名', '章节', '页码', '链接', '创建时间', '我的评分', '内容']];
+        await collection.each(row => {
+            let {
+                subject,
+                chapter,
+                page,
+                url,
+                rating,
+                fulltext,
+                create_time
+            } = row.annotation;
+            data.push([
+                `《${subject.title}》`,
+                chapter,
+                page,
+                url,
+                create_time,
+                rating ? rating.value : '',
+                fulltext,
+            ]);
+        });
+        let worksheet = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(this.workbook, worksheet, '笔记');
+    }
+
     async exportStatus(storage) {
         let formatStatus = (status) => {
             if (status.deleted) {
@@ -1613,6 +1749,9 @@ class Exporter {
                     break;
                 case 'Review':
                     await this.exportReview(storage);
+                    break;
+                case 'Annotation':
+                    await this.exportAnnotation(storage);
                     break;
                 case 'Status':
                     await this.exportStatus(storage);
