@@ -40,6 +40,18 @@ export default class Files extends Task {
     }
 
     async extractImages() {
+        let escapeFolderName = name => {
+            name = name.replace('?', '？')
+                .replace('&', '＆')
+                .replace('#', '＃')
+                .replace('\\', '＼')
+                .replace('%', '％')
+                .replace('<', '＜')
+                .replace('>', '＞')
+                .replace('/', '／');
+            return name;
+        };
+
         await this.storage.transaction('rw', this.storage.album, this.storage.files, async () => {
             await this.storage.album.each(async item => {
                 await this.addFile(
@@ -72,7 +84,7 @@ export default class Files extends Task {
                     item.photo.raw,
                     ['照片'],
                     meta,
-                    '相册/' + album.title
+                    '相册/' + escapeFolderName(album.title)
                 );
             });
         });
@@ -88,7 +100,7 @@ export default class Files extends Task {
                             alt: item.note.abstract,
                             from: item.note.url,
                         },
-                        '日记/' + item.note.title
+                        '日记/' + escapeFolderName(item.note.title)
                     );
                 }
             });
@@ -105,7 +117,7 @@ export default class Files extends Task {
                             alt: item.review.abstract,
                             from: item.review.url,
                         },
-                        '评论/' + item.review.title
+                        '评论/' + escapeFolderName(item.review.title)
                     );
                 }
             });
@@ -122,7 +134,7 @@ export default class Files extends Task {
                             alt: item.annotation.abstract,
                             from: item.annotation.url,
                         },
-                        '笔记/' + item.annotation.title
+                        '笔记/' + escapeFolderName(item.annotation.title)
                     );
                 }
             });
