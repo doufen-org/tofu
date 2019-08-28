@@ -58,8 +58,8 @@ export default class Annotation extends Task {
                         }
                     }
                     await this.storage.annotation.put(row);
-                    this.step();
                 }
+                this.step();
             }
         }
         this.complete();
