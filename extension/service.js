@@ -805,7 +805,7 @@ export default class Service extends EventTarget {
             return {requestHeaders: details.requestHeaders};
         }, {urls: ['http://*.douban.com/*', 'https://*.douban.com/*']}, extraOptions);
         let lastRequest = 0;
-        let fetchURL = (resource, init, continuous = false) => {
+        let fetchURL = (resource, init, continuous = false, retries = 2) => {
             let promise = service.continue();
             let requestInterval = lastRequest + service.requestInterval - Date.now();
             if (!continuous && requestInterval > 0) {
@@ -815,12 +815,22 @@ export default class Service extends EventTarget {
                     });
                 });
             }
-            promise = promise.then(() => {
+            let fetchResolve = () => {
                 let url = Request.prototype.isPrototypeOf(resource) ? resource.url : resource.toString();
                 lastRequest = Date.now();
                 logger.debug(`Fetching ${url}...`, resource);
-                return fetch(resource, init);
-            });
+                return fetch(resource, init).catch(e => {
+                    if (retries > 0) {
+                        logger.debug(e);
+                        logger.debug(`Attempt to fetch ${retries} times...`);
+                        retries --;
+                        return fetchResolve();
+                    } else {
+                        throw e;
+                    }
+                });
+            };
+            promise = promise.then(fetchResolve);
             service.dispatchEvent(new Event('progress'));
             return promise;
         };
