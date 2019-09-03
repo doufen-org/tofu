@@ -112,12 +112,14 @@ class Job extends EventTarget {
     /**
      * Constructor
      * @param {Service} service 
-     * @param {string|null} userId 
+     * @param {string|null} targetUserId 
+     * @param {string|null} localUserId 
      */
-    constructor(service, userId) {
+    constructor(service, targetUserId, localUserId) {
         super();
         this._service = service;
-        this._userId = userId;
+        this._targetUserId = targetUserId;
+        this._localUserId = localUserId;
         this._tasks = [];
         this._isRunning = false;
         this._currentTask = null;
@@ -209,9 +211,9 @@ class Job extends EventTarget {
         let session = await this.checkin(fetch);
 
         let userId, account, targetUser, isOtherUser = false;
-        if (this._userId) {
-            let userInfo = await this.getUserInfo(fetch, session.cookies, this._userId);
-            this._userId = userId = parseInt(userInfo.id);
+        if (this._targetUserId) {
+            let userInfo = await this.getUserInfo(fetch, session.cookies, this._targetUserId);
+            this._targetUserId = userId = parseInt(userInfo.id);
             account = {
                 userId: userId,
                 username: userInfo.name,
@@ -229,7 +231,7 @@ class Job extends EventTarget {
             targetUser = session.userInfo;
         }
 
-        let storage = new Storage(userId);
+        let storage = new Storage(this._localUserId || userId);
         await storage.global.open();
         logger.debug('Open global database');
         await storage.global.account.put(account);
@@ -689,15 +691,16 @@ export default class Service extends EventTarget {
 
     /**
      * Create a job
-     * @param  {string} userId 
+     * @param  {string} targetUserId 
+     * @param  {string} localUserId 
      * @param  {Array} tasks 
      */
-    async createJob(userId, tasks) {
+    async createJob(targetUserId, localUserId, tasks) {
         this.logger.debug('Creating a job...');
-        let job = new Job(this, userId);
+        let job = new Job(this, targetUserId, localUserId);
         for (let {name, args} of tasks) {
             try {
-                let module = await import(`./tasks/${name}.js`);
+                let module = await import(`./tasks/${name.toLowerCase()}.js`);
                 if (typeof args == 'undefined') {
                     args = [];
                 }
