@@ -110,13 +110,17 @@ export default class Drafter {
 
     get block() {
         if (!this._block) {
-            this.createBlock();
+            return this.createBlock();
         }
         return this._block;
     }
 
-    createBlock(tpye = 'unstyled') {
-        
+    createBlock(type = 'unstyled') {
+        if (this._block) {
+            this.blocks.push(this._block);
+        }
+        this._block = new Block(type);
+        return this._block;
     }
 
     addEntity() {
@@ -125,6 +129,7 @@ export default class Drafter {
 
     travelChildren(parentNode) {
         for (let node of parentNode.childNodes) {
+            console.log(node)
             switch (node.nodeType) {
                 case node.ELEMENT_NODE:
                     if (node.tagName in BLOCK_TAGS) {
@@ -142,7 +147,7 @@ export default class Drafter {
                         this.block.feed(TEXT_TAGS[node.tagName]);
                     }
                     if (node.childElementCount > 0) {
-                        this.travelNodes(node.childNodes);
+                        this.travelChildren(node);
                     }
                     break;
                 case node.TEXT_NODE:

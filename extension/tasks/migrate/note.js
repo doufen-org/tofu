@@ -1,5 +1,6 @@
 'use strict';
 import {Task} from '../../service.js';
+import Drafter from '../../vendor/draft.js';
 
 
 const URL_NOTE_PUBLISH = 'https://www.douban.com/j/note/publish';
