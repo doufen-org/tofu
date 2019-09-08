@@ -18,14 +18,32 @@ const BLOCK_TAGS = {
     code: 'code-block',
     p: 'unstyled',
     div: [
-        {class: 'separator', type: 'atomic'},
-        {class: 'subject-wrapper', type: 'atomic', handle: node => {
+        {class: 'separator', type: 'atomic', handle(node) {
+            this.block.write(' ');
+            let entityId = this.addEntity('SEPARATOR', false, {});
+            let range = this.block.addEntityRange(entityId);
+            range.length = 1;
             node.innerHTML = '';
         }},
-        {class: 'video-wrapper', type: 'atomic', handle: node => {
+        {class: 'subject-wrapper', type: 'atomic', handle(node) {
             node.innerHTML = '';
         }},
-        {class: 'image-container', type: 'atomic', handle: node => {
+        {class: 'video-wrapper', type: 'atomic', handle(node) {
+            node.innerHTML = '';
+        }},
+        {class: 'image-container', type: 'atomic', handle(node) {
+            this.block.write(' ');
+            let imageNode = node.querySelector('.image-wrapper>img');
+            let imageIdMatch = imageNode.src.match(/.*\D(\d+)\..+$/);
+            let imageCaption = node.querySelector('.image-caption');
+            let entityId = this.addEntity('IMAGE', false, {
+                src: imageNode.src,
+                caption: imageCaption ? imageCaption.innerText : '',
+                is_animated: (imageNode.dataset.renderType == 'gif') ? true : false,
+                id: imageIdMatch ? imageIdMatch[1]: '',
+            });
+            let range = this.block.addEntityRange(entityId);
+            range.length = 1;
             node.innerHTML = '';
         }},
         {type: 'unstyled'},
@@ -50,14 +68,20 @@ const TEXT_TAGS = {
 };
 
 const ENTITY_TAGS = {
-    a: { type: 'LINK', handle: node => {
-        let entityId = this.addEntity('LINK', true, {url: node.href});
-        this.block.addEntityRange(entityId);
-    }},
-    img: {type: 'IMAGE', handle: node => {
-    }},
-    hr: {type: 'SEPARATOR', handle: node => {
-    }}
+    a(node) {
+        return this.addEntity('LINK', true, {url: node.href});
+    },
+
+    img(node) {
+        return this.addEntity('IMAGE', false, {
+            src: node.src,
+            caption: node.alt || node.title || '',
+        });
+    },
+
+    hr(node) {
+        return this.addEntity('SEPARATOR', false, {});
+    },
 }
 
 
@@ -77,13 +101,11 @@ class Block {
         return {
             "key": this.key,
             "text": this.text,
-            "type": this.style,
+            "type": this.type,
             "depth": 0,
-            "inlineStyleRanges": [
-            ],
-            "entityRanges": [
-            ],
-            "data": { }
+            "inlineStyleRanges": this.inlineStyleRanges,
+            "entityRanges": this.entityRanges,
+            "data": {}
         }
     }
 
@@ -135,7 +157,7 @@ class Block {
 }
 
 
-export default class Drafter {
+export default class Draft {
     constructor() {
         this.blocks = [];
         this.entities = {};
@@ -178,11 +200,7 @@ export default class Drafter {
             if (rule.parent && node.parentNode.tagName != rule.parent) {
                 continue;
             }
-            let handled = false;
-            if (rule.handle) {
-                handled = rule.handle.call(this, node);
-            }
-            return [rule.type, handled];
+            return [rule.type, rule.handle];
         }
         return ['unstyled', null];
     }
@@ -200,11 +218,12 @@ export default class Drafter {
                             this.block.write("\n");
                         } else {
                             let defination = BLOCK_TAGS[nodeTagName];
-                            let blockType = defination;
+                            let blockType = defination, handler;
                             if (defination instanceof Array) {
-                                [blockType] = this.matchNode(defination, node);
+                                [blockType, handler] = this.matchNode(defination, node);
                             }
                             this.addBlock(blockType);
+                            handler && handler.call(this, node);
                         }
                     } else if (nodeTagName in INLINE_TAGS) {
                         // Inline styles
@@ -224,6 +243,12 @@ export default class Drafter {
                         }
                     } else if (nodeTagName in ENTITY_TAGS) {
                         // Entity
+                        let handler = ENTITY_TAGS[nodeTagName];
+                        let entityId = handler.call(this, node);
+                        let range = this.block.addEntityRange(entityId);
+                        this.travelChildren(node, depth + 1);
+                        range.length = this.block.length - range.offset;
+                        ignoreRecursive = true;
                     } else if (nodeTagName in TEXT_TAGS) {
                         // Text
                         this.block.write(TEXT_TAGS[nodeTagName]);
@@ -244,5 +269,20 @@ export default class Drafter {
     feed(html) {
         this.travelChildren(html);
         return this;
+    }
+
+    end() {
+        if (this._block) {
+            this.blocks.push(this._block);
+            delete this._block;
+        }
+    }
+
+    toArray() {
+        this.end();
+        return {
+            blocks: this.blocks.map(block => block.value),
+            entityMap: this.entities,
+        };
     }
 }

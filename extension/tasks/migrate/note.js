@@ -1,6 +1,6 @@
 'use strict';
 import {Task} from '../../service.js';
-import Drafter from '../../vendor/draft.js';
+import Draft from '../../vendor/draft.js';
 
 
 const URL_NOTE_PUBLISH = 'https://www.douban.com/j/note/publish';
@@ -26,14 +26,21 @@ export default class Note extends Task {
         for (let i = 0; i < pageCount; i ++) {
             let rows = await this.storage.note
                 .offset(PAGE_SIZE * i).limit(PAGE_SIZE)
-                .reverse().toArray();
+                .toArray();
             for (let row of rows) {
+                let draft = new Draft();
                 let note = row.note;
-                let noteHTML = this.parseHTML(note.fulltext);
+                let noteHTML = this.parseHTML(note.fulltext).querySelector('body');
+                draft.feed(noteHTML);
                 let noteIntro = noteHTML.querySelector('div.introduction');
+                if (noteIntro) {
+                    postData.set('introduction', noteIntro.innerText);
+                    noteIntro.remove();
+                } else {
+                    postData.set('introduction', '');
+                }
                 postData.set('note_title', note.title);
-                postData.set('note_text', note.fulltext);
-                postData.set('introduction', noteIntro ? noteIntro.innerText : '');
+                postData.set('note_text', JSON.stringify(draft.toArray()));
                 let response = await this.fetch(URL_NOTE_PUBLISH, {
                     headers: {
                         'X-Override-Referer': URL_NOTE_CREATE_REFERER,
