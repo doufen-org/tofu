@@ -95,11 +95,17 @@
                                 </span>
                                 <span>返回</span>
                             </a>
-                            <a class="button" name="export">
+                            <a class="button" name="export" title="将该用户数据导出到 Excel 文件中">
                                 <span class="icon">
                                     <i class="fas fa-file-export"></i>
                                 </span>
                                 <span>导出数据</span>
+                            </a>
+                            <a class="button" name="migrate" title="将该用户数据迁移到我的豆瓣账号中">
+                                <span class="icon">
+                                    <i class="fas fa-exchange-alt"></i>
+                                </span>
+                                <span>迁移数据</span>
                             </a>
                         </div>
                     </div>
@@ -399,6 +405,105 @@
             </section>
             <footer class="modal-card-foot">
                 <button class="button is-link" name="export">导出</button>
+                <button class="button cancel">取消</button>
+            </footer>
+        </div>
+    </div>
+
+    <div class="modal" id="migrate-modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">迁移数据</p>
+                <button class="delete cancel"></button>
+            </header>
+            <section class="modal-card-body">
+                <div class="content">
+                    <p>该功能可以将此备份数据导入到你<a href="options.html#account" target="_blank">当前登录</a>的豆瓣账号中。另外，请在<a href="https://www.douban.com/settings/" target="_blank">广播设置</a>中关闭各事件广播，以免扰邻。</p>
+                </div>
+                <div class="level">
+                    <div class="level-left">
+                        <div class="level-item">
+                            <label>选择迁移的项目：</label>
+                        </div>
+                    </div>
+                    <div class="level-left">
+                        <div class="level-item">
+                            <label class="checkbox">
+                                <input type="checkbox" class="select-all"> 全选
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="columns">
+                    <div class="column">
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="task" value="Interest"> 影/音/书/游/剧
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="task" value="Annotation"> 笔记
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="task" value="Follow"> 关注
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="task" value="Blacklist"> 黑名单
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="field is-hidden">
+                            <div class="control">
+                                <label class="checkbox" disabled>
+                                    <input type="checkbox" name="task" value="Note" disabled> 日记
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field is-hidden">
+                            <div class="control">
+                                <label class="checkbox" disabled>
+                                    <input type="checkbox" name="task" value="Photo" disabled> 相册
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="field is-hidden">
+                            <div class="control">
+                                <label class="checkbox" disabled>
+                                    <input type="checkbox" name="task" value="Doulist" disabled> 豆列
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field is-hidden">
+                            <div class="control">
+                                <label class="checkbox" disabled>
+                                    <input type="checkbox" name="task" value="Review" disabled> 评论
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-link" name="migrate">迁移</button>
                 <button class="button cancel">取消</button>
             </footer>
         </div>

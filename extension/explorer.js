@@ -1789,7 +1789,73 @@ class Exporter {
 }
 
 
+/**
+ * Class MigrateModal
+ */
+class MigrateModal {
+    constructor(selector) {
+        this.element = document.querySelector(selector);
+    }
+
+    static init() {
+        let modal = new MigrateModal('#migrate-modal');
+
+        modal.element.querySelectorAll('.cancel').forEach(item => {
+            item.addEventListener('click', () => modal.close());
+        });
+        $('.button[name="migrate"]').click(() => modal.open());
+
+        modal.element.querySelector('.select-all').addEventListener('change', event => {
+            modal.element.querySelectorAll('input[name="task"]').forEach(item => {
+                if (!item.hasAttribute('disabled')) {
+                    item.checked = event.target.checked;
+                }
+            });
+        });
+
+        modal.element.querySelector('.button[name="migrate"]').addEventListener('click', async () => {
+            let localUserId = parseInt(location.search.substr(1));
+            let job = await modal.createJob(localUserId);
+            if (job) {
+                modal.close();
+                window.open(chrome.extension.getURL('options.html#service'));
+            }
+        });
+
+        return modal;
+    }
+
+    async createJob(localUserId) {
+        let service = (await new Promise(resolve => {
+            chrome.runtime.getBackgroundPage(resolve);
+        })).service;
+        let checkedTasks = this.element.querySelectorAll('input[name="task"]:checked');
+        if (checkedTasks.length == 0) {
+            alert('请勾选要迁移的项目。');
+            return null;
+        }
+        let tasks = new Array(checkedTasks.length);
+        for (let i = 0; i < checkedTasks.length; i ++) {
+            tasks[i] = {
+                name: 'migrate/' + checkedTasks[i].value,
+            };
+        }
+        let job = await service.createJob(null, localUserId, tasks);
+        return job;
+    }
+
+    open() {
+        this.element.classList.add('is-active');
+    }
+
+    close() {
+        this.element.classList.remove('is-active');
+    }
+}
+
+
 let tab = TabPanel.render();
 tab.addEventListener('toggle', async event => await Panel.render(event.target.activeTab));
 Panel.render(tab.activeTab);
 ExportModal.init();
+MigrateModal.init();

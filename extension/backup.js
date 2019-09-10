@@ -109,7 +109,7 @@ class TaskModal {
             });
         });
 
-        modal.element.querySelector('.other-user').addEventListener('click', event => {
+        modal.element.querySelector('.enable-target-user').addEventListener('click', event => {
             let doumailCheckbox = modal.element.querySelector('input[value="Doumail"]');
             let blacklistCheckbox = modal.element.querySelector('input[value="Blacklist"]');
             if (event.target.checked) {
@@ -126,15 +126,15 @@ class TaskModal {
         });
 
         modal.element.querySelector('.button.new').addEventListener('click', async () => {
-            let otherUserId = null;
-            if (modal.useOtherUser) {
-                otherUserId = modal.otherUserId;
-                if (!otherUserId) {
+            let targetUserId = null;
+            if (modal.enableTargetUser) {
+                targetUserId = modal.targetUserId;
+                if (!targetUserId) {
                     alert('请输入正确的用户主页地址。');
                     return false;
                 }
             }
-            let job = await modal.createJob(otherUserId);
+            let job = await modal.createJob(targetUserId);
             if (job) {
                 modal.close();
                 window.open(chrome.extension.getURL('options.html#service'));
@@ -144,7 +144,7 @@ class TaskModal {
         return modal;
     }
 
-    async createJob(userId = null) {
+    async createJob(targetUserId = null) {
         let service = (await new Promise(resolve => {
             chrome.runtime.getBackgroundPage(resolve);
         })).service;
@@ -159,7 +159,7 @@ class TaskModal {
                 name: checkedTasks[i].value,
             };
         }
-        let job = await service.createJob(userId, tasks);
+        let job = await service.createJob(targetUserId, null, tasks);
         return job;
     }
 
@@ -171,7 +171,7 @@ class TaskModal {
         this.element.classList.remove('is-active');
     }
 
-    get otherUserId() {
+    get targetUserId() {
         let matches = this.userHomepageInput.value.match(/^https:\/\/www\.douban\.com\/people\/([^\/]+)\/?$/);
         if (matches) {
             return matches[1];
@@ -179,8 +179,8 @@ class TaskModal {
         return null;
     }
 
-    get useOtherUser() {
-        return this.element.querySelector('.other-user').checked;
+    get enableTargetUser() {
+        return this.element.querySelector('.enable-target-user').checked;
     }
 }
 
