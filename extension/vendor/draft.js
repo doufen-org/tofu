@@ -13,8 +13,6 @@ const BLOCK_TAGS = {
         {parent: 'ul', type: 'unordered-list-item'},
         {parent: 'ol', type: 'ordered-list-item'},
     ],
-    ol: '',
-    ul: '',
     code: 'code-block',
     p: 'unstyled',
     div: [
@@ -35,12 +33,18 @@ const BLOCK_TAGS = {
             this.block.write(' ');
             let imageNode = node.querySelector('.image-wrapper>img');
             let imageIdMatch = imageNode.src.match(/.*\D(\d+)\..+$/);
+            let imageId = imageIdMatch ? imageIdMatch[1]: '';
             let imageCaption = node.querySelector('.image-caption');
+            let imageSrc = imageNode.src;
             let entityId = this.addEntity('IMAGE', false, {
-                src: imageNode.src,
+                src: imageSrc,
+                url: imageSrc,
+                thumb: imageSrc,
+                file_name: '',
                 caption: imageCaption ? imageCaption.innerText : '',
                 is_animated: (imageNode.dataset.renderType == 'gif') ? true : false,
-                id: imageIdMatch ? imageIdMatch[1]: '',
+                id: imageId,
+                seq: imageId,
             });
             let range = this.block.addEntityRange(entityId);
             range.length = 1;
@@ -95,6 +99,7 @@ class Block {
 
     write(segment) {
         this.segments.push(segment);
+        return this;
     }
 
     get value() {
@@ -174,9 +179,9 @@ export default class Draft {
     addBlock(type = 'unstyled') {
         if (this._block) {
             this._block.end();
-            this.blocks.push(this._block);
         }
         this._block = new Block(type);
+        this.blocks.push(this._block);
         return this._block;
     }
 
@@ -197,7 +202,7 @@ export default class Draft {
             if (rule.style && node.attributes.style.value != rule.style) {
                 continue;
             }
-            if (rule.parent && node.parentNode.tagName != rule.parent) {
+            if (rule.parent && node.parentNode.tagName.toLowerCase() != rule.parent) {
                 continue;
             }
             return [rule.type, rule.handle];
@@ -214,17 +219,13 @@ export default class Draft {
                     let nodeTagName = node.tagName.toLowerCase();
                     if (nodeTagName in BLOCK_TAGS) {
                         // Block element
-                        if (depth > 0) {
-                            this.block.write("\n");
-                        } else {
-                            let defination = BLOCK_TAGS[nodeTagName];
-                            let blockType = defination, handler;
-                            if (defination instanceof Array) {
-                                [blockType, handler] = this.matchNode(defination, node);
-                            }
-                            this.addBlock(blockType);
-                            handler && handler.call(this, node);
+                        let defination = BLOCK_TAGS[nodeTagName];
+                        let blockType = defination, handler;
+                        if (defination instanceof Array) {
+                            [blockType, handler] = this.matchNode(defination, node);
                         }
+                        this.addBlock(blockType);
+                        handler && handler.call(this, node);
                     } else if (nodeTagName in INLINE_TAGS) {
                         // Inline styles
                         if (node.childNodes.length > 0) {
@@ -271,15 +272,15 @@ export default class Draft {
         return this;
     }
 
-    end() {
-        if (this._block) {
-            this.blocks.push(this._block);
-            delete this._block;
+    count() {
+        let textCount = 0;
+        for (let block of this.blocks) {
+            textCount += block.text.length;
         }
+        return textCount;
     }
 
     toArray() {
-        this.end();
         return {
             blocks: this.blocks.map(block => block.value),
             entityMap: this.entities,

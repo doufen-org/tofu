@@ -9,6 +9,16 @@ const PAGE_SIZE = 100;
 
 
 export default class Note extends Task {
+    getIntro(html) {
+        let intro = html.querySelector('div.introduction');
+        if (intro) {
+            let introText = intro.innerText;
+            intro.remove();
+            return introText;
+        }
+        return '';
+    }
+
     async run() {
         this.total = await this.storage.note.count();
         if (this.total == 0) {
@@ -28,19 +38,17 @@ export default class Note extends Task {
                 .offset(PAGE_SIZE * i).limit(PAGE_SIZE)
                 .toArray();
             for (let row of rows) {
-                let draft = new Draft();
                 let note = row.note;
-                let noteHTML = this.parseHTML(note.fulltext).querySelector('body');
-                draft.feed(noteHTML);
-                let noteIntro = noteHTML.querySelector('div.introduction');
-                if (noteIntro) {
-                    postData.set('introduction', noteIntro.innerText);
-                    noteIntro.remove();
-                } else {
-                    postData.set('introduction', '');
-                }
+                let html = this.parseHTML(note.fulltext).querySelector('body');
+                let intro = this.getIntro(html);
+
+                let draft = new Draft();
+                draft.feed(html);
+
+                postData.set('introduction', intro);
                 postData.set('note_title', note.title);
                 postData.set('note_text', JSON.stringify(draft.toArray()));
+
                 let response = await this.fetch(URL_NOTE_PUBLISH, {
                     headers: {
                         'X-Override-Referer': URL_NOTE_CREATE_REFERER,
@@ -51,7 +59,7 @@ export default class Note extends Task {
                     body: postData,
                 });
                 let result = await response.json();
-                if (result.result) {
+                if (!result.error) {
                     this.logger.info('Success to publish note:' + note.title);
                 } else {
                     this.logger.warning('Fail to publish note:' + note.title);
