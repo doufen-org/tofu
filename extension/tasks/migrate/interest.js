@@ -37,7 +37,7 @@ export default class Note extends Task {
                 .toArray();
             for (let row of rows) {
                 let interest = row.interest;
-                postData.set('rating', interest.rating || '');
+                postData.set('rating', interest.rating ? interest.rating.value : '');
                 postData.set('interest', MARKS[row.status]);
                 postData.set('tags', interest.tags ? interest.tags.join(' ') : '');
                 postData.set('comment', interest.comment + ' @' + interest.create_time);

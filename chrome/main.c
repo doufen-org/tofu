@@ -52,10 +52,10 @@ int WINAPI WinMain(HINSTANCE hThisInstance,
                    int nCmdShow)
 {
     HWND hWindow = GetForegroundWindow();
-	TCHAR szError[SIZE_MSG],
-		  szMessage[SIZE_MSG + 100];
+    TCHAR szError[SIZE_MSG],
+          szMessage[SIZE_MSG + 100];
 
-	LoadSettings(TEXT(CONFIGURE_FILENAME));
+    LoadSettings(TEXT(CONFIGURE_FILENAME));
     BOOL isFirstRun = IsFirstRun();
 
     if (isFirstRun) {
@@ -95,15 +95,15 @@ int WINAPI WinMain(HINSTANCE hThisInstance,
 
 DWORD GetLastErrorMessage(LPSTR lpszMessage, DWORD nSize)
 {
-	return FormatMessage(
-		FORMAT_MESSAGE_FROM_SYSTEM,
-		NULL,
+    return FormatMessage(
+        FORMAT_MESSAGE_FROM_SYSTEM,
+        NULL,
         GetLastError(),
-		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		lpszMessage,
-		nSize,
-		NULL
-	);
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        lpszMessage,
+        nSize,
+        NULL
+    );
 }
 
 
@@ -113,8 +113,8 @@ BOOL WriteRegistryPolicies()
          hKeyExtensionInstallForcelist,
          hKeyExtensionInstallSources;
     DWORD dwOne = 1;
-	TCHAR szExtensionUrl[SIZE_EXTENSION_ID + sizeof(EXTENSION_URL)];
-	wsprintf(szExtensionUrl, TEXT(EXTENSION_URL), g_szExtensionID);
+    TCHAR szExtensionUrl[SIZE_EXTENSION_ID + sizeof(EXTENSION_URL)];
+    wsprintf(szExtensionUrl, TEXT(EXTENSION_URL), g_szExtensionID);
 
     if (ERROR_SUCCESS != RegCreateKeyEx(HKEY_CURRENT_USER,
                                         TEXT("SOFTWARE\\Policies\\Chromium"),
@@ -125,7 +125,7 @@ BOOL WriteRegistryPolicies()
                                         NULL,
                                         &hKeyChromium,
                                         NULL) ||
-		ERROR_SUCCESS != RegCreateKeyEx(HKEY_CURRENT_USER,
+        ERROR_SUCCESS != RegCreateKeyEx(HKEY_CURRENT_USER,
                                         TEXT("SOFTWARE\\Policies\\Chromium\\ExtensionInstallForcelist"),
                                         0,
                                         NULL,
@@ -134,7 +134,7 @@ BOOL WriteRegistryPolicies()
                                         NULL,
                                         &hKeyExtensionInstallForcelist,
                                         NULL) ||
-		ERROR_SUCCESS != RegCreateKeyEx(HKEY_CURRENT_USER,
+        ERROR_SUCCESS != RegCreateKeyEx(HKEY_CURRENT_USER,
                                         TEXT("SOFTWARE\\Policies\\Chromium\\ExtensionInstallSources"),
                                         0,
                                         NULL,
@@ -173,7 +173,7 @@ BOOL WriteRegistryPolicies()
 
 BOOL StartupChromium()
 {
-	STARTUPINFO si;
+    STARTUPINFO si;
     PROCESS_INFORMATION pi;
 
     ZeroMemory( &si, sizeof(si) );
@@ -190,10 +190,10 @@ BOOL StartupChromium()
 
 BOOL IsFirstRun()
 {
-	TCHAR szExtensionPath[sizeof(EXTENSION_PATH) + SIZE_EXTENSION_ID];
-	wsprintf(szExtensionPath, EXTENSION_PATH, g_szExtensionID);
+    TCHAR szExtensionPath[sizeof(EXTENSION_PATH) + SIZE_EXTENSION_ID];
+    wsprintf(szExtensionPath, EXTENSION_PATH, g_szExtensionID);
 
-	DWORD dwFileAttributes = GetFileAttributes(szExtensionPath);
+    DWORD dwFileAttributes = GetFileAttributes(szExtensionPath);
     if (INVALID_FILE_ATTRIBUTES == dwFileAttributes ||
         !(FILE_ATTRIBUTE_DIRECTORY & dwFileAttributes)) {
         return TRUE;
@@ -234,12 +234,12 @@ BOOL RunAsAdministrator()
 
 BOOL LoadSettings(LPCSTR lpszIniFile)
 {
-	return (BOOL)GetPrivateProfileString(
-		NULL,
-		TEXT("id"),
-		TEXT(EXTENSION_DEFAULT_ID),
-		g_szExtensionID,
-		SIZE_EXTENSION_ID - 1,
-		lpszIniFile
-	);
+    return (BOOL)GetPrivateProfileString(
+        NULL,
+        TEXT("id"),
+        TEXT(EXTENSION_DEFAULT_ID),
+        g_szExtensionID,
+        SIZE_EXTENSION_ID - 1,
+        lpszIniFile
+    );
 }
