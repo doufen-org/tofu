@@ -4,7 +4,7 @@ import {Task} from '../../service.js';
 
 const URL_INTEREST = {
     movie: 'https://movie.douban.com/j/subject/{subject_id}/interest',
-    music: 'https://muisc.douban.com/j/subject/{subject_id}/interest',
+    music: 'https://music.douban.com/j/subject/{subject_id}/interest',
     book: 'https://book.douban.com/j/subject/{subject_id}/interest',
     game: 'https://www.douban.com/j/ilmen/thing/{subject_id}/interest',
     drama: 'https://www.douban.com/j/location/drama/{subject_id}/interest',
