@@ -1594,64 +1594,86 @@ class Exporter {
     }
 
     async exportFollowing(storage) {
-        let collection = storage.local.following;
         let data = [['用户名', '用户ID', '链接', '所在地', '备注']];
-        await collection.each(row => {
-            let {
-                name,
-                uid,
-                url,
-                loc,
-                remark
-            } = row.user;
-            data.push([
-                name,
-                uid,
-                url,
-                loc ? loc.name : '',
-                remark,
-            ]);
+
+        let versionInfo = await storage.local.table('version').get({
+            table: 'following',
         });
+
+        if (versionInfo) {
+            let collection = storage.local.following.where({ version: versionInfo.version });
+            await collection.each(row => {
+                let {
+                    name,
+                    uid,
+                    url,
+                    loc,
+                    remark
+                } = row.user;
+                data.push([
+                    name,
+                    uid,
+                    url,
+                    loc ? loc.name : '',
+                    remark,
+                ]);
+            });    
+        }
+
         let worksheet = XLSX.utils.aoa_to_sheet(data);
         XLSX.utils.book_append_sheet(this.workbook, worksheet, '我关注的');
     }
 
     async exportFollower(storage) {
-        let collection = storage.local.follower;
         let data = [['用户名', '用户ID', '链接', '所在地']];
-        await collection.each(row => {
-            let {
-                name,
-                uid,
-                url,
-                loc
-            } = row.user;
-            data.push([
-                name,
-                uid,
-                url,
-                loc ? loc.name : '',
-            ]);
+
+        let versionInfo = await storage.local.table('version').get({
+            table: 'follower',
         });
+
+        if (versionInfo) {
+            let collection = storage.local.follower.where({ version: versionInfo.version });
+            await collection.each(row => {
+                let {
+                    name,
+                    uid,
+                    url,
+                    loc
+                } = row.user;
+                data.push([
+                    name,
+                    uid,
+                    url,
+                    loc ? loc.name : '',
+                ]);
+            });    
+        }
         let worksheet = XLSX.utils.aoa_to_sheet(data);
         XLSX.utils.book_append_sheet(this.workbook, worksheet, '关注我的');
     }
 
     async exportBlacklist(storage) {
-        let collection = storage.local.blacklist;
         let data = [['用户名', '用户ID', '链接']];
-        await collection.each(row => {
-            let {
-                name,
-                uid,
-                url
-            } = row.user;
-            data.push([
-                name,
-                uid,
-                url
-            ]);
+
+        let versionInfo = await storage.local.table('version').get({
+            table: 'blacklist',
         });
+
+        if (versionInfo) {
+            let collection = storage.local.blacklist.where({ version: versionInfo.version });
+            await collection.each(row => {
+                let {
+                    name,
+                    uid,
+                    url
+                } = row.user;
+                data.push([
+                    name,
+                    uid,
+                    url
+                ]);
+            });
+        }
         let worksheet = XLSX.utils.aoa_to_sheet(data);
         XLSX.utils.book_append_sheet(this.workbook, worksheet, '黑名单');
     }
