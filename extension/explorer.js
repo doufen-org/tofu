@@ -117,6 +117,7 @@ class Panel {
             follow: Follow,
             doumail: DoumailContact,
             doulist: Doulist,
+            board: Board,
         };
         let name = tab.getAttribute('name');
         let panel = new (PANEL_CLASSES[name])(tab, page, pageSize);
@@ -1367,6 +1368,55 @@ class DoulistItem extends Panel {
     }
 }
 
+const TEMPLATE_BOARD = `\
+<article class="media contact">
+  <figure class="media-left">
+    <p class="image is-48x48 avatar">
+      <a class="board-sender-url" target="_blank"><img></a>
+    </p>
+  </figure>
+  <div class="media-content">
+    <div class="content">
+      <p>
+        <a class="board-sender-url username" target="_blank"></a>
+        <br>
+        <span class="text"></span>
+      </p>
+    </div>
+    <div class="columns user-data"></div>
+  </div>
+  <div class="media-right">
+    <span class="time"></span>
+  </div>
+</article>`;
+
+/**
+ * Class Board
+ */
+class Board extends Panel {
+    async load(total) {
+        let storage = this.storage;
+        storage.local.open();
+        let collection = await storage.local.board
+            .reverse()
+            .offset(this.pageSize * (this.page - 1)).limit(this.pageSize)
+            .toArray();
+        if (!total) {
+            total = await storage.local.board.count();
+        }
+        storage.local.close();
+        for (let {id, message, sender, sendTime} of collection) {
+            let $message = $(TEMPLATE_BOARD);
+            $message.find('.avatar img').attr('src', sender.avatar);
+            $message.find('.username').text(sender.name);
+            $message.find('.text').text(message);
+            $message.find('.time').text(sendTime);
+            $message.appendTo(this.container);
+        }
+        return total;
+    }
+}
+
 
 /**
  * Class ExporModal
@@ -1761,6 +1811,23 @@ class Exporter {
         }
     }
 
+    async exportBoard(storage) {
+        let data = [['留言用户', '用户主页', '留言时间', '消息']];
+        let messages = await storage.local.board
+            .reverse()
+            .toArray();
+        for (let {id, sender, sendTime, message} of messages) {
+            data.push([
+                sender.name,
+                sender.url,
+                sendTime,
+                message
+            ]);
+        }
+        let worksheet = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(this.workbook, worksheet, '留言板');
+    }
+
     async export(items) {
         let storage = new Storage(this.userId);
         storage.local.open();
@@ -1798,6 +1865,9 @@ class Exporter {
                     break;
                 case 'Doulist':
                     await this.exportDoulist(storage);
+                    break;
+                case 'Board':
+                    await this.exportBoard(storage);
                     break;
             }
         }

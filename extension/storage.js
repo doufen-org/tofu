@@ -36,6 +36,9 @@ const SCHEMA_LOCAL = [
     {
         annotation: 'id, subject, [subject+version]',
     },
+    {
+        board: 'id',
+    },
 ];
 
 

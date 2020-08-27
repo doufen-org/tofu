@@ -16,7 +16,7 @@ export default class Following extends Task {
 
         await this.storage.table('version').put({table: 'blacklist', version: this.jobId, updated: Date.now()});
 
-        let totalPage = 1;
+        let totalPage = this.total = 1;
 
         for (let i = 0; i < totalPage; i ++) {
             let response = await this.fetch(URL_BLACKLIST.replace('{start}', i * PAGE_SIZE));
@@ -25,7 +25,7 @@ export default class Following extends Task {
             }
             let html =  this.parseHTML(await response.text());
             try {
-                totalPage = parseInt(html.querySelector('.paginator .thispage').dataset.totalPage);
+                this.total = totalPage = parseInt(html.querySelector('.paginator .thispage').dataset.totalPage);
             } catch (e) {}
             for (let dl of html.querySelectorAll('.obss.namel>dl')) {
                 let avatar = dl.querySelector('.imgg');
@@ -59,6 +59,7 @@ export default class Following extends Task {
                 };
                 await this.storage.blacklist.put(row);
             }
+            this.step();
         }
         this.complete();
     }
