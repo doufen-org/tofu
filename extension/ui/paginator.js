@@ -7,6 +7,18 @@ const TEMPLATE_PAGINATOR = `\
   <ul class="pagination-list"></ul>
 </nav>`;
 
+const TEMPLATE_GOTO = `\
+<li>
+    <div class="field has-addons" style="margin: 0.25rem;">
+        <div class="control">
+            <input class="input pagination-goto" type="text" size="1">
+        </div>
+        <div class="control">
+            <a class="button pagination-goto">跳转</a>
+        </div>
+    </div>
+</li>`;
+
 
 /**
  * Class Paginator
@@ -63,6 +75,8 @@ export default class Paginator extends EventTarget {
             pageCount > 1 && $paginationList.append('<li><a class="pagination-link">' + pageCount + '</a></li>');
         }
 
+        $paginationList.append(TEMPLATE_GOTO);
+
         $pagination.on('click', '.pagination-link', event => {
             this.currentPage = parseInt(event.currentTarget.innerText);
             this.dispatchEvent(new Event('change'));
@@ -79,6 +93,13 @@ export default class Paginator extends EventTarget {
             let currentPage = parseInt($pagination.find('.pagination-link.is-current').text());
             if (isNaN(currentPage) || currentPage == endPage) return false;
             this.currentPage = currentPage + 1;
+            this.dispatchEvent(new Event('change'));
+        });
+
+        $pagination.on('click', '.button.pagination-goto', event => {
+            let currentPage = parseInt($pagination.find('.input.pagination-goto').val());
+            if (isNaN(currentPage) || currentPage < 1 || currentPage > pageCount) return false;
+            this.currentPage = currentPage;
             this.dispatchEvent(new Event('change'));
         });
     }
