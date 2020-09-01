@@ -3,9 +3,7 @@
     "short_name": "豆伴",
     "author": "豆坟",
     "version": "0.8.2",
-    "version": "0.8.1",
     "version_name": "0.8.2 beta",
-    "version_name": "0.8.1 beta",
     "description": "用于备份豆瓣网的用户数据及图片，并支持将备份数据导出到 Excel 文档。",
     "manifest_version": 2,
     "icons": {
