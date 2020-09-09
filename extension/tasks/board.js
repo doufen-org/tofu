@@ -66,7 +66,7 @@ export default class Board extends Task {
                         url: li.childNodes[0].href,
                     },
                     created: Date.now(),
-                    message: li.childNodes[1].textContent.substr(4),
+                    message: this.getMessage(li),
                     sendTime: sendTime
                 };
                 try {
@@ -77,6 +77,18 @@ export default class Board extends Task {
         }
         await this.storage.table('version').update('board', { lastId: maxMessageId });
         this.complete();
+    }
+
+    getMessage(element) {
+        let message = element.childNodes[1].textContent.substr(4);
+        for (let i = 2; i < element.childNodes.length; i ++) {
+            let childNode = element.childNodes[i];
+            if (childNode.className == 'pl') break;
+
+            message += childNode.textContent;
+        }
+
+        return message;
     }
 
     get name() {
