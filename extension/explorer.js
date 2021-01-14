@@ -335,7 +335,7 @@ class Status extends Panel {
                 let $resharedStatus;
                 let resharedStatus = status.reshared_status;
                 let $container = $status.find('.reshared-status').removeClass('is-hidden');
-                if (resharedStatus.deleted) {
+                if (resharedStatus.deleted || resharedStatus.hidden) {
                     $resharedStatus = $(`<article class="box">${resharedStatus.msg}</article>`);
                 } else {
                     $resharedStatus = $(TEMPLATE_RESHARED_STATUS);
@@ -1571,6 +1571,7 @@ class Exporter {
         let data = [['书名', '章节', '页码', '链接', '创建时间', '我的评分', '内容']];
         await collection.each(row => {
             let {
+                title,
                 subject,
                 chapter,
                 page,
@@ -1580,7 +1581,7 @@ class Exporter {
                 create_time
             } = row.annotation;
             data.push([
-                `《${subject.title}》`,
+                subject ? `《${subject.title}》` : title,
                 chapter,
                 page,
                 url,
@@ -1595,7 +1596,7 @@ class Exporter {
 
     async exportStatus(storage) {
         let formatStatus = (status) => {
-            if (status.deleted) {
+            if (status.deleted || status.hidden) {
                 return status.msg;
             }
             let text = `${status.author.name}(@${status.author.uid})`;
