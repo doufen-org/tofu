@@ -114,8 +114,9 @@ class Job extends EventTarget {
      * @param {Service} service 
      * @param {string|null} targetUserId 
      * @param {string|null} localUserId 
+     * @param {boolean} isOffline 
      */
-    constructor(service, targetUserId, localUserId) {
+    constructor(service, targetUserId, localUserId, isOffline) {
         super();
         this._service = service;
         this._targetUserId = targetUserId;
@@ -125,6 +126,7 @@ class Job extends EventTarget {
         this._currentTask = null;
         this._id = null;
         this._session = null;
+        this._isOffline = isOffline;
     }
 
     /**
@@ -208,33 +210,49 @@ class Job extends EventTarget {
      */
     async run(fetch, logger) {
         this._isRunning = true;
-        let session = await this.checkin(fetch);
 
         let userId, account, targetUser, isOtherUser = false;
-        if (this._targetUserId) {
-            let userInfo = await this.getUserInfo(fetch, session.cookies, this._targetUserId);
-            this._targetUserId = userId = parseInt(userInfo.id);
-            account = {
-                userId: userId,
-                username: userInfo.name,
-                userSymbol: userInfo.uid,
-                cookies: null,
-                userInfo: userInfo,
-                updated: Date.now(),
-                isOther: true
-            };
-            targetUser = userInfo;
+
+        if (this._isOffline) {
+            userId = this._targetUserId;
             isOtherUser = true;
         } else {
-            userId = session.userId;
-            account = session;
-            targetUser = session.userInfo;
+            let session = await this.checkin(fetch);
+            if (this._targetUserId) {
+                let userInfo = await this.getUserInfo(fetch, session.cookies, this._targetUserId);
+                this._targetUserId = userId = parseInt(userInfo.id);
+                account = {
+                    userId: userId,
+                    username: userInfo.name,
+                    userSymbol: userInfo.uid,
+                    cookies: null,
+                    userInfo: userInfo,
+                    updated: Date.now(),
+                    isOther: true
+                };
+                targetUser = userInfo;
+                isOtherUser = true;
+            } else {
+                userId = session.userId;
+                account = session;
+                targetUser = session.userInfo;
+            }
         }
 
         let storage = new Storage(this._localUserId || userId);
         await storage.global.open();
         logger.debug('Open global database');
-        await storage.global.account.put(account);
+        if (this._isOffline) {
+            let account = await storage.global.account.get({userId: userId});
+            if (!account) {
+                logger.debug('The account does not exist');
+                storage.global.close();
+                return;
+            }
+            targetUser = account.userInfo;
+        } else {
+            await storage.global.account.put(account);
+        }
         logger.debug('Create the account');
         let jobId = await storage.global.job.add({
             userId: userId,
@@ -256,7 +274,7 @@ class Job extends EventTarget {
                 logger,
                 parseHTML,
                 jobId,
-                session,
+                this._session,
                 storage.local,
                 targetUser,
                 isOtherUser
@@ -694,10 +712,11 @@ export default class Service extends EventTarget {
      * @param  {string} targetUserId 
      * @param  {string} localUserId 
      * @param  {Array} tasks 
+     * @param  {boolean} isOffline 
      */
-    async createJob(targetUserId, localUserId, tasks) {
+    async createJob(targetUserId, localUserId, tasks, isOffline = false) {
         this.logger.debug('Creating a job...');
-        let job = new Job(this, targetUserId, localUserId);
+        let job = new Job(this, targetUserId, localUserId, isOffline);
         for (let {name, args} of tasks) {
             try {
                 let module = await import(`./tasks/${name.toLowerCase()}.js`);

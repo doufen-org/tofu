@@ -1952,3 +1952,14 @@ tab.addEventListener('toggle', async event => await Panel.render(event.target.ac
 Panel.render(tab.activeTab);
 ExportModal.init();
 MigrateModal.init();
+
+document.querySelector('.button[name="upload"]').addEventListener('click', async () => {
+    let localUserId = parseInt(location.search.substr(1));
+    let service = (await new Promise(resolve => {
+        chrome.runtime.getBackgroundPage(resolve);
+    })).service;
+    let job = await service.createJob(localUserId, null, [{name: 'files'}], true);
+    if (job) {
+        window.open(chrome.extension.getURL('options.html#service'));
+    }
+});
