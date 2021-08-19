@@ -690,7 +690,7 @@ class Note extends Panel {
     }
 }
 
-const TEMPLATE_ANNOTATION = `\
+const TEMPLATE_SUBJECT_ANNOTATION = `\
 <article class="media subject">
   <figure class="media-left">
     <p class="image subject-cover">
@@ -708,6 +708,24 @@ const TEMPLATE_ANNOTATION = `\
       </p>
       <p class="subtitle is-size-6"></p>
     </div>
+    <div class="box content annotation">
+      <p>
+        <a class="annotation-title annotation-url is-size-5" target="_blank"></a>
+        <small>我的评分：<span class="my-rating is-size-5 has-text-danger"></span></small><br>
+        <small><span class="create-time"></span> 发布<span class="type-name"></span></small>
+        <span class="tag is-normal comments"></span>
+        <span class="tag is-normal reads"></span><br>
+        <small>章节：<span class="chapter"></span></small><br>
+        <small>页码：<span class="page"></span></small>
+      </p>
+      <p class="abstract"></p>
+    </div>
+  </div>
+</article>`;
+
+const TEMPLATE_ANNOTATION = `\
+<article class="media no-subject">
+  <div class="media-content">
     <div class="box content annotation">
       <p>
         <a class="annotation-title annotation-url is-size-5" target="_blank"></a>
@@ -762,23 +780,29 @@ class Annotation extends Panel {
         }
         storage.local.close();
         for (let {id, version, annotation} of collection) {
-            let $annotation = $(TEMPLATE_ANNOTATION);
-            $annotation.find('.subject-cover img').attr('src', annotation.subject.pic.normal);
-            $annotation.find('.subject-url').attr('href', annotation.subject.url);
-            $annotation.find('.title').text(annotation.subject.title);
+            let subject = annotation.subject;
+            let $annotation;
+            if (subject) {
+                $annotation = $(TEMPLATE_SUBJECT_ANNOTATION);
+                $annotation.find('.subject-cover img').attr('src', subject.pic.normal);
+                $annotation.find('.subject-url').attr('href', subject.url);
+                $annotation.find('.title').text(subject.title);
+                $annotation.find('.subtitle').text(subject.card_subtitle);
+                if (subject.null_rating_reason) {
+                    $annotation.find('.rating').text(subject.null_rating_reason);
+                } else {
+                    $annotation.find('.rating-value').text(subject.rating.value.toFixed(1));
+                    $annotation.find('.rating-count').text(subject.rating.count);
+                }
+            } else {
+                $annotation = $(TEMPLATE_ANNOTATION);
+            }
             $annotation.find('.annotation-title').text(annotation.title).click(async event => {
                 event.preventDefault();
                 await this.showAnnotation(id, currentVersion);
                 return false;
             });
             $annotation.find('.annotation-url').attr('href', annotation.url);
-            $annotation.find('.subtitle').text(annotation.subject.card_subtitle);
-            if (annotation.subject.null_rating_reason) {
-                $annotation.find('.rating').text(annotation.subject.null_rating_reason);
-            } else {
-                $annotation.find('.rating-value').text(annotation.subject.rating.value.toFixed(1));
-                $annotation.find('.rating-count').text(annotation.subject.rating.count);
-            }
             $annotation.find('.create-time').text(annotation.create_time);
             if (annotation.rating) {
                 $annotation.find('.my-rating').text(annotation.rating.value);
@@ -1571,7 +1595,6 @@ class Exporter {
         let data = [['书名', '章节', '页码', '链接', '创建时间', '我的评分', '内容']];
         await collection.each(row => {
             let {
-                title,
                 subject,
                 chapter,
                 page,
@@ -1581,7 +1604,7 @@ class Exporter {
                 create_time
             } = row.annotation;
             data.push([
-                subject ? `《${subject.title}》` : title,
+                subject ? subject.title : '',
                 chapter,
                 page,
                 url,

@@ -25,7 +25,7 @@ class Shortcuts {
             this.close();
         });
         document.addEventListener('keydown', event => {
-            if (event.keyCode == 27) {
+            if (event.code == 27) {
                 this.close();
             }
         });
@@ -37,7 +37,9 @@ class Shortcuts {
      */
     close() {
         this._closed = true;
-        document.body.removeChild(this._elementRoot);
+        try {
+            document.body.removeChild(this._elementRoot);
+        } catch (e) {}
         document.documentElement.classList.remove('is-clipped');
         return this;
     }
