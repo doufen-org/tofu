@@ -15,6 +15,9 @@ function encodeContext(context) {
     let contextArray = [];
     for (let key in context) {
         let value = context[key];
+        if (value.length > 100) {
+            value = value.substring(0, 100);
+        }
         key = key.replace('|', '\|').replace('=', '\=');
         value = value.replace('|', '\|').replace('=', '\=');
         contextArray.push(`${key}=${value}`);
