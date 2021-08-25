@@ -18,8 +18,8 @@ function encodeContext(context) {
         if (value.length > 100) {
             value = value.substring(0, 100);
         }
-        key = key.replace('|', '\|').replace('=', '\=');
-        value = value.replace('|', '\|').replace('=', '\=');
+        key = key.replaceAll('|', '\|').replaceAll('=', '\=');
+        value = value.replaceAll('|', '\|').replaceAll('=', '\=');
         contextArray.push(`${key}=${value}`);
     }
     return contextArray.join('|');
@@ -28,6 +28,9 @@ function encodeContext(context) {
 
 export default class Files extends Task {
     async addFile(url, tags, meta, path) {
+        if (!url) {
+            return;
+        }
         try {
             await this.storage.files.add({
                 url: url,
@@ -44,14 +47,14 @@ export default class Files extends Task {
 
     async extractImages() {
         let escapeFolderName = name => {
-            name = name.replace('?', '？')
-                .replace('&', '＆')
-                .replace('#', '＃')
-                .replace('\\', '＼')
-                .replace('%', '％')
-                .replace('<', '＜')
-                .replace('>', '＞')
-                .replace('/', '／');
+            name = name.replaceAll('?', '？')
+                .replaceAll('&', '＆')
+                .replaceAll('#', '＃')
+                .replaceAll('\\', '＼')
+                .replaceAll('%', '％')
+                .replaceAll('<', '＜')
+                .replaceAll('>', '＞')
+                .replaceAll('/', '／');
             return name;
         };
 
@@ -179,6 +182,22 @@ export default class Files extends Task {
             return;
         }
 
+        let escapePath = path => {
+            let dirs = path.split('/');
+            let folderName = dirs.pop();
+            if (folderName.trim() == '') {
+                folderName = folderName.replaceAll(' ', '␣');
+            } else if (folderName.startsWith(' ')) {
+                folderName = folderName.replace('.', '␣');
+            } else if (folderName.replaceAll('.', '') == '') {
+                folderName = folderName.replaceAll('.', '·');
+            } else if (folderName.startsWith('.')) {
+                folderName = folderName.replace('.', '·');
+            }
+            dirs.push(folderName);
+            return dirs.join('/');
+        };
+
         let uploadURL = UPLOAD_URL.replace('{cloud}', this.cloudName);
 
         let pageCount = Math.ceil(this.total / PAGE_SIZE);
@@ -188,12 +207,16 @@ export default class Files extends Task {
             }).limit(PAGE_SIZE).toArray();
 
             for (let row of rows) {
+                if (!row.url) {
+                    this.step();
+                    continue;
+                }
                 let postData = new URLSearchParams();
                 postData.append('file', row.url);
                 postData.append('upload_preset', 'douban');
                 postData.append('tags', row.tags);
                 postData.append('context', encodeContext(row.meta));
-                postData.append('folder', `${this.targetUser.uid}/${row.path}`);
+                postData.append('folder', `${this.targetUser.uid}/${escapePath(row.path)}`);
 
                 let response = await this.fetch(uploadURL, {
                     method: 'POST',
