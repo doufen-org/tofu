@@ -28,6 +28,9 @@ function encodeContext(context) {
 
 export default class Files extends Task {
     async addFile(url, tags, meta, path) {
+        if (!url) {
+            return;
+        }
         try {
             await this.storage.files.add({
                 url: url,
