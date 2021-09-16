@@ -319,7 +319,7 @@ class Status extends Panel {
                         $card.find('.image>img').attr('src', card.image.normal.url);
                     }
                     let $title = $card.find('.title>a');
-                    $title.text(card.title);
+                    $title.text(card.title ? card.title : `${card.owner_name} ${card.activity}:`);
                     $title.attr('href', card.url);
                     $card.find('.subtitle').text(card.subtitle);
                 }
