@@ -37,6 +37,23 @@
                 <div class="navbar-end">
                     <div class="navbar-item">
                         <div class="buttons">
+                            <button class="button" id="backup-db" title="导出豆伴数据库并打包下载">
+                                <span class="icon">
+                                    <i class="fas fa-file-download"></i>
+                                </span>
+                                <span>备份数据库</span>
+                            </button>
+                            <div class="file" style="margin: 0 .5rem .5rem 0;">
+                                <label class="file-label" title="导入备份的数据包">
+                                    <input class="file-input" type="file" id="restore-db" accept=".zip" multiple="false">
+                                    <span class="file-cta" style="background-color: white;">
+                                        <span class="file-icon">
+                                            <i class="fas fa-file-upload"></i>
+                                        </span>
+                                        <span class="file-label">恢复数据库</span>
+                                    </span>
+                                </label>
+                            </div>
                             <a class="button" href="options.html">
                                 <span class="icon">
                                     <i class="fas fa-cog"></i>
@@ -231,6 +248,14 @@
                 <button class="button new is-link">新建</button>
                 <button class="button cancel">取消</button>
             </footer>
+        </div>
+    </div>
+
+    <div class="modal" id="backup-db-modal">
+        <div class="modal-background"></div>
+        <div class="modal-content">
+            <p class="title has-text-white has-text-centered is-size-5"></p>
+            <progress class="progress is-info" value="0" max="100"></progress>
         </div>
     </div>
 
