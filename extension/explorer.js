@@ -1531,14 +1531,15 @@ class Exporter {
                 let collection = storage.local.interest
                     .where({ type: type, status: status })
                     .reverse();
-                let data = [['标题', '简介', '豆瓣评分', '链接', '创建时间', '我的评分', '标签', '评论']];
+                let data = [['标题', '简介', '豆瓣评分', '链接', '创建时间', '我的评分', '标签', '评论', '可见性']];
                 await collection.each(row => {
                     let {
                         subject,
                         tags,
                         rating,
                         comment,
-                        create_time
+                        create_time,
+                        is_private
                     } = row.interest;
                     data.push([
                         subject.title,
@@ -1549,6 +1550,7 @@ class Exporter {
                         rating ? rating.value : '',
                         tags.toString(),
                         comment,
+                        is_private ? "private" : "public"
                     ]);
                 });
                 let worksheet = XLSX.utils.aoa_to_sheet(data);
