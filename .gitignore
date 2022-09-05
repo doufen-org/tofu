@@ -89,3 +89,4 @@ typings/
 *.vcxproj
 *.vcxproj.*
 Release
+.vscode/

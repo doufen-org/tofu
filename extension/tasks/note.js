@@ -41,7 +41,7 @@ export default class Note extends Task {
                 if (row) {
                     let lastVersion = row.version;
                     row.version = version;
-                    if (note.update_time != row.note.update_time) {
+                    if (note.update_time != row.note.update_time || row.note.fulltext == undefined) {
                         !row.history && (row.history = {});
                         row.history[lastVersion] = row.note;
                         note.fulltext = await this.fetchNote(note.url);
