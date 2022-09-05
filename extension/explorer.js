@@ -1544,7 +1544,7 @@ class Exporter {
                     data.push([
                         subject.title,
                         subject.card_subtitle,
-                        subject.rating.value.toFixed(1),
+                        subject.rating ? subject.rating.value.toFixed(1) : subject.null_rating_reason,
                         subject.url,
                         create_time,
                         rating ? rating.value : '',
