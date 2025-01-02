@@ -38,6 +38,10 @@ export default class Interest extends Task {
 
     async processInterest(interest, version, type)
     {
+        if (!interest.subject) {
+            console.warn("Encountered malformed interest, skipping");
+            return;
+        }        
         let subjectId = parseInt(interest.subject.id)
         let interestId = parseInt(interest.id);
         let row = await this.storage.interest.get({ subject: subjectId });
