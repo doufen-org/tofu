@@ -38,6 +38,10 @@ export default class Interest extends Task {
 
     async processInterest(interest, version, type)
     {
+        if (!interest || Object.keys(interest).length === 0) {
+            console.warn("Empty interest object received.");
+            return;
+        }
         let subjectId = parseInt(interest.subject.id)
         let interestId = parseInt(interest.id);
         let row = await this.storage.interest.get({ subject: subjectId });
@@ -84,6 +88,7 @@ export default class Interest extends Task {
             .replace('{ck}', this.session.cookies.ck)
             .replace('{uid}', this.targetUser.id);
 
+        // for (let type of ['movie']) {
         for (let type of ['game', 'music', 'book', 'movie', 'drama']) {
             let urlWithType = baseURL.replace('{type}', type);
 
