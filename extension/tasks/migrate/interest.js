@@ -1,5 +1,6 @@
 'use strict';
-import {Task} from '../../service.js';
+import Task from '../../services/Task.js';
+import TaskError from '../../services/TaskError.js';
 
 
 const URL_INTEREST = {
@@ -42,7 +43,8 @@ export default class Note extends Task {
                 postData.set('tags', interest.tags ? interest.tags.join(' ') : '');
                 postData.set('comment', interest.comment + ' @' + interest.create_time);
 
-                let response = await this.fetch(URL_INTEREST[row.type].replace('{subject_id}', row.subject), {
+                let fetch = await this.fetch
+                let response = await fetch(URL_INTEREST[row.type].replace('{subject_id}', row.subject), {
                     headers: {
                         'X-Override-Referer': 'https://www.douban.com/',
                         'X-Requested-With': 'XMLHttpRequest',

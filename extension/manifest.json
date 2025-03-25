@@ -1,19 +1,19 @@
 {
-    "name": "豆伴：豆瓣账号备份工具",
-    "short_name": "豆伴",
-    "author": "豆坟",
-    "version": "0.11.0",
-    "version_name": "0.11.0 beta",
-    "description": "用于备份豆瓣网的用户数据及图片，并支持将备份数据导出到 Excel 文档。",
-    "manifest_version": 2,
+    "name": "豆伴：豆瓣账号备份工具(manifest V3版)",
+    "short_name": "豆伴(V3版)",
+    "author": "豆坟|豆坟2号",
+    "version": "0.12.0",
+    "version_name": "0.12.0 Mainfest V3版本",
+    "description": "用于备份豆瓣网的用户数据及图片，并支持将备份数据导出到 Excel 文档。现已支持manifest V3。",
+    "manifest_version": 3,
     "icons": {
         "16": "images/icon-16x16.png",
         "32": "images/icon-32x32.png",
         "48": "images/icon-48x48.png",
         "128": "images/icon-128x128.png"
     },
-    "browser_action": {
-        "default_icon":  {
+    "action": {
+        "default_icon": {
             "16": "images/icon-19x19.png",
             "32": "images/icon-38x38.png"
         },
@@ -32,23 +32,27 @@
         }
     ],
     "background": {
-        "page": "background.html"
+        "service_worker": "background.js",
+        "type": "module"
     },
-    "web_accessible_resources": [
-        "images/*",
-        "media/*",
-        "index.html"
-    ],
-    "permissions": [
-        "storage",
-        "cookies",
-        "webRequest",
-        "webRequestBlocking",
+    "host_permissions": [
         "http://*.douban.com/*",
         "https://*.douban.com/*",
         "https://*.doubanio.com/*"
     ],
-    "optional_permissions": [],
-    "homepage_url": "https://doufen.org/",
-    "options_page": "options.html"
+    "permissions": [
+        "storage",
+        "cookies",
+        "scripting",
+        "declarativeNetRequest",
+        "declarativeNetRequestWithHostAccess"
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": ["images/*", "media/*", "index.html"],
+            "matches": ["<all_urls>"]
+        }
+    ],
+    "options_page": "options.html",
+    "homepage_url": "https://doufen.org/"
 }

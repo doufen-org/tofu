@@ -1,5 +1,6 @@
 'use strict';
-import {Task, TaskError} from '../../service.js';
+import Task from '../../services/Task.js';
+import TaskError from '../../services/TaskError.js';
 import Draft from '../../vendor/draft.js';
 
 
@@ -12,7 +13,8 @@ const WORD_COUNT_LIMIT = 10;
 
 export default class Annotation extends Task {
     async getInitialData(createURL) {
-        let response = await this.fetch(createURL);
+        let fetch = await this.fetch
+        let response = await fetch(createURL);
         let html = this.parseHTML(await response.text());
         let input = html.querySelector('#review-editor-form>input[name="nid"]');
         if (!input) {
@@ -40,14 +42,15 @@ export default class Annotation extends Task {
             let entity = draft.entities[i];
             if (entity.type != 'IMAGE') continue;
             let entityData = entity.data;
-            let imageResponse = await this.fetch(entityData.src, {
+            let fetch = await this.fetch
+            let imageResponse = await fetch(entityData.src, {
                 'X-Override-Referer': 'https://www.douban.com/',
             }, true);
             let imageBlob = await imageResponse.blob();
             let imageURL = new URL(entityData.src);
             let filename = imageURL.pathname.split('/').pop();
             uploadForm.set('image', imageBlob, filename);
-            let uploadResponse = await this.fetch(uploadURL, {method: 'POST', body: uploadForm}, true);
+            let uploadResponse = await fetch(uploadURL, {method: 'POST', body: uploadForm}, true);
             let uploadedImage = await uploadResponse.json();
             entity.data = uploadedImage.photo;
             entity.data.src = entity.data.url;
@@ -87,8 +90,8 @@ export default class Annotation extends Task {
                 postData.set('chapter', annotation.chapter);
                 postData.set('page', annotation.page || 1);
                 postData.set('content', JSON.stringify(draft.toArray()));
-
-                let response = await this.fetch(URL_ANNOTATION_PUBLISH.replace('{nid}', nid), {
+                let fetch = await this.fetch
+                let response = await fetch(URL_ANNOTATION_PUBLISH.replace('{nid}', nid), {
                     headers: {
                         'X-Override-Referer': createURL,
                         'X-Requested-With': 'XMLHttpRequest',

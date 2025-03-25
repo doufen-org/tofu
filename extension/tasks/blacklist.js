@@ -1,6 +1,6 @@
 'use strict';
-import {TaskError, Task} from '../service.js';
-
+import Task from '../services/Task.js';
+import TaskError from '../services/TaskError.js';
 
 const URL_BLACKLIST = 'https://www.douban.com/contacts/blacklist?start={start}';
 const URL_USER_INFO = 'https://m.douban.com/rexxar/api/v2/user/{uid}?ck={ck}&for_mobile=1';
@@ -19,8 +19,9 @@ export default class Following extends Task {
         let totalPage = this.total = 1;
 
         for (let i = 0; i < totalPage; i ++) {
-            let response = await this.fetch(URL_BLACKLIST.replace('{start}', i * PAGE_SIZE));
-            if (response.status != 200) {
+            let fetch = await this.fetch
+            let response = await fetch(URL_BLACKLIST.replace('{start}', i * PAGE_SIZE));
+            if (response.status !== 200) {
                 throw new TaskError('豆瓣服务器返回错误');
             }
             let html =  this.parseHTML(await response.text());
@@ -38,7 +39,8 @@ export default class Following extends Task {
                     let url = URL_USER_INFO
                         .replace('{ck}', this.session.cookies.ck)
                         .replace('{uid}', uid);
-                    let response = await this.fetch(url, {headers: {'X-Override-Referer': 'https://www.douban.com/'}});
+                    let fetch = await this.fetch
+                    let response = await fetch(url, {headers: {'X-Override-Referer': 'https://www.douban.com/'}});
                     if (response.status != 200) {
                         idText = null;
                     } else {

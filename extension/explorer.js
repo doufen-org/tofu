@@ -2,6 +2,7 @@
 import TabPanel from './ui/tab.js';
 import Paginator from './ui/paginator.js';
 import Storage from './storage.js';
+import Service from "./service.js";
 
 
 const PAGE_SIZE = 50;
@@ -1936,7 +1937,7 @@ class MigrateModal {
             let job = await modal.createJob(localUserId);
             if (job) {
                 modal.close();
-                window.open(chrome.extension.getURL('options.html#service'));
+                window.open(chrome.runtime.getURL('options.html#service'));
             }
         });
 
@@ -1944,11 +1945,8 @@ class MigrateModal {
     }
 
     async createJob(localUserId) {
-        let service = (await new Promise(resolve => {
-            chrome.runtime.getBackgroundPage(resolve);
-        })).service;
         let checkedTasks = this.element.querySelectorAll('input[name="task"]:checked');
-        if (checkedTasks.length == 0) {
+        if (checkedTasks.length === 0) {
             alert('请勾选要迁移的项目。');
             return null;
         }
@@ -1958,6 +1956,8 @@ class MigrateModal {
                 name: 'migrate/' + checkedTasks[i].value,
             };
         }
+
+        const service = await Service.getInstance();
         let job = await service.createJob(null, localUserId, tasks);
         return job;
     }
@@ -1980,11 +1980,9 @@ MigrateModal.init();
 
 document.querySelector('.button[name="upload"]').addEventListener('click', async () => {
     let localUserId = parseInt(location.search.substr(1));
-    let service = (await new Promise(resolve => {
-        chrome.runtime.getBackgroundPage(resolve);
-    })).service;
+    const service = await Service.getInstance();
     let job = await service.createJob(localUserId, null, [{name: 'files'}], true);
     if (job) {
-        window.open(chrome.extension.getURL('options.html#service'));
+        window.open(chrome.runtime.getURL('options.html#service'));
     }
 });

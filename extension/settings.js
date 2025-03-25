@@ -6,7 +6,7 @@ export default class Settings {
         for (let key in settings) {
             try {
                 let keyPath = key.split('.');
-                if (keyPath.shift() != target.name) {
+                if (keyPath.shift() !== target.name) {
                     continue;
                 }
                 let lastNode = keyPath.pop();
@@ -19,7 +19,7 @@ export default class Settings {
     }
 
     static async load(...args) {
-        args.unshift(new Object());
+        args.unshift({});
         let defaults = Object.assign.apply(null, args);
         let settings = await new Promise(resolve => {
             chrome.storage.sync.get(Object.keys(defaults), resolve);

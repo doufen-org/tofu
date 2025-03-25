@@ -1,5 +1,6 @@
 'use strict';
-import {Task} from '../../service.js';
+import Task from '../../services/Task.js';
+import TaskError from '../../services/TaskError.js';
 import Draft from '../../vendor/draft.js';
 
 
@@ -62,7 +63,8 @@ export default class Review extends Task {
                 postData.set('review[title]', review.title);
                 postData.set('review[text]', JSON.stringify(draft.toArray()));
 
-                let response = await this.fetch(URL_REVIEW_PUBLISH, {
+                let fetch = await this.fetch
+                let response = await fetch(URL_REVIEW_PUBLISH, {
                     headers: {
                         'X-Override-Referer': URL_REVIEW_CREATE_REFERER.replace('{subject}', row.subject),
                         'X-Requested-With': 'XMLHttpRequest',

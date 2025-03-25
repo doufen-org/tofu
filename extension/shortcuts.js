@@ -5,7 +5,7 @@ const SHORTCUTS_TEMPLATE = `\
 <div class="modal-background"></div>
 <div class="modal-content">
     <h1>豆伴</h1>
-    <p><a href="${chrome.extension.getURL('index.html')}">后台</a></p>
+    <p><a href="${chrome.runtime.getURL('index.html')}">后台</a></p>
 </div>
 <button class="modal-close"></button>
 `;

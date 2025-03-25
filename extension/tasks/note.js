@@ -1,5 +1,6 @@
 'use strict';
-import {TaskError, Task} from '../service.js';
+import Task from '../services/Task.js';
+import TaskError from '../services/TaskError.js';
 
 
 const PAGE_SIZE = 50;
@@ -8,7 +9,8 @@ const URL_NOTES = 'https://m.douban.com/rexxar/api/v2/user/{uid}/notes?start={st
 
 export default class Note extends Task {
     async fetchNote(url) {
-        let response = await this.fetch(url);
+        let fetch = await this.fetch
+        let response = await fetch(url);
         if (response.status != 200) {
             return;
         }
@@ -30,7 +32,8 @@ export default class Note extends Task {
 
         let pageCount = 1;
         for (let i = 0; i < pageCount; i ++) {
-            let response = await this.fetch(baseURL.replace('{start}', i * PAGE_SIZE), {headers: {'X-Override-Referer': 'https://m.douban.com/mine/notes'}});
+            let fetch = await this.fetch
+            let response = await fetch(baseURL.replace('{start}', i * PAGE_SIZE), {headers: {'X-Override-Referer': 'https://m.douban.com/mine/notes'}});
             if (response.status != 200) {
                 throw new TaskError('豆瓣服务器返回错误');
             }

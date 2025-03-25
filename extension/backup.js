@@ -1,6 +1,7 @@
 'use strict';
 import Storage from './storage.js';
 import FileSaver from './vendor/FileSaver.js';
+import Service from "./service.js";
 
 const ACCOUNT_TEMPLATE = `\
 <article class="media box account">
@@ -93,7 +94,7 @@ class TaskModal {
     static init() {
         let modal = new TaskModal('#task-modal');
         TaskModal.instance = modal;
-        if (location.hash == '#new-task') {
+        if (location.hash === '#new-task') {
             modal.open();
         }
 
@@ -135,9 +136,13 @@ class TaskModal {
                 }
             }
             let job = await modal.createJob(targetUserId);
+            // await new Promise(resolve => setTimeout(resolve, 5000));
             if (job) {
+                // console.log("等待5s")
                 modal.close();
-                window.open(chrome.extension.getURL('options.html#service'));
+                // window.open(chrome.runtime.getURL('options.html#service'));
+                location.href = chrome.runtime.getURL('options.html#service'); // 在当前页面跳转
+                // history.pushState({}, '', 'options.html#service');
             }
         });
 
@@ -145,20 +150,24 @@ class TaskModal {
     }
 
     async createJob(targetUserId = null) {
-        let service = (await new Promise(resolve => {
-            chrome.runtime.getBackgroundPage(resolve);
-        })).service;
         let checkedTasks = this.element.querySelectorAll('input[name="task"]:checked');
-        if (checkedTasks.length == 0) {
+        if (checkedTasks.length === 0) {
             alert('请勾选要备份的项目。');
             return null;
         }
+
         let tasks = new Array(checkedTasks.length);
         for (let i = 0; i < checkedTasks.length; i ++) {
             tasks[i] = {
                 name: checkedTasks[i].value,
             };
         }
+        console.log("createJob tasks", tasks)
+        const service = await Service.getInstance();
+        console.log("createJob service", service)
+        // 延时 3 秒
+        // await new Promise(resolve => setTimeout(resolve, 3000));
+        // console.log("等待3s后")
         let job = await service.createJob(targetUserId, null, tasks);
         return job;
     }

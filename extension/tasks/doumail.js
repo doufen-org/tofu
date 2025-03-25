@@ -1,5 +1,6 @@
 'use strict';
-import {TaskError, Task} from '../service.js';
+import Task from '../services/Task.js';
+import TaskError from '../services/TaskError.js';
 
 
 const PAGE_SIZE = 20;
@@ -7,14 +8,15 @@ const URL_DOUMAIL = 'https://www.douban.com/doumail/?start={start}';
 const URL_DOUMAIL_LOAD_MORE = 'https://www.douban.com/j/doumail/loadmore';
 
 
-export default class Photo extends Task {
+export default class Doumail extends Task {
     async run() {
         if (this.isOtherUser) {
             throw TaskError('不能备份其他用户的豆邮');
         }
         let pageCount = 1;
         for (let i = 0; i < pageCount; i ++) {
-            let response = await this.fetch(URL_DOUMAIL.replace('{start}', i * PAGE_SIZE));
+            let fetch = await this.fetch
+            let response = await fetch(URL_DOUMAIL.replace('{start}', i * PAGE_SIZE));
             if (response.status != 200) {
                 throw new TaskError('豆瓣服务器返回错误');
             }
@@ -53,7 +55,8 @@ export default class Photo extends Task {
                     postData.append('start', start);
                     postData.append('target_id', userId);
                     postData.append('ck', this.session.cookies.ck);
-                    let response = await this.fetch(URL_DOUMAIL_LOAD_MORE, {
+                    let fetch = await this.fetch
+                    let response = await fetch(URL_DOUMAIL_LOAD_MORE, {
                         headers: {'X-Override-Referer': doumailUrl},
                         method: 'POST',
                         body: postData,

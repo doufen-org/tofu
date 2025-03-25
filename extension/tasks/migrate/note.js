@@ -1,5 +1,6 @@
 'use strict';
-import {Task} from '../../service.js';
+import Task from '../../services/Task.js';
+import TaskError from '../../services/TaskError.js';
 import Draft from '../../vendor/draft.js';
 
 
@@ -49,7 +50,8 @@ export default class Note extends Task {
                 postData.set('note_title', note.title);
                 postData.set('note_text', JSON.stringify(draft.toArray()));
 
-                let response = await this.fetch(URL_NOTE_PUBLISH, {
+                let fetch = await this.fetch
+                let response = await fetch(URL_NOTE_PUBLISH, {
                     headers: {
                         'X-Override-Referer': URL_NOTE_CREATE_REFERER,
                         'X-Requested-With': 'XMLHttpRequest',

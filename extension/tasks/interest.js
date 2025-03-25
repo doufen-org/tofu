@@ -1,5 +1,6 @@
 'use strict';
-import {TaskError, Task} from '../service.js';
+import Task from '../services/Task.js';
+import TaskError from '../services/TaskError.js';
 
 
 const PAGE_SIZE = 50;
@@ -12,8 +13,9 @@ export default class Interest extends Task {
         let totalURL = URL_TOTAL
             .replace('{ck}', this.session.cookies.ck)
             .replace('{uid}', this.targetUser.id);
-        let response = await this.fetch(totalURL, {headers: {'X-Override-Referer': 'https://m.douban.com/mine/'}});
-        if (response.status != 200) {
+        let fetch = await this.fetch
+        let response = await fetch(totalURL, {headers: {'X-Override-Referer': 'https://m.douban.com/mine/'}});
+        if (response.status !== 200) {
             throw new TaskError('豆瓣服务器返回错误');
         }
         let json = await response.json();
@@ -21,23 +23,27 @@ export default class Interest extends Task {
     }
 
     compareInterest(l, r) {
-        if (l.status != r.status) return false;
-        if (l.comment != r.comment) return false;
-        if (l.rating != r.rating) {
+        if (l.status !== r.status) return false;
+        if (l.comment !== r.comment) return false;
+        if (l.rating !== r.rating) {
             if (l.rating && r.rating) {
-                if (l.rating.value != r.rating.value) {
+                if (l.rating.value !== r.rating.value) {
                     return false;
                 }
             } else {
                 return false;
             }
         }
-        if (l.tags.sort().toString() != r.tags.sort().toString()) return false;
+        if (l.tags.sort().toString() !== r.tags.sort().toString()) return false;
         return true;
     }
 
     async processInterest(interest, version, type)
     {
+        if (!interest || Object.keys(interest).length === 0) {
+            console.warn("Empty interest object received.");
+            return;
+        }
         let subjectId = parseInt(interest.subject.id)
         let interestId = parseInt(interest.id);
         let row = await this.storage.interest.get({ subject: subjectId });
@@ -45,7 +51,7 @@ export default class Interest extends Task {
             let lastVersion = row.version;
             let changed = false;
             row.version = version;
-            if (row.id != interestId) {
+            if (row.id !== interestId) {
                 await this.storage.interest.delete(row.id);
                 row.id = interestId;
                 changed = true;
@@ -75,7 +81,7 @@ export default class Interest extends Task {
     async run() {
         let version = this.jobId;
         this.total = await this.getTotal();
-        if (this.total == 0) {
+        if (this.total === 0) {
             return;
         }
         await this.storage.table('version').put({table: 'interest', version: version, updated: Date.now()});
@@ -84,6 +90,7 @@ export default class Interest extends Task {
             .replace('{ck}', this.session.cookies.ck)
             .replace('{uid}', this.targetUser.id);
 
+        // for (let type of ['movie']) {
         for (let type of ['game', 'music', 'book', 'movie', 'drama']) {
             let urlWithType = baseURL.replace('{type}', type);
 
@@ -95,17 +102,19 @@ export default class Interest extends Task {
                     let urlToFetch = urlWithStatus
                         .replace('{start}', start)
                         .replace('{count}', PAGE_SIZE);
-                    let response = await this.fetch(urlToFetch, {headers: {'X-Override-Referer': 'https://m.douban.com/mine/' + type}});
-                    if (response.status != 200) {
-                        if (response.status == 500) {
+                    let fetch = await this.fetch
+                    let response = await fetch(urlToFetch, {headers: {'X-Override-Referer': 'https://m.douban.com/mine/' + type}});
+                    if (response.status !== 200) {
+                        if (response.status === 500) {
                             // try to fetch this page sliced
                             for (let j = 0; j < PAGE_SIZE; j ++) {
                                 let startSliced = start + j;
                                 let urlToFetchSliced = urlWithStatus
                                     .replace('{start}', startSliced)
                                     .replace('{count}', 1);
-                                let response = await this.fetch(urlToFetchSliced, {headers: {'X-Override-Referer': 'https://m.douban.com/mine/' + type}});
-                                if (response.status != 200) {
+                                let fetch = await this.fetch
+                                let response = await fetch(urlToFetchSliced, {headers: {'X-Override-Referer': 'https://m.douban.com/mine/' + type}});
+                                if (response.status !== 200) {
                                     // skip douban server error
                                     continue;
                                 }
@@ -113,7 +122,7 @@ export default class Interest extends Task {
                                 for (let interest of json.interests) {
                                     await this.processInterest(interest, version, type);
                                 }
-                                if (json.total == startSliced) {
+                                if (json.total === startSliced) {
                                     continue;
                                 }
                             }

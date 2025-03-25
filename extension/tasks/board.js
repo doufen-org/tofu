@@ -1,5 +1,6 @@
 'use strict';
-import {TaskError, Task} from '../service.js';
+import Task from '../services/Task.js';
+import TaskError from '../services/TaskError.js';
 
 
 const PAGE_SIZE = 20;
@@ -28,8 +29,9 @@ export default class Board extends Task {
         let totalPage = this.total = 1;
 
         for (let i = 0; i < totalPage; i ++) {
-            let response = await this.fetch(baseURL.replace('{start}', i * PAGE_SIZE));
-            if (response.status != 200) {
+            let fetch = await this.fetch
+            let response = await fetch(baseURL.replace('{start}', i * PAGE_SIZE));
+            if (response.status !== 200) {
                 throw new TaskError('豆瓣服务器返回错误');
             }
             let html =  this.parseHTML(await response.text());

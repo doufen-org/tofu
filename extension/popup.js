@@ -1,14 +1,10 @@
-// popup.js
+import Service from "./service.js";
 
 const URL_OPTIONS = chrome.runtime.getURL('options.html');
 const URL_ABOUT = URL_OPTIONS + '#about';
 const URL_HELP = URL_OPTIONS + '#help';
 const URL_BACKUP = chrome.runtime.getURL('backup.html');
 
-
-/**
- * Class PopupMenu
- */
 class PopupMenu {
     constructor(selector, service) {
         this.element = document.querySelector(selector);
@@ -23,12 +19,12 @@ class PopupMenu {
         window.open(URL_BACKUP);
     }
 
-    clickStart(event) {
-        this.service.start();
+    async clickStart(event) {
+        await this.service.start();
     }
 
-    clickStop(event) {
-        this.service.stop();
+    async clickStop(event) {
+        await this.service.stop();
     }
 
     clickSettings(event) {
@@ -40,6 +36,7 @@ class PopupMenu {
     }
 
     clickAbout(event) {
+        console.log("clickAbout");
         window.open(URL_ABOUT);
     }
 
@@ -48,7 +45,7 @@ class PopupMenu {
     }
 
     disable(name) {
-        this.getItem(name).setAttribute('disabled');
+        this.getItem(name).setAttribute('disabled', true);
     }
 
     enable(name) {
@@ -56,31 +53,40 @@ class PopupMenu {
     }
 
     static async render() {
-        let service = (await new Promise(resolve => {
-            chrome.runtime.getBackgroundPage(resolve);
-        })).service;
+        let service = await Service.getInstance();
         let menu = new PopupMenu('.menu', service);
-        switch (service.status) {
-            case service.STATE_STOPPED:
-            menu.enable('Start');
-            break;
 
-            case service.STATE_START_PENDING:
-            case service.STATE_RUNNING:
-            menu.enable('Stop');
-            break;
+        // 根据状态启用/禁用按钮
+        switch (service.status) {
+            case Service.STATE_STOPPED:
+                menu.enable('Start');
+                menu.disable('Stop');
+                break;
+
+            case Service.STATE_START_PENDING:
+            case Service.STATE_RUNNING:
+                menu.disable('Start');
+                menu.enable('Stop');
+                break;
 
             default:
-            break;
+                break;
         }
-        $('.menu').on('click', '.menu-item', event => {
-            if (event.currentTarget.hasAttribute('disbaled')) return false;
+
+        // 绑定点击事件
+        Zepto('.menu').on('click', '.menu-item', event => {
+            console.log('Button clicked:', event.currentTarget.getAttribute('name'));
+            if (event.currentTarget.hasAttribute('disabled')) return false;
             let handle = menu['click' + event.currentTarget.getAttribute('name')];
             if (!handle) return false;
-            handle.apply(menu, event);
-            window.close();
+            handle.apply(menu, [event]);
+            setTimeout(() => {
+                window.close();
+            }, 100);
         });
     }
 }
 
-PopupMenu.render();
+document.addEventListener('DOMContentLoaded', () => {
+    PopupMenu.render();
+});

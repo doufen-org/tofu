@@ -1,5 +1,6 @@
 'use strict';
-import {TaskError, Task} from '../service.js';
+import Task from '../services/Task.js';
+import TaskError from '../services/TaskError.js';
 
 
 const PAGE_SIZE = 50;
@@ -35,7 +36,8 @@ export default class Doulist extends Task {
             let urlWithType = baseURL.replace('{type}', type);
             let pageCount = 1;
             for (let i = 0; i < pageCount; i ++) {
-                let response = await this.fetch(urlWithType.replace('{start}', i * PAGE_SIZE), {headers: {'X-Override-Referer': 'https://m.douban.com/mine/doulist'}});
+                let fetch = await this.fetch
+                let response = await fetch(urlWithType.replace('{start}', i * PAGE_SIZE), {headers: {'X-Override-Referer': 'https://m.douban.com/mine/doulist'}});
                 if (response.status != 200) {
                     throw new TaskError('豆瓣服务器返回错误');
                 }
@@ -63,7 +65,8 @@ export default class Doulist extends Task {
                     const DOULIST_PAGE_SIZE = 25;
                     let doulistTotalPage = 1;
                     for (let i = 0; i < doulistTotalPage; i ++) {
-                        let response = await this.fetch(doulist.url + '?start=' + i * DOULIST_PAGE_SIZE);
+                        let fetch = await this.fetch
+                        let response = await fetch(doulist.url + '?start=' + i * DOULIST_PAGE_SIZE);
                         if (response.status != 200) {
                             if (response.status < 500) continue;
                             throw new TaskError('豆瓣服务器返回错误');

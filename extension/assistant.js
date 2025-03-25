@@ -3,7 +3,7 @@
 
 const ASSISTANT_TEMPLATE = `\
 <span class="icon close" title="关闭"></span>
-<div class="sprite" style="background-image: url('${chrome.extension.getURL('images/icon-32x32.png')}');"></div>
+<div class="sprite" style="background-image: url('${chrome.runtime.getURL('images/icon-32x32.png')}');"></div>
 <div class="dialog">
     <div class="arrow">
         <div class="border"></div>
@@ -497,7 +497,7 @@ class Assistant {
         if (this.silent || this._hidden) return this;
         let audio = `media/${name}.mp3`;
         let speaker = this._elementRoot.querySelector('.speaker');
-        speaker.src = chrome.extension.getURL(audio);
+        speaker.src = chrome.runtime.getURL(audio);
         speaker.play();
         return this;
     }

@@ -1,5 +1,6 @@
 'use strict';
-import {TaskError, Task} from '../service.js';
+import Task from '../services/Task.js';
+import TaskError from '../services/TaskError.js';
 
 
 const PAGE_SIZE = 50;
@@ -13,7 +14,8 @@ export default class Photo extends Task {
     }
 
     async fetchPhotoDetail(url) {
-        let response = await this.fetch(url);
+        let fetch = await this.fetch
+        let response = await fetch(url);
         if (response.status != 200) {
             if (response.status < 500) {
                 return false;
@@ -39,7 +41,8 @@ export default class Photo extends Task {
 
         let pageCount = 1;
         for (let i = 0; i < pageCount; i ++) {
-            let response = await this.fetch(baseURL.replace('{start}', i * PAGE_SIZE), {headers: {'X-Override-Referer': 'https://m.douban.com/mine/photos'}});
+            let fetch = await this.fetch
+            let response = await fetch(baseURL.replace('{start}', i * PAGE_SIZE), {headers: {'X-Override-Referer': 'https://m.douban.com/mine/photos'}});
             if (response.status != 200) {
                 throw new TaskError('豆瓣服务器返回错误');
             }
@@ -68,7 +71,8 @@ export default class Photo extends Task {
                 const ALBUM_PAGE_SIZE = 18;
                 let albumTotalPage = 1;
                 for (let i = 0; i < albumTotalPage; i ++) {
-                    let response = await this.fetch(album.url + '?m_start=' + i * ALBUM_PAGE_SIZE);
+                    let fetch = await this.fetch
+                    let response = await fetch(album.url + '?m_start=' + i * ALBUM_PAGE_SIZE);
                     if (response.status != 200) {
                         if (response.status < 500) continue;
                         throw new TaskError('豆瓣服务器返回错误');

@@ -1,6 +1,7 @@
 'use strict';
-import {TaskError, Task} from '../service.js';
-
+import Task from '../services/Task.js';
+import TaskError from '../services/TaskError.js';
+import Storage  from "../storage.js";
 
 const PAGE_SIZE = 50;
 const URL_REVIEWS = 'https://m.douban.com/rexxar/api/v2/user/{uid}/reviews?type={type}&start={start}&count=50&ck={ck}&for_mobile=1';
@@ -8,8 +9,9 @@ const URL_REVIEWS = 'https://m.douban.com/rexxar/api/v2/user/{uid}/reviews?type=
 
 export default class Review extends Task {
     async fetchReview(url) {
-        let response = await this.fetch(url);
-        if (response.status != 200) {
+        let fetch = await this.fetch
+        let response = await fetch(url);
+        if (response.status !== 200) {
             return;
         }
         let html = this.parseHTML(await response.text());
@@ -19,7 +21,7 @@ export default class Review extends Task {
     async run() {
         let version = this.jobId;
         this.total = this.targetUser.reviews_count;
-        if (this.total == 0) {
+        if (this.total === 0) {
             return;
         }
         await this.storage.table('version').put({table: 'review', version: version, updated: Date.now()});
@@ -32,8 +34,8 @@ export default class Review extends Task {
             let fullURL = baseURL.replace('{type}', type);
             let pageCount = 1;
             for (let i = 0; i < pageCount; i ++) {
-                let response = await this.fetch(fullURL.replace('{start}', i * PAGE_SIZE), {headers: {'X-Override-Referer': 'https://m.douban.com/mine/' + type}});
-                if (response.status != 200) {
+                let response = await (await this.fetch)(fullURL.replace('{start}', i * PAGE_SIZE), {headers: {'X-Override-Referer': 'https://m.douban.com/mine/' + type}});
+                if (response.status !== 200) {
                     throw new TaskError('豆瓣服务器返回错误');
                 }
                 let json = await response.json();
@@ -44,7 +46,7 @@ export default class Review extends Task {
                     if (row) {
                         let lastVersion = row.version;
                         row.version = version;
-                        if (fulltext != row.review.fulltext) {
+                        if (fulltext !== row.review.fulltext) {
                             !row.history && (row.history = {});
                             row.history[lastVersion] = row.review;
                             review.fulltext = fulltext;

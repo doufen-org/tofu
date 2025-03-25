@@ -1,7 +1,7 @@
 'use strict';
-import {TaskError, Task} from '../service.js';
 import Settings from '../settings.js';
-
+import Task from '../services/Task.js';
+import TaskError from '../services/TaskError.js';
 
 export const TASK_FILES_SETTINGS = {
     '同步图片.cloudName': '',
@@ -218,7 +218,8 @@ export default class Files extends Task {
                 postData.append('context', encodeContext(row.meta));
                 postData.append('folder', `${this.targetUser.uid}/${escapePath(row.path)}`);
 
-                let response = await this.fetch(uploadURL, {
+                let fetch = await this.fetch
+                let response = await fetch(uploadURL, {
                     method: 'POST',
                     body: postData,
                 }, true);

@@ -1,6 +1,6 @@
 'use strict';
-import {TaskError, Task} from '../service.js';
-
+import Task from '../services/Task.js';
+import TaskError from '../services/TaskError.js';
 
 const API_PAGE_SIZE = 50;
 const WEB_PAGE_SIZE = 20;
@@ -18,8 +18,9 @@ export default class Follower extends Task {
 
         let pageCount = 1;
         for (let i = 0; i < pageCount; i ++) {
-            let response = await this.fetch(baseURL.replace('{start}', i * API_PAGE_SIZE), {headers: {'X-Override-Referer': 'https://m.douban.com/mine/follower'}});
-            if (response.status != 200) {
+            let fetch = await this.fetch
+            let response = await fetch(baseURL.replace('{start}', i * API_PAGE_SIZE), {headers: {'X-Override-Referer': 'https://m.douban.com/mine/follower'}});
+            if (response.status !== 200) {
                 throw new TaskError('豆瓣服务器返回错误');
             }
             let json = await response.json();
@@ -38,8 +39,9 @@ export default class Follower extends Task {
     async crawlByWebpage() {
         let totalPage = 1;
         for (let i = 0; i < totalPage; i ++) {
-            let response = await this.fetch(URL_FOLLOWERS_WEBPAGE.replace('{start}', i * WEB_PAGE_SIZE));
-            if (response.status != 200) {
+            let fetch = await this.fetch
+            let response = await fetch(URL_FOLLOWERS_WEBPAGE.replace('{start}', i * WEB_PAGE_SIZE));
+            if (response.status !== 200) {
                 throw new TaskError('豆瓣服务器返回错误');
             }
             let html =  this.parseHTML(await response.text());
@@ -52,7 +54,7 @@ export default class Follower extends Task {
                 let userLink = li.querySelector('.info>h3>a').href;
                 let loc = null;
                 let userInfo = li.querySelector('.info>p');
-                if (userInfo.childElementCount == 3) {
+                if (userInfo.childElementCount === 3) {
                     loc = { name: userInfo.firstChild.textContent.trim() };
                 }
                 let followInfo = userInfo.querySelectorAll('b');
@@ -82,12 +84,13 @@ export default class Follower extends Task {
     async crawlOtherUserByWebpage() {
         let totalPage = 1;
         for (let i = 0; i < totalPage; i ++) {
-            let response = await this.fetch(
+            let fetch = await this.fetch
+            let response = await fetch(
                 URL_FOLLOWERS_OTHER_USER
                     .replace('{uid}', this.targetUser.id)
                     .replace('{start}', i * OTHER_USER_PAGE_SIZE)
             );
-            if (response.status != 200) {
+            if (response.status !== 200) {
                 throw new TaskError('豆瓣服务器返回错误');
             }
             let html =  this.parseHTML(await response.text());
@@ -120,7 +123,7 @@ export default class Follower extends Task {
 
     async run() {
         this.total = this.targetUser.followers_count;
-        if (this.total == 0) {
+        if (this.total === 0) {
             return;
         }
         await this.storage.table('version').put({table: 'follower', version: this.jobId, updated: Date.now()});

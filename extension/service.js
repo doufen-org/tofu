@@ -1,6 +1,12 @@
 'use strict';
 import Settings from './settings.js';
 import Storage from './storage.js';
+import Job from './services/job.js';
+import Task from "./services/Task.js";
+import AsyncBlockingQueue from "./services/AsyncBlockingQueue.js";
+import StateChangeEvent from "./services/StateChangeEvent.js";
+import Logger from "./services/Logger.js";
+import {taskFromJSON} from "./services/task_deserialize.js";
 
 
 /**
@@ -12,521 +18,58 @@ export const SERVICE_SETTINGS = {
     'service.cloudinary': '',
 };
 
-
-/**
- * Class TaskError
- */
-export class TaskError extends Error {
-    constructor(message) {
-        super(message);
-    }
-}
-
-
-/**
- * Class Task
- */
-export class Task {
-    /**
-     * Initialize the task
-     * @param {callback} fetch
-     * @param {Logger} logger
-     * @param {callback} parseHTML
-     * @param {number} jobId
-     * @param {Object} session
-     * @param {Dexie} localStorage
-     * @param {Object} targetUser
-     * @param {boolean} isOtherUser
-     */
-    init(fetch, logger, parseHTML, jobId, session, localStorage, targetUser, isOtherUser) {
-        this.fetch = fetch;
-        this.logger = logger;
-        this.parseHTML = parseHTML;
-        this.jobId = jobId;
-        this.session = session;
-        this.storage = localStorage;
-        this.targetUser = targetUser;
-        this.isOtherUser = isOtherUser;
-        this.total = 1;
-        this.completion = 0;
-    }
-
-    /**
-     * Run task
-     */
-    async run() {
-        throw new TaskError('Not implemented.');
-    }
-
-    /**
-     * Convert to JSON string
-     * @returns {string}
-     */
-    toJSON() {
-        return this.name;
-    }
-
-    /**
-     * Get task name
-     * @returns {string}
-     */
-    get name() {
-        throw new TaskError('Not implemented.');
-    }
-
-    /**
-     * Task completed
-     */
-    complete() {
-        this.completion = this.total;
-    }
-
-    /**
-     * Progress step
-     */
-    step() {
-        this.completion += 1;
-    }
-}
-
-
-/**
- * Parse HTML
- * @param {string} html 
- * @param {string} url 
- */
-function parseHTML(html, url) {
-    let context = document.implementation.createHTMLDocument('');
-    context.documentElement.innerHTML = html;
-    let base = context.createElement('base');
-    base.href = url;
-    context.head.appendChild(base);
-    return context;
-}
-
-
-/**
- * Class Job
- */
-class Job extends EventTarget {
-    /**
-     * Constructor
-     * @param {Service} service 
-     * @param {string|null} targetUserId 
-     * @param {string|null} localUserId 
-     * @param {boolean} isOffline 
-     */
-    constructor(service, targetUserId, localUserId, isOffline) {
-        super();
-        this._service = service;
-        this._targetUserId = targetUserId;
-        this._localUserId = localUserId;
-        this._tasks = [];
-        this._isRunning = false;
-        this._currentTask = null;
-        this._id = null;
-        this._session = null;
-        this._isOffline = isOffline;
-    }
-
-    /**
-     * Get user info
-     * @param {callback} fetch 
-     * @param {Object} cookies 
-     * @param {string} userId 
-     */
-    async getUserInfo(fetch, cookies, userId) {
-        const URL_USER_INFO = 'https://m.douban.com/rexxar/api/v2/user/{uid}?ck={ck}&for_mobile=1';
-
-        let userInfoURL = URL_USER_INFO
-            .replace('{uid}', userId)
-            .replace('{ck}', cookies.ck);
-        return await (
-            await fetch(userInfoURL, {headers: {'X-Override-Referer': 'https://m.douban.com/'}})
-        ).json();
-    }
-
-    /**
-     * Checkin account
-     * @param {callback} fetch 
-     * @returns {object}
-     */
-    async checkin(fetch) {
-        const URL_MINE = 'https://m.douban.com/mine/';
-
-        let response = await fetch(URL_MINE);
-        if (response.redirected) {
-            window.open(response.url);
-            throw new TaskError('未登录豆瓣');
-        }
-        let bodyElement = parseHTML(await response.text(), URL_MINE);
-        let inputElement = bodyElement.querySelector('#user');
-        let username = inputElement.getAttribute('data-name');
-        let uid = inputElement.getAttribute('value');
-        let homepageLink = bodyElement.querySelector('.profile .detail .basic-info>a');
-        let homepageURL = homepageLink.getAttribute('href');
-        let userSymbol = homepageURL.match(/\/people\/(.+)/).pop();
-        let cookiesNeeded = {
-            'ue': '',
-            'bid': '',
-            'frodotk_db': '',
-            'ck': '',
-            'dbcl2': '',
-        };
-        let cookies = await new Promise(
-            resolve => chrome.cookies.getAll({url: 'https://*.douban.com'}, resolve)
-        );
-        for (let cookie of cookies) {
-            if (cookie.name in cookiesNeeded) {
-                cookiesNeeded[cookie.name] = cookie.value;
-            }
-        }
-
-        let userInfo = await this.getUserInfo(fetch, cookiesNeeded, uid);
-
-        return this._session = {
-            userId: parseInt(uid),
-            username: username,
-            userSymbol: userSymbol,
-            cookies: cookiesNeeded,
-            userInfo: userInfo,
-            updated: Date.now(),
-            isOther: false
-        }
-    }
-
-    /**
-     * Add a task
-     * @param {Task} task 
-     */
-    addTask(task) {
-        this._tasks.push(task);
-    }
-
-    /**
-     * Run the job
-     * @param {callback} fetch 
-     * @param {Logger} logger 
-     */
-    async run(fetch, logger) {
-        this._isRunning = true;
-
-        let userId, account, targetUser, isOtherUser = false;
-
-        if (this._isOffline) {
-            userId = this._targetUserId;
-            isOtherUser = true;
-        } else {
-            let session = await this.checkin(fetch);
-            if (this._targetUserId) {
-                let userInfo = await this.getUserInfo(fetch, session.cookies, this._targetUserId);
-                this._targetUserId = userId = parseInt(userInfo.id);
-                account = {
-                    userId: userId,
-                    username: userInfo.name,
-                    userSymbol: userInfo.uid,
-                    cookies: null,
-                    userInfo: userInfo,
-                    updated: Date.now(),
-                    isOther: true
-                };
-                targetUser = userInfo;
-                isOtherUser = true;
-            } else {
-                userId = session.userId;
-                account = session;
-                targetUser = session.userInfo;
-            }
-        }
-
-        let storage = new Storage(this._localUserId || userId);
-        await storage.global.open();
-        logger.debug('Open global database');
-        if (this._isOffline) {
-            let account = await storage.global.account.get({userId: userId});
-            if (!account) {
-                logger.debug('The account does not exist');
-                storage.global.close();
-                return;
-            }
-            targetUser = account.userInfo;
-        } else {
-            await storage.global.account.put(account);
-        }
-        logger.debug('Create the account');
-        let jobId = await storage.global.job.add({
-            userId: userId,
-            created: Date.now(),
-            progress: {},
-            tasks: JSON.parse(JSON.stringify(this._tasks)),
-        });
-        logger.debug('Create the job');
-        storage.global.close();
-        logger.debug('Close global database');
-
-        await storage.local.open();
-        logger.debug('Open local database');
-        this._id = jobId;
-        for (let task of this._tasks) {
-            this._currentTask = task;
-            task.init(
-                fetch,
-                logger,
-                parseHTML,
-                jobId,
-                this._session,
-                storage.local,
-                targetUser,
-                isOtherUser
-            );
-            try {
-                await task.run();
-            } catch (e) {
-                logger.error('Fail to run task:' + e);
-            }
-        }
-        storage.local.close();
-        logger.debug('Close local database');
-        this._currentTask = null;
-        this._isRunning = false;
-    }
-
-    /**
-     * Whether the job is running
-     * @returns {boolean}
-     */
-    get isRunning() {
-        return this._isRunning;
-    }
-
-    /**
-     * Get current task
-     * @returns {Task|null}
-     */
-    get currentTask() {
-        return this._currentTask;
-    }
-
-    /**
-     * Get tasks
-     * @returns {Array}
-     */
-    get tasks() {
-        return this._tasks;
-    }
-
-    /**
-     * Get job id
-     * @returns {number|null}
-     */
-    get id() {
-        return this._id;
-    }
-}
-
-
-/**
- * Class Logger
- */
-class Logger extends EventTarget {
-    /**
-     * Constructor
-     */
-    constructor() {
-        super();
-        Object.assign(this, {
-            LEVEL_CRITICAL: 50,
-            LEVEL_ERROR: 40,
-            LEVEL_WARNING: 30,
-            LEVEL_INFO: 20,
-            LEVEL_DEBUG: 10,
-            LEVEL_NOTSET: 0,
-        });
-        this._level = this.LEVEL_INFO;
-        this.entries = [];
-    }
-
-    /**
-     * Log error
-     * @param {string} message 
-     * @param {any} context 
-     * @returns {object}  
-     */
-    error(message, context = null) {
-        return this.log(this.LEVEL_ERROR, message, context);
-    }
-
-    /**
-     * Log warning
-     * @param {string} message 
-     * @param {any} context 
-     * @returns {object} 
-     */
-    warning(message, context = null) {
-        return this.log(this.LEVEL_WARNING, message, context);
-    }
-
-    /**
-     * Log info
-     * @param {string} message 
-     * @param {any} context 
-     * @returns {object} 
-     */
-    info(message, context = null) {
-        return this.log(this.LEVEL_INFO, message, context);
-    }
-
-    /**
-     * Log debug info
-     * @param {string} message 
-     * @param {any} context 
-     * @returns {object} 
-     */
-    debug(message, context = null) {
-        return this.log(this.LEVEL_DEBUG, message, context);
-    }
-
-    /**
-     * Log message
-     * @param {number} level 
-     * @param {string} message 
-     * @param {any} context 
-     * @returns {object} 
-     */
-    log(level, message, context = null) {
-        if (this._level > level) return;
-        let levelName;
-        switch (level) {
-            case this.LEVEL_DEBUG:
-            levelName = 'DEBUG';
-            break;
-            case this.LEVEL_INFO:
-            levelName = 'INFO';
-            break;
-            case this.LEVEL_WARNING:
-            levelName = 'WARNING';
-            break;
-            case this.LEVEL_ERROR:
-            levelName = 'ERROR';
-            break;
-            case this.LEVEL_CRITICAL:
-            levelName = 'CRITICAL';
-            break;
-            default:
-            levelName = 'UNKNOWN';
-        }
-        let entry = {
-            time: Date.now(),
-            level: level,
-            levelName: levelName,
-            message: message,
-            context: context,
-        };
-        let cancelled = !this.dispatchEvent(new CustomEvent('log', {detail: entry}));
-        if (cancelled) {
-            return entry;
-        }
-        return this.entries.push(entry);
-    }
-
-    /**
-     * Get default level
-     * @returns {number}
-     */
-    get level() {
-        return this._level;
-    }
-
-    /**
-     * Set default level
-     * @param {number} value
-     */
-    set level(value) {
-        this._level = value;
-    }
-}
-
-
-/**
- * Class AsyncBlockingQueue
- */
-class AsyncBlockingQueue {
-    constructor() {
-        this.resolves = [];
-        this.promises = [];
-    }
-
-    _add() {
-        this.promises.push(
-            new Promise(resolve => {
-                this.resolves.push(resolve);
-            })
-        );
-    }
-
-    enqueue(item) {
-        if (!this.resolves.length) this._add();
-        let resolve = this.resolves.shift();
-        resolve(item);
-    }
-
-    dequeue() {
-        if (!this.promises.length) this._add();
-        return this.promises.shift();
-    }
-
-    isEmpty() {
-        return !this.promises.length;
-    }
-
-    isBlocked() {
-        return !!this.resolves.length;
-    }
-
-    clear() {
-        this.promises.length = 0;
-    }
-
-    get length() {
-        return (this.promises.length - this.resolves.length);
-    }
-}
-
-
-/**
- * Class StateChangeEvent
- */
-class StateChangeEvent extends Event {
-    constructor(originalState, currentState) {
-        super('statechange');
-        this.originalState = originalState;
-        this.currentState = currentState;
-    }
-}
-
-
 /**
  * Class Service
  */
 export default class Service extends EventTarget {
+    static STATE_STOPPED = 1;
+    static STATE_START_PENDING = 2;
+    static STATE_STOP_PENDING = 3;
+    static STATE_RUNNING = 4;
+
     /**
      * Constructor
      */
     constructor() {
         super();
-        Object.assign(this, {
-            STATE_STOPPED: 1,
-            STATE_START_PENDING: 2,
-            STATE_STOP_PENDING: 3,
-            STATE_RUNNING: 4
-        });
         this._currentJob = null;
         this._ports = new Map();
         this._jobQueue = new AsyncBlockingQueue();
-        this._status = this.STATE_STOPPED;
+        this._status = Service.STATE_STOPPED;
         this.lastRequest = 0;
         chrome.runtime.onConnect.addListener(port => this.onConnect(port));
     }
+
+    toJSON() {
+        return {
+            _currentJob: this._currentJob ? this._currentJob.toJSON() : null, // 序列化当前任务
+            _ports: Array.from(this._ports.entries()), // 将 Map 转换为数组
+            _jobQueueTasks: this._jobQueue.promises.length > 0 ? this._jobQueue.promises : [], // 保存任务队列内容
+            _status: this._status,
+            lastRequest: this.lastRequest,
+            _debug: this._debug
+        };
+    }
+
+    static fromJSON(json, service) {
+        const instance = new Service();
+        instance._currentJob = json._currentJob ? Job.fromJSON(json._currentJob, service, service.storage) : null; // 反序列化当前任务
+        instance._ports = new Map(json._ports); // 将数组转换回 Map
+        instance._status = json._status;
+        instance.lastRequest = json.lastRequest;
+        instance._debug = json._debug;
+
+        // 重新初始化任务队列
+        instance._jobQueue = new AsyncBlockingQueue();
+        if (json._jobQueueTasks && json._jobQueueTasks.length > 0) {
+            for (let taskJson of json._jobQueueTasks) {
+                instance._jobQueue.enqueue(taskFromJSON(taskJson, service.fetch, service.logger, service.storage));
+            }
+        }
+
+        return instance;
+    }
+
 
     /**
      * Load settings
@@ -547,7 +90,7 @@ export default class Service extends EventTarget {
 
     /**
      * Get debug mode
-     * @returns {boolean} 
+     * @returns {boolean}
      */
     get debug() {
         return this._debug;
@@ -558,7 +101,7 @@ export default class Service extends EventTarget {
      * @param {boolean} value
      */
     set debug(value) {
-        if (this._debug = !!value) {
+        if (this._debug === !!value) {
             let logger = this.logger;
             logger.level = logger.LEVEL_DEBUG;
             logger.addEventListener('log', event => {
@@ -571,7 +114,7 @@ export default class Service extends EventTarget {
 
     /**
      * Get logger
-     * @returns {Logger} 
+     * @returns {Logger}
      */
     get logger() {
         let logger = this._logger;
@@ -583,7 +126,7 @@ export default class Service extends EventTarget {
 
     /**
      * Get port unique name
-     * @param {chrome.runtime.Port} port 
+     * @param {chrome.runtime.Port} port
      * @returns {string}
      */
     getPortName(port) {
@@ -593,7 +136,7 @@ export default class Service extends EventTarget {
 
     /**
      * On connect
-     * @param {chrome.runtime.Port} port 
+     * @param {chrome.runtime.Port} port
      */
     onConnect(port) {
         this._ports.set(this.getPortName(port), port);
@@ -603,7 +146,7 @@ export default class Service extends EventTarget {
 
     /**
      * On disconnect
-     * @param {chrome.runtime.Port} port 
+     * @param {chrome.runtime.Port} port
      */
     onDisconnect(port) {
         this._ports.delete(this.getPortName(port));
@@ -611,8 +154,8 @@ export default class Service extends EventTarget {
 
     /**
      * On receive message
-     * @param {chrome.runtime.Port} port 
-     * @param {any} message 
+     * @param {chrome.runtime.Port} port
+     * @param {any} message
      */
     onMessage(port, message) {
         switch (message.type) {
@@ -629,8 +172,8 @@ export default class Service extends EventTarget {
 
     /**
      * Post message
-     * @param {chrome.runtime.Port} port 
-     * @param {any} message 
+     * @param {chrome.runtime.Port} port
+     * @param {any} message
      */
     postMessage(port, message) {
         try {
@@ -642,7 +185,7 @@ export default class Service extends EventTarget {
 
     /**
      * Broadcast message
-     * @param {any} message 
+     * @param {any} message
      */
     broadcast(message) {
         for (let port of this._ports.values()) {
@@ -652,7 +195,7 @@ export default class Service extends EventTarget {
 
     /**
      * Ping test
-     * @param {any} payload 
+     * @param {any} payload
      * @returns {string}
      */
     ping(payload) {
@@ -670,33 +213,36 @@ export default class Service extends EventTarget {
     /**
      * Start handling task queue
      */
-    start() {
+    async start() {
+        console.log("service start", this._jobQueue)
         let originalState = this._status;
-        if (originalState != this.STATE_STOPPED) return false;
-        this._status = this.STATE_START_PENDING;
+        if (originalState !== Service.STATE_STOPPED) return false;
+        this._status = Service.STATE_START_PENDING;
         this.dispatchEvent(new StateChangeEvent(originalState, this._status));
         this.logger.debug('Starting service...');
         if (this._continuation) {
             this._continuation();
         }
+        await this.saveState();
         return true;
     }
 
     /**
      * Stop handling task queue
      */
-    stop() {
+    async stop() {
+        console.log("service stop")
         let originalState = this._status;
 
         switch (originalState) {
-            case this.STATE_RUNNING:
-            this._status = this.STATE_STOP_PENDING;
+            case Service.STATE_RUNNING:
+            this._status = Service.STATE_STOP_PENDING;
             this.dispatchEvent(new StateChangeEvent(originalState, this._status));
-            this.logger.debug('Stopping service...');    
+            this.logger.debug('Stopping service...');
             break;
 
-            case this.STATE_START_PENDING:
-            this._status = this.STATE_STOPPED;
+            case Service.STATE_START_PENDING:
+            this._status = Service.STATE_STOPPED;
             this.dispatchEvent(new StateChangeEvent(originalState, this._status));
             this.logger.debug('Service stopped.');
             break;
@@ -704,32 +250,39 @@ export default class Service extends EventTarget {
             default:
             return false;
         }
+        await this.saveState();
         return true;
     }
 
     /**
      * Create a job
-     * @param  {string} targetUserId 
-     * @param  {string} localUserId 
-     * @param  {Array} tasks 
-     * @param  {boolean} isOffline 
+     * @param  {string} targetUserId
+     * @param  {string} localUserId
+     * @param  {Array} tasks
+     * @param  {boolean} isOffline
      */
     async createJob(targetUserId, localUserId, tasks, isOffline = false) {
+        console.log(`service createJob targetUserId ${targetUserId} localUserId ${localUserId} isOffline ${isOffline}`, tasks)
         this.logger.debug('Creating a job...');
         let job = new Job(this, targetUserId, localUserId, isOffline);
         for (let {name, args} of tasks) {
             try {
-                let module = await import(`./tasks/${name.toLowerCase()}.js`);
+                let taskFile = `./tasks/${name.toLowerCase()}.js`
+                console.log(`taskFile ${taskFile}`)
+                let module = await import(taskFile);
                 if (typeof args == 'undefined') {
                     args = [];
                 }
                 let task = new module.default(...args);
+                console.log("add task", task)
                 job.addTask(task);
             } catch (e) {
+                console.error('Fail to create task:' + e)
                 this.logger.error('Fail to create task:' + e);
             }
         }
         this._jobQueue.enqueue(job);
+        await this.saveState();
         return job;
     }
 
@@ -737,51 +290,66 @@ export default class Service extends EventTarget {
      * Continue the task
      */
     continue() {
-        let executor, originalState = this._status;
+        console.log(`service continue ${this._status}`);
+        let executor;
+        let originalState = this._status;
 
         switch (originalState) {
-            case this.STATE_RUNNING:
+            case Service.STATE_RUNNING:
+                // let promise = Promise.resolve();
+                // console.log(`service continue promise is undefined? ${promise === undefined}`);
+                // return promise;
                 return Promise.resolve();
 
-            case this.STATE_START_PENDING:
+            case Service.STATE_START_PENDING:
                 executor = resolve => {
-                    this._status = this.STATE_RUNNING;
+                    this._status = Service.STATE_RUNNING;
                     this.dispatchEvent(new StateChangeEvent(originalState, this._status));
                     this.logger.debug('Service started.');
                     resolve();
                 };
                 break;
 
-            case this.STATE_STOP_PENDING:
+            case Service.STATE_STOP_PENDING:
                 executor = resolve => {
-                    this._status = this.STATE_STOPPED;
+                    this._status = Service.STATE_STOPPED;
                     this.dispatchEvent(new StateChangeEvent(originalState, this._status));
                     this.logger.debug('Service stopped.');
                     this._continuation = resolve;
                 };
                 break;
 
-            case this.STATE_STOPPED:
-                executor = resolve => this._continuation = resolve;
+            case Service.STATE_STOPPED:
+                executor = resolve => {
+                    this._continuation = resolve;
+                };
+                break;
+
+            default:
+                // 处理未定义的状态
+                return Promise.resolve();
         }
 
+        // await this.saveState();
         return new Promise(executor);
     }
 
     /**
      * Get ready for running task
      */
-    ready() {
+    async ready() {
+        console.log("service ready")
         let originalState = this._status;
         switch (originalState) {
-            case this.STATE_RUNNING:
-                this._status = this.STATE_START_PENDING;
+            case Service.STATE_RUNNING:
+                this._status = Service.STATE_START_PENDING;
                 this.dispatchEvent(new StateChangeEvent(originalState, this._status));
                 this.logger.debug('Service is pending...');
-
-            case this.STATE_START_PENDING:
+                break;
+            case Service.STATE_START_PENDING:
                 return Promise.resolve();
         }
+        await this.saveState();
         return this.continue();
     }
 
@@ -793,43 +361,101 @@ export default class Service extends EventTarget {
         return this._currentJob;
     }
 
-    /**
-     * Get singleton instance
-     * @returns {Service}
-     */
-    static get instance() {
+    static async getInstance() {
+        // console.log(`getInstance _instance存在吗？ ${!!Service._instance}`)
         if (!Service._instance) {
-            Service._instance = new Service();
+            let storedData = await chrome.storage.session.get("serviceState");
+            if (storedData.serviceState) {
+                console.log("🔄 从存储恢复 Service 状态...");
+                Service._instance = new Service();
+                await Service._instance.restoreState();
+            } else {
+                console.log("🆕 创建新的 Service 实例...");
+                Service._instance = new Service();
+            }
+            Service.startup();
+            await Service._instance.start();
         }
         return Service._instance;
     }
+
+    async saveState() {
+        const state = this.toJSON(); // 调用 toJSON 方法序列化
+        await chrome.storage.session.set({ serviceState: state });
+        console.log('Service 状态已保存');
+    }
+
+    async restoreState() {
+        const storedData = await chrome.storage.session.get("serviceState");
+        if (storedData.serviceState) {
+            const state = storedData.serviceState;
+            const restoredService = Service.fromJSON(state, this); // 调用 fromJSON 方法反序列化
+
+            // 将恢复的状态赋值给当前实例
+            this._currentJob = restoredService._currentJob;
+            this._ports = restoredService._ports;
+            this._jobQueue = restoredService._jobQueue;
+            this._status = restoredService._status;
+            this.lastRequest = restoredService.lastRequest;
+            this._debug = restoredService._debug;
+
+            console.log('Service 状态已恢复');
+        }
+    }
+
 
     /**
      * Startup service
      * @returns {Service}
      */
     static async startup() {
+        console.log(`service startup state ${Service._instance._status}`)
         const RUN_FOREVER = true;
 
-        let service = await Service.instance.loadSettings();
+        let service = await Service.getInstance();
+        await service.loadSettings();
         let logger = service.logger;
 
-        let browserMainVersion = (/Chrome\/([0-9]+)/.exec(navigator.userAgent)||[,0])[1];
-        let extraOptions = (browserMainVersion >= 72) ? ['blocking', 'requestHeaders', 'extraHeaders'] : ['blocking', 'requestHeaders'];
-
-        chrome.webRequest.onBeforeSendHeaders.addListener(details => {
-            let overrideHeaderTag = 'X-Override-';
-            for (let header of details.requestHeaders) {
-                if (header.name.startsWith(overrideHeaderTag)) {
-                    header.name = header.name.substr(overrideHeaderTag.length);
-                }
-            }
-            return {requestHeaders: details.requestHeaders};
-        }, {urls: ['http://*.douban.com/*', 'https://*.douban.com/*']}, extraOptions);
         let lastRequest = 0;
-        let fetchURL = (resource, init, continuous = false, retries = 2) => {
-            let promise = service.continue();
+
+        while (RUN_FOREVER) {
+            console.debug("RUN_FOREVER")
+            await service.ready();
+            if (!service._currentJob) {
+                console.log('Waiting for the job...');
+                logger.debug('Waiting for the job...');
+                service._currentJob = await service._jobQueue.dequeue();
+            }
+            try {
+                await service.continue();
+                console.log('Performing job...');
+                logger.debug('Performing job...');
+                await service._currentJob.run();
+                console.log('Job completed...');
+                logger.debug('Job completed...');
+                service._currentJob = null;
+            } catch (e) {
+                console.error(e)
+                logger.error(e);
+                await service.stop();
+            } finally {
+                await service.saveState();
+            }
+        }
+    }
+
+    static async getFetchURL(service) {
+        let logger = service.logger;
+        let lastRequest = 0;
+
+        return async (resource, init = {}, continuous = false, retries = 2) => {
+            let promise =  service.continue();
+            if(promise === undefined) {
+                console.error("promise is undefined!");
+            }
             let requestInterval = lastRequest + service.requestInterval - Date.now();
+
+            // 如果请求间隔大于 0，则等待
             if (!continuous && requestInterval > 0) {
                 promise = promise.then(() => {
                     return new Promise(resolve => {
@@ -837,42 +463,38 @@ export default class Service extends EventTarget {
                     });
                 });
             }
-            let fetchResolve = () => {
-                let url = Request.prototype.isPrototypeOf(resource) ? resource.url : resource.toString();
-                lastRequest = Date.now();
-                logger.debug(`Fetching ${url}...`, resource);
-                return fetch(resource, init).catch(e => {
-                    if (retries > 0) {
-                        logger.debug(e);
-                        logger.debug(`Attempt to fetch ${retries} times...`);
-                        retries --;
-                        return fetchResolve();
-                    } else {
-                        throw e;
-                    }
-                });
-            };
-            promise = promise.then(fetchResolve);
-            service.dispatchEvent(new Event('progress'));
-            return promise;
-        };
 
-        while (RUN_FOREVER) {
-            await service.ready();
-            if (!service._currentJob) {
-                logger.debug('Waiting for the job...');
-                service._currentJob = await service._jobQueue.dequeue();
+            let fetchResolve = () => {
+                try {
+                    let url = Request.prototype.isPrototypeOf(resource) ? resource.url : resource.toString();
+                    lastRequest = Date.now();
+                    console.log(`Fetching ${url}...`, resource);
+
+                    // 直接使用传入的 init 参数，不再修改 Header
+                    return fetch(resource, init).catch(e => {
+                        if (retries > 0) {
+                            logger.debug(e);
+                            logger.debug(`Attempt to fetch ${retries} times...`);
+                            retries--;
+                            return fetchResolve();
+                        } else {
+                            throw e;
+                        }
+                    });
+                } catch (error) {
+                    console.error(error)
+                    logger.error("Fetch error:", error);
+                    return Promise.reject(error);
+                }
+            };
+            if(promise === undefined) {
+                console.error("then之前，promise is undefined!");
+                promise = Promise.resolve()
             }
-            try {
-                await service.continue();
-                logger.debug('Performing job...');
-                await service._currentJob.run(fetchURL, logger);
-                logger.debug('Job completed...');
-                service._currentJob = null;
-            } catch (e) {
-                logger.error(e);
-                service.stop();
-            }
+            promise = promise.then(fetchResolve);
+            service.dispatchEvent(new Event("progress"));
+            return promise;
         }
     }
+
 }

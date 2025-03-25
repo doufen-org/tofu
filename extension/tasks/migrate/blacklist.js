@@ -1,5 +1,6 @@
 'use strict';
-import {Task} from '../../service.js';
+import Task from '../../services/Task.js';
+import TaskError from '../../services/TaskError.js';
 
 
 const URL_FORBID = 'https://www.douban.com/j/contact/addtoblacklist';
@@ -24,7 +25,8 @@ export default class Blacklist extends Task {
             for (let row of rows) {
                 let uid = row.user.id || row.user.uid;
                 postData.set('people', uid);
-                let response = await this.fetch(URL_FORBID, {
+                let fetch = await this.fetch
+                let response = await fetch(URL_FORBID, {
                     headers: {
                         'X-Override-Referer': 'https://www.douban.com/',
                         'X-Requested-With': 'XMLHttpRequest',

@@ -1,5 +1,5 @@
 import Settings from './settings.js';
-import {SERVICE_SETTINGS} from './service.js';
+import Service, {SERVICE_SETTINGS} from './service.js';
 import {TASK_FILES_SETTINGS} from './tasks/files.js';
 import Notification from './ui/notification.js';
 import TabPanel from './ui/tab.js';
@@ -71,7 +71,7 @@ class AccountPanel {
 
     static async render() {
         let panel = new AccountPanel('#account',
-                                     '#account-error');
+            '#account-error');
         let account = await panel.load();
     }
 }
@@ -108,7 +108,7 @@ class GeneralPanel {
             set value(value) {
                 $(this.element).prop('checked', value).trigger('change');
             }
-        
+
             get value() {
                 return this.element.checked;
             }
@@ -118,7 +118,7 @@ class GeneralPanel {
             set value(value) {
                 this.element.value = value / 1000;
             }
-        
+
             get value() {
                 return parseInt(parseFloat(this.element.value) * 1000);
             }
@@ -141,7 +141,7 @@ class GeneralPanel {
             {name: '同步图片.cloudName', type: TextInput},
         ];
 
-        this.controls = new Object();
+        this.controls = {};
         for (let {name, type} of CONTROL_METAS) {
             let control = this.controls[name] = new type(name);
             control.value = settings[name];
@@ -168,10 +168,8 @@ class GeneralPanel {
     async save(settings) {
         try {
             await Settings.save(settings);
-            let service = (await new Promise(resolve => {
-                chrome.runtime.getBackgroundPage(resolve);
-            })).service;
-            service.loadSettings();
+            const service = await Service.getInstance();
+            await Service.getInstance().loadSettings();
             Notification.show('保存成功');
         } catch (e) {
             Notification.show('保存失败', {type: 'danger'});
@@ -196,7 +194,7 @@ const TEMPLATE_TASK = `\
 /**
  * class ServicePanel
  */
-class ServicePanel {
+export default class ServicePanel {
     constructor(selector, service) {
         this.panel = document.querySelector(selector);
         this.service = service;
@@ -207,8 +205,14 @@ class ServicePanel {
         this.$loading = $panel.find('.service-ctrl[name="loading"]');
         this.$logs = $panel.find('.logs');
         this.$job = $panel.find('.job');
-        this.$start.click(event => service.start());
-        this.$stop.click(event => service.stop());
+        this.$start.click(async event => {
+            console.log("start click")
+            await service.start();
+        });
+        this.$stop.click(async event => {
+            console.log("stop click")
+            await service.stop();
+        });
         service.addEventListener('statechange', event => this.onStateChange(event.target));
         service.addEventListener('progress', event => this.onProgress(event.target));
         if (service.debug) {
@@ -219,7 +223,7 @@ class ServicePanel {
     }
 
     onLog(entry) {
-        let { time, levelName, message } = entry;
+        let {time, levelName, message} = entry;
         let datetime = new Date(time).toISOString();
         $('<P>').text(`[${datetime}] ${levelName}: ${message}`).appendTo(this.$logs);
         this.$logs.scrollTop(this.$logs.prop('scrollHeight'));
@@ -231,19 +235,19 @@ class ServicePanel {
 
         let statusName;
         switch (service.status) {
-            case service.STATE_STOPPED:
+            case Service.STATE_STOPPED:
                 statusName = '已停止';
                 this.$start.removeClass('is-hidden');
                 break;
-            case service.STATE_START_PENDING:
+            case Service.STATE_START_PENDING:
                 this.$stop.removeClass('is-hidden');
                 statusName = '等待任务';
                 break;
-            case service.STATE_STOP_PENDING:
+            case Service.STATE_STOP_PENDING:
                 this.$loading.removeClass('is-hidden');
                 statusName = '正在停止';
                 break;
-            case service.STATE_RUNNING:
+            case Service.STATE_RUNNING:
                 this.$stop.removeClass('is-hidden');
                 statusName = '运行中';
                 break;
@@ -261,6 +265,7 @@ class ServicePanel {
             return;
         }
         for (let task of currentJob.tasks) {
+            console.log("类名: ", task.constructor.name);
             let $task = $(TEMPLATE_TASK);
             if (task === currentJob.currentTask) {
                 $task.addClass('is-selected');
@@ -272,9 +277,10 @@ class ServicePanel {
     }
 
     static async render() {
-        let service = (await new Promise(resolve => {
-            chrome.runtime.getBackgroundPage(resolve);
-        })).service;
+        // await new Promise(resolve => {
+        //     chrome.runtime.sendMessage({ action: "ServicePanel" }, resolve);
+        // });
+        let service = await Service.getInstance()
         return new ServicePanel('.page-tab-content[name="service"]', service);
     }
 }

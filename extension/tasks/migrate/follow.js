@@ -1,5 +1,6 @@
 'use strict';
-import {Task} from '../../service.js';
+import Task from '../../services/Task.js';
+import TaskError from '../../services/TaskError.js';
 
 
 const URL_FOLLOW = 'https://www.douban.com/j/contact/addcontact';
@@ -24,7 +25,8 @@ export default class Follow extends Task {
             for (let row of rows) {
                 let uid = row.user.id || row.user.uid;
                 postData.set('people', uid);
-                let response = await this.fetch(URL_FOLLOW, {
+                let fetch = await this.fetch
+                let response = await fetch(URL_FOLLOW, {
                     headers: {
                         'X-Override-Referer': 'https://www.douban.com/',
                         'X-Requested-With': 'XMLHttpRequest',
