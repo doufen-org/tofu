@@ -1,10 +1,10 @@
 {
-    "name": "豆伴：豆瓣账号备份工具(manifest V3版)",
-    "short_name": "豆伴(V3版)",
-    "author": "豆坟|豆坟2号",
+    "name": "豆伴：豆瓣账号备份工具",
+    "short_name": "豆伴",
+    "author": "豆坟",
     "version": "0.12.0",
-    "version_name": "0.12.0 Mainfest V3版本",
-    "description": "用于备份豆瓣网的用户数据及图片，并支持将备份数据导出到 Excel 文档。现已支持manifest V3。",
+    "version_name": "0.12.0",
+    "description": "用于备份豆瓣网的用户数据及图片，并支持将备份数据导出到 Excel 文档。现已支持manifest V3 (By wangyeming)。",
     "manifest_version": 3,
     "icons": {
         "16": "images/icon-16x16.png",
@@ -20,17 +20,6 @@
         "default_title": "豆伴",
         "default_popup": "popup.html"
     },
-    "content_scripts": [
-        {
-            "matches": [
-                "http://*.douban.com/*",
-                "https://*.douban.com/*"
-            ],
-            "js": ["assistant.js", "shortcuts.js"],
-            "css": ["assistant.css", "shortcuts.css"],
-            "run_at": "document_idle"
-        }
-    ],
     "background": {
         "service_worker": "background.js",
         "type": "module"
@@ -43,7 +32,6 @@
     "permissions": [
         "storage",
         "cookies",
-        "scripting",
         "declarativeNetRequest",
         "declarativeNetRequestWithHostAccess"
     ],
